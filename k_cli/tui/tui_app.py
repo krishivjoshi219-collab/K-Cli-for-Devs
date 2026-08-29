@@ -2275,29 +2275,46 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
 
     @on(Button.Pressed, "#btn-side-swarm")
     def on_swarm_click(self) -> None:
-        from k_cli.agents.adversarial_swarm import AdversarialConsensusSwarm
-        swarm = AdversarialConsensusSwarm(max_rounds=2)
-        res = swarm.run_consensus("Verify zero-defect implementation of core algorithms")
         scroll = self.query_one("#chat-scroll", VerticalScroll)
-        scroll.mount(Markdown(res.render_markdown()))
+        typing_ind = Static("🐝 Adversarial Swarm running multi-round consensus...", classes="typing-indicator")
+        scroll.mount(typing_ind)
         scroll.scroll_end(animate=False)
+        def _work():
+            from k_cli.agents.adversarial_swarm import AdversarialConsensusSwarm
+            swarm = AdversarialConsensusSwarm(max_rounds=2)
+            res = swarm.run_consensus("Verify zero-defect implementation of core algorithms")
+            def update():
+                try: typing_ind.remove()
+                except Exception: pass
+                scroll.mount(Markdown(res.render_markdown()))
+                scroll.scroll_end(animate=False)
+            self.app.call_from_thread(update)
+        self.run_worker(_work, thread=True)
 
     @on(Button.Pressed, "#btn-side-synapse")
     def on_synapse_click(self) -> None:
-        from k_cli.tools.synapse_graph import SynapseCodeGraph
-        graph = SynapseCodeGraph()
-        sl = graph.extract_subgraph_slice("core orchestrator verifier")
         scroll = self.query_one("#chat-scroll", VerticalScroll)
-        scroll.mount(Markdown(sl.render_context()))
-        scroll.scroll_end(animate=False)
+        def _work():
+            from k_cli.tools.synapse_graph import SynapseCodeGraph
+            graph = SynapseCodeGraph()
+            sl = graph.extract_subgraph_slice("core orchestrator verifier")
+            def update():
+                scroll.mount(Markdown(sl.render_context()))
+                scroll.scroll_end(animate=False)
+            self.app.call_from_thread(update)
+        self.run_worker(_work, thread=True)
 
     @on(Button.Pressed, "#btn-side-airgap")
     def on_airgap_click(self) -> None:
-        from k_cli.core.airgap import AirgapManager
-        rep = AirgapManager().audit_environment()
         scroll = self.query_one("#chat-scroll", VerticalScroll)
-        scroll.mount(Markdown(rep.render_markdown()))
-        scroll.scroll_end(animate=False)
+        def _work():
+            from k_cli.core.airgap import AirgapManager
+            rep = AirgapManager().audit_environment()
+            def update():
+                scroll.mount(Markdown(rep.render_markdown()))
+                scroll.scroll_end(animate=False)
+            self.app.call_from_thread(update)
+        self.run_worker(_work, thread=True)
 
     @on(Button.Pressed, "#btn-side-bisect")
     def on_bisect_click(self) -> None:
@@ -2313,43 +2330,63 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
 
     @on(Button.Pressed, "#btn-side-route")
     def on_route_click(self) -> None:
-        from k_cli.core.smart_router import SmartModelRouter
-        dec = SmartModelRouter().route("Refactor multi-file architectural modules")
         scroll = self.query_one("#chat-scroll", VerticalScroll)
-        scroll.mount(Markdown(f"### ⚡ Smart Model Router Decision\n- **Selected Model**: `{dec.selected_model}` ({dec.selected_provider})\n- **Estimated Cost**: `${dec.estimated_cost_usd:.4f}`\n- **Savings vs GPT-4**: `${dec.savings_usd:.4f}` ({dec.savings_usd/dec.baseline_gpt4_cost_usd:.1%})\n- **Rationale**: {dec.reasoning}"))
-        scroll.scroll_end(animate=False)
+        def _work():
+            from k_cli.core.smart_router import SmartModelRouter
+            dec = SmartModelRouter().route("Refactor multi-file architectural modules")
+            def update():
+                scroll.mount(Markdown(f"### ⚡ Smart Model Router Decision\n- **Selected Model**: `{dec.selected_model}` ({dec.selected_provider})\n- **Estimated Cost**: `${dec.estimated_cost_usd:.4f}`\n- **Savings vs GPT-4**: `${dec.savings_usd:.4f}` ({dec.savings_usd/dec.baseline_gpt4_cost_usd:.1%})\n- **Rationale**: {dec.reasoning}"))
+                scroll.scroll_end(animate=False)
+            self.app.call_from_thread(update)
+        self.run_worker(_work, thread=True)
 
     @on(Button.Pressed, "#btn-side-garden")
     def on_garden_click(self) -> None:
-        from k_cli.tools.repo_gardener import RepoGardener
-        rep = RepoGardener().run_garden_sweep()
         scroll = self.query_one("#chat-scroll", VerticalScroll)
-        scroll.mount(Markdown(rep.render_markdown()))
-        scroll.scroll_end(animate=False)
+        def _work():
+            from k_cli.tools.repo_gardener import RepoGardener
+            rep = RepoGardener().run_garden_sweep()
+            def update():
+                scroll.mount(Markdown(rep.render_markdown()))
+                scroll.scroll_end(animate=False)
+            self.app.call_from_thread(update)
+        self.run_worker(_work, thread=True)
 
     @on(Button.Pressed, "#btn-side-explain")
     def on_explain_click(self) -> None:
-        from k_cli.tools.codebase_qa import CodebaseQAEngine
-        qa = CodebaseQAEngine()
-        res = qa.ask("Explain the high-level architecture and execution pipeline of this repository")
         scroll = self.query_one("#chat-scroll", VerticalScroll)
-        scroll.mount(Markdown(res.render_markdown()))
-        scroll.scroll_end(animate=False)
+        def _work():
+            from k_cli.tools.codebase_qa import CodebaseQAEngine
+            qa = CodebaseQAEngine()
+            res = qa.ask("Explain the high-level architecture and execution pipeline of this repository")
+            def update():
+                scroll.mount(Markdown(res.render_markdown()))
+                scroll.scroll_end(animate=False)
+            self.app.call_from_thread(update)
+        self.run_worker(_work, thread=True)
 
     @on(Button.Pressed, "#btn-side-scaffold")
     def on_scaffold_click(self) -> None:
-        from k_cli.agents.scaffold_engine import FullStackScaffolder
-        res = FullStackScaffolder().scaffold("FastAPI + Redis Cache + Pytest")
         scroll = self.query_one("#chat-scroll", VerticalScroll)
-        scroll.mount(Markdown(res.render_markdown()))
-        scroll.scroll_end(animate=False)
+        def _work():
+            from k_cli.agents.scaffold_engine import FullStackScaffolder
+            res = FullStackScaffolder().scaffold("FastAPI + Redis Cache + Pytest")
+            def update():
+                scroll.mount(Markdown(res.render_markdown()))
+                scroll.scroll_end(animate=False)
+            self.app.call_from_thread(update)
+        self.run_worker(_work, thread=True)
 
     @on(Button.Pressed, "#btn-side-diagram")
     def on_diagram_click(self) -> None:
-        md = DiagramGenerator().generate_mermaid_architecture()
         scroll = self.query_one("#chat-scroll", VerticalScroll)
-        scroll.mount(Markdown(f"### 📊 Repository Architecture Graph\n{md}"))
-        scroll.scroll_end(animate=False)
+        def _work():
+            md = DiagramGenerator().generate_mermaid_architecture()
+            def update():
+                scroll.mount(Markdown(f"### 📊 Repository Architecture Graph\n{md}"))
+                scroll.scroll_end(animate=False)
+            self.app.call_from_thread(update)
+        self.run_worker(_work, thread=True)
 
     @on(Button.Pressed, "#chip-plan")
     def on_plan_chip(self) -> None:
@@ -2395,6 +2432,7 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
             return
 
         await scroll.mount(Markdown(f"**User**: {val}"))
+        loop = asyncio.get_running_loop()
 
         if val.startswith("/"):
             if val in ("/codex", "/setup", "/start"):
@@ -2402,9 +2440,16 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
                 return
             elif val.startswith("/audit") or val.startswith("/swarm"):
                 task_p = val.split(maxsplit=1)[1] if " " in val else "Implement high-performance concurrent LRU cache in Python"
-                from k_cli.agents.adversarial_swarm import MultiModelConsensusSwarm
-                swarm = MultiModelConsensusSwarm(mock_mode=True)
-                report = swarm.audit_and_generate(task_prompt=task_p)
+                typing_ind = Static("🐝 5-Model Swarm is evaluating consensus...", classes="typing-indicator")
+                await scroll.mount(typing_ind)
+                scroll.scroll_end(animate=False)
+                def _swarm_run():
+                    from k_cli.agents.adversarial_swarm import MultiModelConsensusSwarm
+                    swarm = MultiModelConsensusSwarm(mock_mode=True)
+                    return swarm.audit_and_generate(task_prompt=task_p)
+                report = await loop.run_in_executor(None, _swarm_run)
+                try: typing_ind.remove()
+                except Exception: pass
                 await scroll.mount(Markdown(report.render_markdown()))
                 scroll.scroll_end(animate=False)
                 return
@@ -2418,28 +2463,37 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
                 scroll.scroll_end(animate=False)
                 from k_cli.agents.strands_agent import create_strands_agent
                 agent = create_strands_agent()
-                loop = asyncio.get_running_loop()
                 res = await loop.run_in_executor(None, agent.run, goal)
-                try:
-                    typing_ind.remove()
-                except Exception:
-                    pass
+                try: typing_ind.remove()
+                except Exception: pass
                 await scroll.mount(Markdown(res))
                 scroll.scroll_end(animate=False)
                 return
             elif val.startswith("/autoheal") or val.startswith("/triage"):
                 log_text = val.split(maxsplit=1)[1] if " " in val else "Traceback (most recent call last):\n  File 'test.py', line 1, in <module>\nValueError: invalid input"
+                typing_ind = Static("🔍 Triaging incident and synthesizing verified repair...", classes="typing-indicator")
+                await scroll.mount(typing_ind)
+                scroll.scroll_end(animate=False)
                 from k_cli.agents.strands_agent import triage_and_heal_incident
-                report = triage_and_heal_incident(log_text)
+                report = await loop.run_in_executor(None, triage_and_heal_incident, log_text)
+                try: typing_ind.remove()
+                except Exception: pass
                 await scroll.mount(Markdown(f"### 🔍 Strands Incident Triage & Auto-Heal Report\n```json\n{report}\n```"))
                 scroll.scroll_end(animate=False)
                 return
             elif val.startswith("/immune") or val.startswith("/chaos"):
                 target = val.split(maxsplit=1)[1] if " " in val else None
-                from k_cli.tools.chaos_immunity import ChaosImmunityEngine
-                engine = ChaosImmunityEngine(repo_path=".")
                 if target:
-                    rep = engine.inoculate_file(target)
+                    typing_ind = Static(f"🛡️ Probing AST & Inoculating '{target}'...", classes="typing-indicator")
+                    await scroll.mount(typing_ind)
+                    scroll.scroll_end(animate=False)
+                    def _immune_run():
+                        from k_cli.tools.chaos_immunity import ChaosImmunityEngine
+                        engine = ChaosImmunityEngine(repo_path=".")
+                        return engine.inoculate_file(target)
+                    rep = await loop.run_in_executor(None, _immune_run)
+                    try: typing_ind.remove()
+                    except Exception: pass
                     await scroll.mount(Markdown(rep.render_markdown()))
                 else:
                     self.action_open_chaos()

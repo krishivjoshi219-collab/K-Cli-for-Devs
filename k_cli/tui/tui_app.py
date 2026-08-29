@@ -260,27 +260,30 @@ class CodexStartingModal(ModalScreen[bool]):
                 # -------------------------------------------------------------
                 # Tab 2: 💻 Local Models (Pros & Cons for Coding)
                 # -------------------------------------------------------------
-                with TabPane("💻 Local Models (Pros & Cons)", id="tab-local", classes="codex-tab-pane"):
-                    yield Label("Curated Top Local Coding Models — Zero Cloud Cost, Zero Latency Jitter:", classes="codex-card-title")
-                    with Horizontal(id="codex-local-split", style="height: 1fr;"):
+                with TabPane("💻 Local Coding SLMs", id="tab-codex-local", classes="codex-tab-pane"):
+                    with Container(classes="codex-section-card"):
+                        yield Label("🚀 Curated Local Coding SLMs (Zero API Key & 100% Offline)", classes="codex-card-title")
+                        yield Label("Select an optimized coding SLM to inspect benchmarks, memory footprints, and 1-click download via Ollama / llama.cpp.")
+                    
+                    with Horizontal(id="codex-local-split"):
                         yield OptionList(id="opt-codex-local-list")
-                        yield RichLog(id="log-codex-local-details", highlight=True)
+                        yield RichLog(id="log-codex-local-details", highlight=True, markup=True)
 
                     with Horizontal(classes="codex-action-row"):
-                        yield Button("📥 1-Click Download Model", variant="success", id="btn-codex-download-local")
-                        yield Button("⚡ Set Active Model", variant="primary", id="btn-codex-set-active-local")
-                        yield Button("🏎️ Benchmark Speed", variant="warning", id="btn-codex-bench-local")
+                        yield Button("📥 1-Click Pull Model", variant="success", id="btn-codex-download-local")
+                        yield Button("⭐ Set as Active Model", variant="primary", id="btn-codex-set-active-local")
+                        yield Button("⚡ Run Speed Benchmark", variant="warning", id="btn-codex-bench-local")
 
                 # -------------------------------------------------------------
                 # Tab 3: ⚡ Bankai Models (My Own Custom Hugging Face Models)
                 # -------------------------------------------------------------
                 with TabPane("⚡ Bankai Models (Hugging Face)", id="tab-bankai", classes="codex-tab-pane"):
                     yield Label("Bankai Custom Fine-Tuned Models — Compiler-Grounded & AST Healers:", classes="codex-card-title")
-                    with Horizontal(id="codex-bankai-split", style="height: 1fr;"):
+                    with Horizontal(id="codex-bankai-split"):
                         yield OptionList(id="opt-codex-bankai-list")
                         yield RichLog(id="log-codex-bankai-details", highlight=True)
 
-                    with Container(classes="codex-section-card", style="height: auto; margin-top: 1;"):
+                    with Container(classes="codex-section-card"):
                         yield Label("📥 Custom Hugging Face Repo Downloader:", classes="codex-card-title")
                         with Horizontal():
                             yield Input(
@@ -1895,7 +1898,17 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
 
     @on(Button.Pressed, "#btn-side-triage")
     def on_triage_click(self) -> None:
-        self.app.notify("Ready to triage stack traces & CI failure logs.", title="Incident Triage", severity="information")
+        inp = self.query_one("#main-prompt-input", Input)
+        inp.value = "/autoheal "
+        inp.focus()
+        self.app.notify("Incident Triage ready. Paste stack trace or log and press Enter.", title="Incident Triage", severity="information")
+
+    @on(Button.Pressed, "#btn-side-add-ctx")
+    def on_add_ctx_click(self) -> None:
+        inp = self.query_one("#main-prompt-input", Input)
+        inp.value = "@"
+        inp.focus()
+        self.app.notify("Type @ followed by filename to pin context to prompt.", title="Context Pin", severity="information")
 
     @on(Button.Pressed, "#btn-side-ghost")
     def on_ghost_click(self) -> None:

@@ -126,6 +126,10 @@ class SecurityScanReport:
     scan_duration_seconds: float = 0.0
 
     @property
+    def total_files_scanned(self) -> int:
+        return self.scanned_files_count
+
+    @property
     def critical_count(self) -> int:
         return sum(1 for f in self.findings if f.severity == VulnerabilitySeverity.CRITICAL.value)
 

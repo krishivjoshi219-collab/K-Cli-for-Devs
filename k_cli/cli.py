@@ -2720,7 +2720,7 @@ def bisect_cmd(
 
 @app.command(name="route", help="Feature 3: Cost & Latency Smart Model Router.")
 def route_cmd(
-    task: str = typer.Argument(..., help="Task prompt to analyze and route."),
+    task: str = typer.Argument("Analyze, architect, and optimize repository codebase", help="Task prompt to analyze and route."),
 ):
     from k_cli.core.smart_router import SmartModelRouter
     try:
@@ -2760,7 +2760,7 @@ def garden_cmd(
 
 @app.command(name="explain", help="Feature 5: Codebase Natural Language Search & Semantic Q&A.")
 def explain_cmd(
-    query: str = typer.Argument(..., help="Question to ask about the codebase architecture."),
+    query: str = typer.Argument("Explain high level architecture and entrypoints", help="Question to ask about the codebase architecture."),
 ):
     from k_cli.tools.codebase_qa import CodebaseQAEngine
     if not query.strip():
@@ -2792,7 +2792,7 @@ def ghost_cmd(
 
 @app.command(name="swarm", help="Feature 7: Adversarial Red Team / Blue Team Consensus Loop.")
 def swarm_cmd(
-    task: str = typer.Argument(..., help="Coding task to execute through adversarial consensus."),
+    task: str = typer.Argument("Implement verified zero-defect algorithms", help="Coding task to execute through adversarial consensus."),
     rounds: int = typer.Option(3, "--rounds", "-r", help="Maximum adversarial attack rounds."),
 ):
     from k_cli.agents.adversarial_swarm import AdversarialConsensusSwarm
@@ -2808,7 +2808,7 @@ def swarm_cmd(
 
 @app.command(name="synapse", help="Feature 8: AST Neural Code Graph & Context Compressor.")
 def synapse_cmd(
-    query: str = typer.Argument(..., help="Task or keyword to extract minimal AST subgraph for."),
+    query: str = typer.Argument("core architecture components", help="Task or keyword to extract minimal AST subgraph for."),
 ):
     from k_cli.tools.synapse_graph import SynapseCodeGraph
     try:

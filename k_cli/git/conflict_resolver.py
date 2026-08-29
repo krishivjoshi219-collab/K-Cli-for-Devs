@@ -865,10 +865,12 @@ class ConflictResolver:
     def _stage_file_git(self, file_path: str) -> bool:
         """Helper to stage a resolved file using git add."""
         try:
-            p = Path(file_path)
-            parent_dir = p.parent if p.is_file() else p
+            p = Path(file_path).resolve()
+            if not p.exists():
+                return False
+            parent_dir = p.parent
             res = subprocess.run(
-                ["git", "add", str(p)],
+                ["git", "add", p.name],
                 cwd=str(parent_dir),
                 capture_output=True,
                 text=True,
@@ -894,6 +896,9 @@ class ConflictResolver:
             List of all ConflictBlock objects found across the workspace.
         """
         target = Path(repo_path).resolve()
+        if not target.exists():
+            return []
+
         if target.is_file():
             try:
                 content = target.read_text(encoding="utf-8")
@@ -902,7 +907,7 @@ class ConflictResolver:
                 return []
 
         all_conflicts: List[ConflictBlock] = []
-        conflicted_files: Set[str] = set()
+        conflicted_files: Set[Path] = set()
 
         # Method 1: Check git unmerged files
         try:
@@ -916,7 +921,9 @@ class ConflictResolver:
                 for line in res.stdout.splitlines():
                     rel_p = line.strip()
                     if rel_p:
-                        conflicted_files.add(str((target / rel_p).resolve()))
+                        candidate = (target / rel_p).resolve()
+                        if candidate.is_relative_to(target) and candidate.exists():
+                            conflicted_files.add(candidate)
         except Exception:
             pass
 
@@ -927,7 +934,9 @@ class ConflictResolver:
             for fname in files:
                 if fname.startswith("."):
                     continue
-                fpath = os.path.join(root, fname)
+                fpath = (Path(root) / fname).resolve()
+                if not fpath.is_relative_to(target):
+                    continue
                 try:
                     with open(fpath, "r", encoding="utf-8", errors="ignore") as f:
                         chunk = f.read(1024 * 1024)
@@ -938,8 +947,8 @@ class ConflictResolver:
 
         for fpath in sorted(conflicted_files):
             try:
-                content = Path(fpath).read_text(encoding="utf-8")
-                blocks = self.parse_conflict_blocks(content, file_path=fpath)
+                content = fpath.read_text(encoding="utf-8")
+                blocks = self.parse_conflict_blocks(content, file_path=str(fpath))
                 all_conflicts.extend(blocks)
             except Exception as e:
                 logger.warning("Could not read conflicted file %s: %s", fpath, e)

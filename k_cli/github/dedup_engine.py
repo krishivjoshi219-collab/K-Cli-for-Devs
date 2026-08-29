@@ -359,7 +359,7 @@ class DedupEngine:
                 return []
 
             raw_entries = res.stdout.split("COMMIT_START\x1f")
-            issue_regex = re.compile(r"(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|pr|issue|pull request)[\s#:]+(\d+)", re.IGNORECASE)
+            issue_regex = re.compile(r"\b(?:closes?|closed|fixes?|fixed|resolves?|resolved|pr|issue|pull\s+request)\s*#?(\d+)\b", re.IGNORECASE)
 
             for entry in raw_entries:
                 if not entry.strip():

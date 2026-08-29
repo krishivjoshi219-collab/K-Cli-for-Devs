@@ -145,8 +145,11 @@ class Verifier:
         timeout: float,
     ) -> subprocess.CompletedProcess:
         """Run a verifier child with bounded resources and reliable descendant cleanup."""
+        safe_cwd = Path(cwd).resolve()
+        if not safe_cwd.exists():
+            raise FileNotFoundError(f"Subprocess working directory does not exist: {cwd}")
         kwargs: Dict[str, Any] = {
-            "cwd": str(cwd),
+            "cwd": str(safe_cwd),
             "stdout": subprocess.PIPE,
             "stderr": subprocess.PIPE,
             "text": True,

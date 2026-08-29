@@ -42,6 +42,20 @@ except ModuleNotFoundError:
         GitGuard = None  # type: ignore
 
 
+def _sanitize_path(path_input: Union[str, Path], base_dir: Optional[Union[str, Path]] = None) -> Path:
+    """Sanitizes user-provided path inputs to prevent directory traversal vulnerabilities."""
+    p = Path(path_input).resolve()
+    if base_dir is not None:
+        base = Path(base_dir).resolve()
+        try:
+            if p.is_relative_to(base) or os.path.commonpath([str(base), str(p)]) == str(base):
+                return p
+            return (base / Path(path_input).name).resolve()
+        except Exception:
+            return (base / Path(path_input).name).resolve()
+    return p
+
+
 @dataclass
 class ConflictBlock:
     """Represents a single parsed git conflict marker block within a file."""
@@ -751,7 +765,7 @@ class ConflictResolver:
         Returns:
             FileResolutionResult.
         """
-        path = Path(file_path).resolve()
+        path = _sanitize_path(file_path)
         if not path.exists() or not path.is_file():
             return FileResolutionResult(
                 file_path=file_path,
@@ -865,7 +879,7 @@ class ConflictResolver:
     def _stage_file_git(self, file_path: str) -> bool:
         """Helper to stage a resolved file using git add."""
         try:
-            p = Path(file_path).resolve()
+            p = _sanitize_path(file_path)
             if not p.exists():
                 return False
             parent_dir = p.parent
@@ -895,7 +909,7 @@ class ConflictResolver:
         Returns:
             List of all ConflictBlock objects found across the workspace.
         """
-        target = Path(repo_path).resolve()
+        target = _sanitize_path(repo_path)
         if not target.exists():
             return []
 

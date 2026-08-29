@@ -27,6 +27,20 @@ except ImportError:  # pragma: no cover - non-POSIX hosts
     resource = None  # type: ignore
 
 
+def _sanitize_path(path_input: Union[str, Path], base_dir: Optional[Union[str, Path]] = None) -> Path:
+    """Sanitizes user-provided path inputs to prevent directory traversal vulnerabilities."""
+    p = Path(path_input).resolve()
+    if base_dir is not None:
+        base = Path(base_dir).resolve()
+        try:
+            if p.is_relative_to(base) or os.path.commonpath([str(base), str(p)]) == str(base):
+                return p
+            return (base / Path(path_input).name).resolve()
+        except Exception:
+            return (base / Path(path_input).name).resolve()
+    return p
+
+
 class TestFramework(str, Enum):
     """Supported auto-detected project test frameworks."""
     PYTEST = "pytest"
@@ -470,7 +484,7 @@ class Verifier:
         Returns:
             Detected framework name ("pytest", "cargo", "npm", "go", "make") or None.
         """
-        p_dir = Path(project_dir).resolve()
+        p_dir = _sanitize_path(project_dir)
         if not p_dir.exists() or not p_dir.is_dir():
             return None
 
@@ -561,7 +575,7 @@ class Verifier:
         Auto-detects project test framework (pytest, cargo test, npm test, go test, make test)
         and runs post-patch verification suite in the target project directory.
         """
-        p_dir = Path(project_dir).resolve()
+        p_dir = _sanitize_path(project_dir)
         detected_fw = framework or self.detect_test_framework(p_dir)
 
         if not detected_fw:
@@ -669,7 +683,7 @@ class Verifier:
         Returns:
             VerificationResult with `rolled_back=True` if rollback was performed.
         """
-        p_dir = Path(project_dir).resolve()
+        p_dir = _sanitize_path(project_dir)
 
         # Step 1: Pre-scan Python files in workspace for AST syntax errors
         py_files = list(p_dir.glob("*.py"))

@@ -1312,13 +1312,21 @@ class ModelHubModal(ModalScreen[None]):
 
     def load_models(self) -> None:
         hub = ModelHub()
-        hub.discover_all_live_models()
+        active_models = hub.get_verified_active_models()
+        all_models = hub.list_models()
         opt = self.query_one("#opt-model-list", OptionList)
         opt.clear_options()
-        for m in hub.list_models():
-            type_str = "Local SLM" if m.is_local else "Cloud LLM"
-            status_p = "🟢 Installed" if m.is_installed else ("🟢 Ready" if not m.is_local else "📥 Pullable")
-            opt.add_option(Option(f"[{m.provider.value.upper()}] {m.id} ({type_str}) [{status_p}] — {m.description[:45]}", id=m.id))
+
+        if active_models:
+            for m in active_models:
+                type_str = "Local SLM" if m.is_local else "Cloud LLM"
+                opt.add_option(Option(f"✔ [ONLINE] [{m.provider.value.upper()}] {m.id} ({type_str}) — {m.description[:45]}", id=m.id))
+
+        for m in all_models:
+            if m not in active_models:
+                type_str = "Local SLM" if m.is_local else "Cloud LLM"
+                status_p = "📥 Pullable" if m.is_local else "🔑 Key Needed"
+                opt.add_option(Option(f"○ [{status_p}] [{m.provider.value.upper()}] {m.id} ({type_str})", id=m.id))
 
     @on(Button.Pressed, "#btn-m-rescan")
     def on_rescan(self) -> None:
@@ -1331,7 +1339,6 @@ class ModelHubModal(ModalScreen[None]):
         sel_id = opt.get_option_at_index(opt.highlighted).id if opt.highlighted is not None else "qwen2.5-coder:1.5b"
         self.app.notify(f"Pulling model weights for '{sel_id}' via Ollama...", title="Model Pull", severity="information")
 
-
     @on(Button.Pressed, "#btn-apply-custom-model")
     def on_apply_custom(self) -> None:
         inp = self.query_one("#input-custom-model-tag", Input)
@@ -1339,7 +1346,19 @@ class ModelHubModal(ModalScreen[None]):
         if not val:
             self.app.notify("Please enter a model identifier.", title="Model Empty", severity="warning")
             return
+        
+        # Register in ModelHub
+        hub = ModelHub()
+        spec = hub.resolve_model(val)
+        if spec:
+            hub.register_model(spec)
+
         DevPreferencesManager.set("default_model", val)
+        self.app.model_name = val
+        try:
+            self.app.query_one("#hud-model", Label).update(f"🤖 {val}")
+        except Exception:
+            pass
         self.app.notify(f"Switched active model to custom '{val}'!", title="Custom Model Activated", severity="information")
         self.dismiss()
 
@@ -1360,6 +1379,11 @@ class ModelHubModal(ModalScreen[None]):
         if opt.highlighted is not None:
             sel = opt.get_option_at_index(opt.highlighted)
             DevPreferencesManager.set("default_model", sel.id)
+            self.app.model_name = sel.id
+            try:
+                self.app.query_one("#hud-model", Label).update(f"🤖 {sel.id}")
+            except Exception:
+                pass
             self.app.notify(f"Active model switched to {sel.id}", title="Model Switched", severity="information")
             self.dismiss()
 

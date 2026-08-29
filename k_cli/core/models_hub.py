@@ -590,7 +590,98 @@ class ModelHub:
             except Exception:
                 pass
 
+        # 4. Google Gemini Dynamic Models
+        gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        if gemini_key:
+            try:
+                req = urllib.request.Request(
+                    f"https://generativelanguage.googleapis.com/v1beta/models?key={gemini_key}",
+                    headers={"User-Agent": "K-CLI"},
+                )
+                with urllib.request.urlopen(req, timeout=3.0) as resp:
+                    if resp.status == 200:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        for item in data.get("models", []):
+                            raw_name = item.get("name", "").replace("models/", "")
+                            if "gemini" in raw_name and "deprecated" not in raw_name:
+                                spec = ModelSpec(
+                                    id=raw_name,
+                                    name=f"Google Gemini: {raw_name}",
+                                    provider=ModelProvider.GEMINI,
+                                    env_var_key="GEMINI_API_KEY",
+                                    description=item.get("description", f"Google Gemini model {raw_name}")[:60],
+                                )
+                                self.registry[spec.id] = spec
+            except Exception:
+                pass
+
+        # 5. DeepSeek Dynamic Models
+        deepseek_key = os.environ.get("DEEPSEEK_API_KEY")
+        if deepseek_key:
+            try:
+                req = urllib.request.Request(
+                    "https://api.deepseek.com/models",
+                    headers={"Authorization": f"Bearer {deepseek_key}", "User-Agent": "K-CLI"},
+                )
+                with urllib.request.urlopen(req, timeout=2.5) as resp:
+                    if resp.status == 200:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        for item in data.get("data", []):
+                            m_id = item.get("id")
+                            if m_id:
+                                spec = ModelSpec(
+                                    id=f"deepseek/{m_id}",
+                                    name=f"DeepSeek: {m_id}",
+                                    provider=ModelProvider.DEEPSEEK,
+                                    base_url="https://api.deepseek.com",
+                                    env_var_key="DEEPSEEK_API_KEY",
+                                    description=f"DeepSeek Reasoning & Coding model {m_id}",
+                                )
+                                self.registry[spec.id] = spec
+            except Exception:
+                pass
+
+        # 6. OpenAI Dynamic Models
+        openai_key = os.environ.get("OPENAI_API_KEY")
+        if openai_key:
+            try:
+                req = urllib.request.Request(
+                    "https://api.openai.com/v1/models",
+                    headers={"Authorization": f"Bearer {openai_key}", "User-Agent": "K-CLI"},
+                )
+                with urllib.request.urlopen(req, timeout=2.5) as resp:
+                    if resp.status == 200:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        for item in data.get("data", []):
+                            m_id = item.get("id", "")
+                            if m_id.startswith("gpt-4") or m_id.startswith("o1") or m_id.startswith("o3") or m_id.startswith("chatgpt"):
+                                spec = ModelSpec(
+                                    id=f"openai/{m_id}",
+                                    name=f"OpenAI: {m_id}",
+                                    provider=ModelProvider.OPENAI,
+                                    base_url="https://api.openai.com/v1",
+                                    env_var_key="OPENAI_API_KEY",
+                                    description=f"OpenAI model {m_id}",
+                                )
+                                self.registry[spec.id] = spec
+            except Exception:
+                pass
+
         return list(self.registry.values())
+
+    def get_verified_active_models(self) -> List[ModelSpec]:
+        """Returns only models whose provider is actively configured and reachable."""
+        self.discover_all_live_models()
+        active = []
+        for spec in self.registry.values():
+            if spec.is_local:
+                # If local, check if installed in ollama or custom local server
+                if spec.is_installed or spec.base_url:
+                    active.append(spec)
+            else:
+                if self.is_provider_configured(spec.provider):
+                    active.append(spec)
+        return active
 
     def is_provider_configured(self, provider: ModelProvider) -> bool:
         """Checks if a provider has active API credentials or local service available."""

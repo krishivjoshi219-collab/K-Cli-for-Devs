@@ -21,14 +21,15 @@ from k_cli.agents.strands_agent import (
     inspect_repo_structure,
     search_offline_docs,
     generate_architecture_diagram,
+    generate_chaos_immunity_patch,
 )
 
 
 class TestStrandsTools:
-    """Test suite for all 7 Strands-registered deterministic tools."""
+    """Test suite for all 8 Strands-registered deterministic tools."""
 
     def test_registered_tools_count(self):
-        assert len(STRANDS_DEV_TOOLS) == 7
+        assert len(STRANDS_DEV_TOOLS) == 8
 
     def test_verify_code_file_valid_python(self, tmp_path):
         test_file = tmp_path / "valid.py"
@@ -95,6 +96,14 @@ class TestStrandsTools:
         res = generate_architecture_diagram(str(tmp_path))
         assert "mermaid" in res.lower()
 
+    def test_generate_chaos_immunity_patch(self, tmp_path):
+        sample_file = tmp_path / "calc.py"
+        sample_file.write_text("def calc(d):\n    return d['v']\n")
+        res_str = generate_chaos_immunity_patch(str(sample_file), repo_path=str(tmp_path))
+        res = json.loads(res_str)
+        assert "patterns_detected" in res
+        assert res["verification_passed"] is True
+
     def test_triage_and_heal_incident_python_traceback(self):
         sample_traceback = (
             "Traceback (most recent call last):\n"
@@ -114,7 +123,7 @@ class TestStrandsDevAgent:
     def test_strands_agent_instantiation(self):
         agent = create_strands_agent(provider="auto")
         assert agent is not None
-        assert len(agent.tools) == 7
+        assert len(agent.tools) == 8
 
     def test_strands_agent_fallback_run(self):
         agent = StrandsDevAgent(provider="none")

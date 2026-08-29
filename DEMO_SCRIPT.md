@@ -40,13 +40,21 @@ k-cli strands "Inspect the repository structure, find any unverified modules, an
 **Voiceover:**
 > *"Now let's give the Strands Agent a broader engineering goal. The agent uses its registered tools — calling `inspect_repo_structure`, `verify_code_file`, and `generate_architecture_diagram`. Notice how it autonomously sequences the tools, reasons through the output, and returns production-grade verified results."*
 
-### Step 3: Full-Screen Developer Terminal Workstation
+### Step 3: Autonomous Chaos Immunity & Edge-Case Inoculation
+**Terminal Command:**
+```bash
+k-cli immune k_cli/tools/security.py
+```
+**Voiceover:**
+> *"Next is our killer feature: the Autonomous Chaos Immunity Engine. It probes brittle AST patterns like unhandled KeyErrors or socket timeout hangs, automatically synthesizes adversarial test suites, and inoculates your codebase with defensive guards before bugs ever hit production."*
+
+### Step 4: Full-Screen Developer Terminal Workstation
 **Terminal Command:**
 ```bash
 k-cli ui
 ```
 **Voiceover:**
-> *"For developers who live in the terminal, K-CLI also includes a full-screen Textual dashboard with real-time token speedometers, RAM allocation gauges, and interactive 3-way Git conflict resolvers."*
+> *"For developers who live in the terminal, K-CLI also includes a full-screen Textual dashboard with real-time token speedometers, RAM allocation gauges, interactive 1-click launchers, and the new Chaos Immunity Hub (Ctrl+I)."*
 
 ---
 

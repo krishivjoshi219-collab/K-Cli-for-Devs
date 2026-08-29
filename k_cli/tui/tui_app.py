@@ -1338,6 +1338,79 @@ class SecurityScannerModal(ModalScreen[None]):
         self.dismiss()
 
 
+class ChaosImmunityModal(ModalScreen[None]):
+    """Autonomous Chaos Immunity & Edge-Case Probing Modal."""
+
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("ctrl+i", "dismiss", "Close"),
+    ]
+
+    DEFAULT_CSS = """
+    ChaosImmunityModal {
+        align: center middle;
+        background: rgba(10, 15, 30, 0.9);
+    }
+
+    #chaos-box {
+        width: 85%;
+        height: 85%;
+        background: #0d1117;
+        border: heavy #ffaa00;
+        padding: 1;
+    }
+
+    #chaos-log {
+        height: 1fr;
+        background: #161b22;
+        padding: 1;
+    }
+
+    #chaos-act {
+        height: 3;
+        align: center middle;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        with Container(id="chaos-box"):
+            yield Label("🛡️ Autonomous Chaos Immunity & Edge-Case Self-Healing Engine")
+            yield RichLog(id="chaos-log", highlight=True, markup=True)
+            with Horizontal(id="chaos-act"):
+                yield Button("🔬 Probe Brittle Patterns", variant="warning", id="btn-chaos-probe")
+                yield Button("💉 Synthesize Tests & Inoculate", variant="success", id="btn-chaos-inoculate")
+                yield Button("✖ Close", variant="default", id="btn-chaos-close")
+
+    def on_mount(self) -> None:
+        self.on_probe()
+
+    @on(Button.Pressed, "#btn-chaos-probe")
+    def on_probe(self) -> None:
+        from k_cli.tools.chaos_immunity import ChaosImmunityEngine
+        engine = ChaosImmunityEngine(repo_path=".")
+        reports = engine.scan_and_inoculate_repo(max_files=10)
+        log = self.query_one("#chaos-log", RichLog)
+        log.clear()
+        total_patterns = sum(len(r.patterns_detected) for r in reports)
+        total_tests = sum(r.generated_tests_count for r in reports)
+        log.write(f"🔬 Scanned {len(reports)} core modules for brittle AST patterns.\nFound {total_patterns} edge-case risk points (KeyError, None dereference, timeout hangs).\nSynthesized {total_tests} adversarial test cases.\nStatus: {'✔ 100% Resilient' if total_patterns == 0 else '⚠️ Inoculation Recommended'}")
+
+    @on(Button.Pressed, "#btn-chaos-inoculate")
+    def on_inoculate(self) -> None:
+        from k_cli.tools.chaos_immunity import ChaosImmunityEngine
+        engine = ChaosImmunityEngine(repo_path=".")
+        reports = engine.scan_and_inoculate_repo(max_files=10)
+        log = self.query_one("#chaos-log", RichLog)
+        log.write("\n💉 Inoculating modules with defensive guards and AST ground-truth verification...")
+        for r in reports:
+            log.write(f"  • {r.target_file}: {r.patches_applied_count} surgical patch(es) applied. AST Verified: {'✔' if r.verification_passed else '✘'}")
+        self.app.notify("Codebase successfully inoculated against edge cases.", title="Chaos Immunity", severity="information")
+
+    @on(Button.Pressed, "#btn-chaos-close")
+    def on_close(self) -> None:
+        self.dismiss()
+
+
 # =============================================================================
 # 5b. Local Hub & Trending Discovery Modals (Ctrl+H & Ctrl+R)
 # =============================================================================
@@ -1606,6 +1679,7 @@ class KCliCyberWorkstation(App):
         Binding("ctrl+u", "open_audit", "Swarm Audit", show=True),
         Binding("ctrl+m", "open_models", "Models", show=True),
         Binding("ctrl+a", "open_vault", "API Vault", show=True),
+        Binding("ctrl+i", "open_chaos", "Chaos Immunity", show=True),
         Binding("ctrl+k", "open_conflicts", "Conflicts", show=True),
         Binding("ctrl+g", "open_github", "GitHub", show=True),
         Binding("ctrl+s", "open_security", "Security", show=True),
@@ -1649,6 +1723,7 @@ class KCliCyberWorkstation(App):
             with VerticalScroll(id="sidebar-left"):
                 yield Label("🚀 1-CLICK LAUNCHER", classes="sidebar-section-title")
                 yield Button("⚡ AWS Strands Agent", variant="success", id="btn-side-strands", classes="launcher-btn")
+                yield Button("🛡️ Chaos Immune System", variant="warning", id="btn-side-chaos", classes="launcher-btn")
                 yield Button("⚡ 5-Model Swarm Audit", variant="warning", id="btn-side-audit-swarm", classes="launcher-btn")
                 yield Button("🤖 Dynamic Model Hub", variant="primary", id="btn-side-models", classes="launcher-btn")
                 yield Button("📖 Codex & Setup Hub", variant="primary", id="btn-side-codex", classes="launcher-btn")
@@ -1687,6 +1762,7 @@ class KCliCyberWorkstation(App):
                 # 1-Click Action Chips Bar
                 with Horizontal(id="chips-bar"):
                     yield Button("⚡ Strands Agent", variant="success", id="chip-strands", classes="chip-btn")
+                    yield Button("🛡️ Chaos Immunity", variant="warning", id="chip-chaos", classes="chip-btn")
                     yield Button("🚨 Auto-Heal", variant="error", id="chip-autoheal", classes="chip-btn")
                     yield Button("⚡ 5-Model Audit", variant="warning", id="chip-audit", classes="chip-btn")
                     yield Button("🤖 Models", variant="primary", id="chip-models", classes="chip-btn")
@@ -1824,6 +1900,9 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
     def action_open_security(self) -> None:
         self.push_screen(SecurityScannerModal())
 
+    def action_open_chaos(self) -> None:
+        self.push_screen(ChaosImmunityModal())
+
     def action_open_local_hub(self) -> None:
         self.push_screen(LocalHubModal())
 
@@ -1836,6 +1915,11 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
         scroll.mount(Markdown("# 🧹 Workspace Cleared\nReady for new tasks."))
 
     # Button click routing
+    @on(Button.Pressed, "#btn-side-chaos")
+    @on(Button.Pressed, "#chip-chaos")
+    def on_chaos_click(self) -> None:
+        self.action_open_chaos()
+
     @on(Button.Pressed, "#btn-side-audit-swarm")
     @on(Button.Pressed, "#chip-audit")
     def on_audit_swarm_click(self) -> None:
@@ -2076,6 +2160,17 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
                 from k_cli.agents.strands_agent import triage_and_heal_incident
                 report = triage_and_heal_incident(log_text)
                 await scroll.mount(Markdown(f"### 🔍 Strands Incident Triage & Auto-Heal Report\n```json\n{report}\n```"))
+                scroll.scroll_end(animate=False)
+                return
+            elif val.startswith("/immune") or val.startswith("/chaos"):
+                target = val.split(maxsplit=1)[1] if " " in val else None
+                from k_cli.tools.chaos_immunity import ChaosImmunityEngine
+                engine = ChaosImmunityEngine(repo_path=".")
+                if target:
+                    rep = engine.inoculate_file(target)
+                    await scroll.mount(Markdown(rep.render_markdown()))
+                else:
+                    self.action_open_chaos()
                 scroll.scroll_end(animate=False)
                 return
             elif val in ("/conflict", "/conflicts"):

@@ -29,6 +29,7 @@ def test_kcli_tui_full_navigation_and_modals_lifecycle():
                 ("Conflicts", app.action_open_conflicts),
                 ("GitHub", app.action_open_github),
                 ("Security", app.action_open_security),
+                ("ChaosImmunity", app.action_open_chaos),
                 ("LocalHub", app.action_open_local_hub),
                 ("Trending", app.action_open_trending),
             ]

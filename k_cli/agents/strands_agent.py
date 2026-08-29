@@ -448,6 +448,34 @@ def generate_architecture_diagram(repo_path: str = ".") -> str:
         return f"```mermaid\ngraph TD;\nError[\"{e}\"];\n```"
 
 
+@tool
+def generate_chaos_immunity_patch(file_path: str, repo_path: str = ".") -> str:
+    """Performs AST chaos edge-case probing on a source file, synthesizes adversarial pytest cases,
+    and applies verified defensive inoculation patches against KeyError, None dereference, timeout hangs, and ReDoS.
+
+    Args:
+        file_path: Target source file path to inoculate.
+        repo_path: Root repository path (default: current directory).
+
+    Returns:
+        JSON report detailing probed brittle patterns, generated test cases count, and verification status.
+    """
+    try:
+        from k_cli.tools.chaos_immunity import ChaosImmunityEngine
+        engine = ChaosImmunityEngine(repo_path=repo_path)
+        report = engine.inoculate_file(file_path, auto_apply_patches=True)
+        return json.dumps({
+            "target_file": report.target_file,
+            "patterns_detected": len(report.patterns_detected),
+            "generated_tests_count": report.generated_tests_count,
+            "patches_applied_count": report.patches_applied_count,
+            "verification_passed": report.verification_passed,
+            "summary": report.summary,
+        }, indent=2)
+    except Exception as e:
+        return json.dumps({"error": str(e), "target_file": file_path, "verification_passed": False})
+
+
 # List of all tools registered for the Strands Agent
 STRANDS_DEV_TOOLS = [
     triage_and_heal_incident,
@@ -457,6 +485,7 @@ STRANDS_DEV_TOOLS = [
     inspect_repo_structure,
     search_offline_docs,
     generate_architecture_diagram,
+    generate_chaos_immunity_patch,
 ]
 
 
@@ -483,6 +512,7 @@ Available Tools:
 - `inspect_repo_structure`: Symbol map of classes, functions, and dependencies.
 - `search_offline_docs`: Local SQLite FTS5 documentation lookup.
 - `generate_architecture_diagram`: Mermaid diagram generator.
+- `generate_chaos_immunity_patch`: AST chaos prober, adversarial test suite generator, and auto-inoculation patcher.
 
 Always prioritize safe, minimal, surgical edits and ground-truth verification.
 """

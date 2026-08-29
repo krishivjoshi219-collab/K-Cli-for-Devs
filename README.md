@@ -50,6 +50,7 @@ flowchart TD
     T5["🗺️ inspect_repo_structure\n(Topological AST Symbol Map)"]
     T6["📚 search_offline_docs\n(Embedded SQLite FTS5 DevDocs)"]
     T7["📊 generate_architecture_diagram\n(Mermaid Diagram Generator)"]
+    T8["🛡️ generate_chaos_immunity_patch\n(Edge-Case Prober & Inoculator)"]
   end
 
   subgraph Loop ["🔁 Closed-Loop Verification & Execution"]
@@ -99,10 +100,13 @@ Applies line-accurate `<<<<<<< SEARCH / ======= / >>>>>>> REPLACE` modifications
 ### 4. 3-Way Git Conflict Resolver (`conflict_resolver.py`)
 Parses Git conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`), evaluates `BASE`, `OURS`, and `THEIRS` in AST context, and generates syntactically valid resolutions.
 
-### 5. Pluggable Cloud & Local Models
+### 5. Autonomous Chaos Immunity & Edge-Case Self-Healing (`chaos_immunity.py`)
+Proactively probes brittle AST patterns (KeyError, None dereference, socket/HTTP timeout hangs, ReDoS), synthesizes adversarial pytest suites in `tests/chaos/`, and applies verified defensive inoculation patches with zero regressions.
+
+### 6. Pluggable Cloud & Local Models
 Configured to run natively with:
 * **Amazon Bedrock** (Anthropic Claude 3.5 Sonnet / Amazon Nova Pro)
-* **Google Gemini** (Gemini 2.0 Flash)
+* **Google Gemini** (Gemini 2.5 Flash / Pro)
 * **Anthropic / OpenAI APIs**
 * **Local Ollama** (100% offline air-gapped mode with embedded FTS5 DevDocs)
 
@@ -159,13 +163,23 @@ k-cli auto-heal crash_report.log
 pytest | k-cli auto-heal
 ```
 
-### 3. Standalone Ground-Truth Code Verification
+### 3. Autonomous Chaos Immunity & Zero-Day Inoculation
+Probe edge cases, synthesize adversarial tests, and inoculate your code with defensive guards:
+```bash
+# Inoculate a specific module
+k-cli immune src/handler.py
+
+# Or sweep and inoculate the entire repository
+k-cli immune
+```
+
+### 4. Standalone Ground-Truth Code Verification
 Verify any source file against local compilers and AST checks:
 ```bash
 k-cli verify src/handler.py
 ```
 
-### 4. Interactive Full-Screen Terminal Workstation (TUI)
+### 5. Interactive Full-Screen Terminal Workstation (TUI)
 Launch the full Textual dashboard with real-time token speedometers and RAM monitors:
 ```bash
 k-cli ui

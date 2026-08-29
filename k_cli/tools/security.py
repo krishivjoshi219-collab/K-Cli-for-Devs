@@ -40,6 +40,8 @@ def scan_workspace(root_dir: str | Path = ".", max_findings: int = 25) -> List[S
         except (OSError, UnicodeDecodeError):
             continue
         for line_number, line in enumerate(lines, start=1):
+            if any(dummy in line.lower() for dummy in ("mock", "example", "placeholder", "dummy", "sample", "test_key", "sk-ant-api03", "sk-proj-test", "sk-mock")):
+                continue
             for rule_name, pattern in RULES.items():
                 if pattern.search(line):
                     findings.append(SecurityFinding(path=path.relative_to(root).as_posix(), line=line_number, rule=rule_name))

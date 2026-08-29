@@ -132,28 +132,67 @@ class CredentialsManager:
             cwd.parent / ".env",
             cwd.parent / "key.json",
             Path.home() / "BankaiProject" / "key.json",
+            Path.home() / "BankaiProject" / "finance.key.json",
             Path.home() / ".env",
         ]
+        
+        KEY_ALIASES = {
+            "GOOGLE_KEYS": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
+            "GEMINI_KEYS": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
+            "GEMINI_API_KEY": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
+            "GOOGLE_API_KEY": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
+            "GROQ_KEYS": ["GROQ_API_KEY"],
+            "GROQ_API_KEY": ["GROQ_API_KEY"],
+            "OPENROUTER_KEYS": ["OPENROUTER_API_KEY"],
+            "OPENROUTER_API_KEY": ["OPENROUTER_API_KEY"],
+            "DEEPSEEK_KEYS": ["DEEPSEEK_API_KEY"],
+            "DEEPSEEK_API_KEY": ["DEEPSEEK_API_KEY"],
+            "GITHUB_KEYS": ["GITHUB_TOKEN"],
+            "GITHUB_TOKEN": ["GITHUB_TOKEN"],
+            "ANTHROPIC_KEYS": ["ANTHROPIC_API_KEY"],
+            "ANTHROPIC_API_KEY": ["ANTHROPIC_API_KEY"],
+            "OPENAI_KEYS": ["OPENAI_API_KEY"],
+            "OPENAI_API_KEY": ["OPENAI_API_KEY"],
+        }
+
         for cand in candidates:
             if cand.exists():
                 try:
                     if cand.suffix == ".json":
                         data = json.loads(cand.read_text(encoding="utf-8"))
-                        for k, v in data.items():
-                            if isinstance(v, str) and v.strip() and k in [sk[0] for sk in SUPPORTED_KEYS]:
-                                if k not in os.environ:
-                                    os.environ[k] = v.strip()
-                                loaded[k] = v.strip()
+                        if isinstance(data, dict):
+                            for k, v in data.items():
+                                val_str = None
+                                if isinstance(v, str) and v.strip():
+                                    val_str = v.strip()
+                                elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], str) and v[0].strip():
+                                    val_str = v[0].strip()
+                                elif isinstance(v, dict):
+                                    for sub_k, sub_v in v.items():
+                                        if isinstance(sub_v, str) and sub_v.strip():
+                                            val_str = sub_v.strip()
+                                            break
+                                
+                                if val_str:
+                                    target_keys = KEY_ALIASES.get(k.upper(), [k.upper()])
+                                    for t_key in target_keys:
+                                        if t_key not in loaded:
+                                            loaded[t_key] = val_str
+                                            if t_key not in os.environ:
+                                                os.environ[t_key] = val_str
                     else:
                         for line in cand.read_text(encoding="utf-8").splitlines():
                             line = line.strip()
                             if line and not line.startswith("#") and "=" in line:
                                 k, v = line.split("=", 1)
-                                k, v = k.strip(), v.strip()
-                                if k in [sk[0] for sk in SUPPORTED_KEYS] and v:
-                                    if k not in os.environ:
-                                        os.environ[k] = v
-                                    loaded[k] = v
+                                k, v = k.strip().upper(), v.strip()
+                                if v:
+                                    target_keys = KEY_ALIASES.get(k, [k])
+                                    for t_key in target_keys:
+                                        if t_key not in loaded:
+                                            loaded[t_key] = v
+                                            if t_key not in os.environ:
+                                                os.environ[t_key] = v
                 except Exception:
                     pass
 

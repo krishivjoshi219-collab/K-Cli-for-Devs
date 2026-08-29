@@ -16,8 +16,17 @@ import json
 import os
 import shlex
 import sys
-import psutil
 from pathlib import Path
+
+# Ensure project root is in sys.path for direct CLI script execution
+_pkg_root = str(Path(__file__).resolve().parent.parent)
+if _pkg_root not in sys.path:
+    sys.path.insert(0, _pkg_root)
+_module_dir = str(Path(__file__).resolve().parent)
+if _module_dir not in sys.path:
+    sys.path.insert(0, _module_dir)
+
+import psutil
 from typing import List, Optional
 
 import typer
@@ -1481,7 +1490,14 @@ def pr_list_cmd(
             console.print("[bold red]Error:[/bold red] GitHubClient module is not available.")
         raise typer.Exit(code=1)
 
-    prs = client.list_pull_requests(state=state, limit=limit)
+    try:
+        prs = client.list_pull_requests(state=state, limit=limit)
+    except Exception as ex:
+        if json_output:
+            typer.echo(json.dumps({"error": str(ex), "pull_requests": []}))
+        else:
+            console.print(f"[bold yellow]⚠ Could not list pull requests:[/bold yellow] {ex}")
+        return
 
     if json_output:
         typer.echo(json.dumps([pr.to_dict() for pr in prs], indent=2))
@@ -1531,9 +1547,16 @@ def pr_view_cmd(
             console.print("[bold red]Error:[/bold red] GitHubClient module is not available.")
         raise typer.Exit(code=1)
 
-    pr = client.get_pull_request(pr_num)
-    diff = client.get_pr_diff(pr_num)
-    ci = client.get_ci_status(pr.head_sha or pr.head_branch)
+    try:
+        pr = client.get_pull_request(pr_num)
+        diff = client.get_pr_diff(pr_num)
+        ci = client.get_ci_status(pr.head_sha or pr.head_branch)
+    except Exception as ex:
+        if json_output:
+            typer.echo(json.dumps({"error": str(ex)}))
+        else:
+            console.print(f"[bold yellow]⚠ Could not view pull request #{pr_num}:[/bold yellow] {ex}")
+        return
 
     if json_output:
         data = pr.to_dict()

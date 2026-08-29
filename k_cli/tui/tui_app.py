@@ -1645,10 +1645,12 @@ class KCliCyberWorkstation(App):
             # Left: Antigravity Navigator
             with VerticalScroll(id="sidebar-left"):
                 yield Label("🚀 1-CLICK LAUNCHER", classes="sidebar-section-title")
+                yield Button("⚡ AWS Strands Agent", variant="success", id="btn-side-strands", classes="launcher-btn")
                 yield Button("⚡ 5-Model Swarm Audit", variant="warning", id="btn-side-audit-swarm", classes="launcher-btn")
                 yield Button("🤖 Dynamic Model Hub", variant="primary", id="btn-side-models", classes="launcher-btn")
                 yield Button("📖 Codex & Setup Hub", variant="primary", id="btn-side-codex", classes="launcher-btn")
                 yield Button("🔑 API Key Vault", variant="default", id="btn-side-vault", classes="launcher-btn")
+                yield Button("🚨 Incident Triage & Heal", variant="error", id="btn-side-triage", classes="launcher-btn")
                 yield Button("👻 Ghost Autopilot", variant="default", id="btn-side-ghost", classes="launcher-btn")
                 yield Button("🐝 Adversarial Swarm", variant="warning", id="btn-side-swarm", classes="launcher-btn")
                 yield Button("🧠 Synapse Code Graph", variant="default", id="btn-side-synapse", classes="launcher-btn")
@@ -1664,7 +1666,6 @@ class KCliCyberWorkstation(App):
                 yield Button("⚔️ Merge Conflicts", variant="default", id="btn-side-conflicts", classes="launcher-btn")
                 yield Button("🐙 GitHub Center", variant="default", id="btn-side-github", classes="launcher-btn")
                 yield Button("🛡️ Security Auto-Heal", variant="warning", id="btn-side-security", classes="launcher-btn")
-                yield Button("🚨 Incident Triage", variant="error", id="btn-side-triage", classes="launcher-btn")
                 yield Button("📊 Repo Architecture", variant="success", id="btn-side-diagram", classes="launcher-btn")
 
 
@@ -1682,6 +1683,8 @@ class KCliCyberWorkstation(App):
 
                 # 1-Click Action Chips Bar
                 with Horizontal(id="chips-bar"):
+                    yield Button("⚡ Strands Agent", variant="success", id="chip-strands", classes="chip-btn")
+                    yield Button("🚨 Auto-Heal", variant="error", id="chip-autoheal", classes="chip-btn")
                     yield Button("⚡ 5-Model Audit", variant="warning", id="chip-audit", classes="chip-btn")
                     yield Button("🤖 Models", variant="primary", id="chip-models", classes="chip-btn")
                     yield Button("📖 Codex", variant="primary", id="chip-codex", classes="chip-btn")
@@ -1875,6 +1878,21 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
     def on_trending_click(self) -> None:
         self.action_open_trending()
 
+    @on(Button.Pressed, "#btn-side-strands")
+    @on(Button.Pressed, "#chip-strands")
+    def on_strands_click(self) -> None:
+        inp = self.query_one("#main-prompt-input", Input)
+        inp.value = "/strands "
+        inp.focus()
+        self.app.notify("AWS Strands Autonomous Agent ready. Enter your high-level goal.", title="Strands Agent", severity="information")
+
+    @on(Button.Pressed, "#chip-autoheal")
+    def on_autoheal_click(self) -> None:
+        inp = self.query_one("#main-prompt-input", Input)
+        inp.value = "/autoheal "
+        inp.focus()
+        self.app.notify("Paste stacktrace or error log to auto-heal.", title="Incident Triage", severity="information")
+
     @on(Button.Pressed, "#btn-side-triage")
     def on_triage_click(self) -> None:
         self.app.notify("Ready to triage stack traces & CI failure logs.", title="Incident Triage", severity="information")
@@ -2023,6 +2041,29 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
                 return
             elif val in ("/keys", "/api", "/vault"):
                 self.action_open_vault()
+                return
+            elif val.startswith("/strands") or val.startswith("/agent"):
+                goal = val.split(maxsplit=1)[1] if " " in val else "Inspect repository, verify tests, and report status"
+                typing_ind = Static(f"⚡ Strands Agent running goal: '{goal}'...", classes="typing-indicator")
+                await scroll.mount(typing_ind)
+                scroll.scroll_end(animate=False)
+                from k_cli.agents.strands_agent import create_strands_agent
+                agent = create_strands_agent()
+                loop = asyncio.get_running_loop()
+                res = await loop.run_in_executor(None, agent.run, goal)
+                try:
+                    typing_ind.remove()
+                except Exception:
+                    pass
+                await scroll.mount(Markdown(res))
+                scroll.scroll_end(animate=False)
+                return
+            elif val.startswith("/autoheal") or val.startswith("/triage"):
+                log_text = val.split(maxsplit=1)[1] if " " in val else "Traceback (most recent call last):\n  File 'test.py', line 1, in <module>\nValueError: invalid input"
+                from k_cli.agents.strands_agent import triage_and_heal_incident
+                report = triage_and_heal_incident(log_text)
+                await scroll.mount(Markdown(f"### 🔍 Strands Incident Triage & Auto-Heal Report\n```json\n{report}\n```"))
+                scroll.scroll_end(animate=False)
                 return
             elif val in ("/conflict", "/conflicts"):
                 self.action_open_conflicts()

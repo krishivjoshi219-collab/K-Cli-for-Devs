@@ -7,7 +7,7 @@ Features:
 2. Pluggable Model Support:
    - Amazon Bedrock (Claude 3.5 Sonnet, Amazon Nova Pro, Amazon Nova Lite)
    - Anthropic (Claude direct API)
-   - Google Gemini (Gemini 2.0 Flash / Pro)
+   - Google Gemini (Gemini 2.5 Flash / Pro, Gemini 1.5 Flash)
    - OpenAI (GPT-4o / GPT-4o-mini)
    - Local Ollama (Qwen 2.5 Coder, Llama 3.2, DeepSeek Coder)
 3. Exposes K-CLI's deterministic engines as Strands Tools:
@@ -68,6 +68,95 @@ try:
     from strands.models.ollama import OllamaModel
 except Exception:
     OllamaModel = None  # type: ignore
+
+
+# ==============================================================================
+# STRANDS SDK COMPATIBILITY PATCHES (google-genai / Pydantic schema normalization)
+# ==============================================================================
+
+if GeminiModel is not None:
+    try:
+        from google import genai
+        import strands.models.gemini as _smg
+
+        # Patch 1: Ensure FunctionDeclaration compatibility with google-genai 1.x
+        def _safe_format_request_tools(self, tool_specs):
+            if not tool_specs and not self.config.get("gemini_tools"):
+                return None
+            try:
+                fields = genai.types.FunctionDeclaration.model_fields.keys() if hasattr(genai.types.FunctionDeclaration, "model_fields") else []
+                param_key = "parameters" if "parameters" in fields else "parameters_json_schema"
+                tools = [
+                    genai.types.Tool(
+                        function_declarations=[
+                            genai.types.FunctionDeclaration(
+                                description=tool_spec.get("description", ""),
+                                name=tool_spec["name"],
+                                **{param_key: tool_spec.get("inputSchema", {}).get("json", {})}
+                            )
+                            for tool_spec in tool_specs or []
+                        ]
+                    )
+                ]
+                if self.config.get("gemini_tools"):
+                    tools.extend(self.config["gemini_tools"])
+                return tools
+            except Exception:
+                return None
+
+        _smg.GeminiModel._format_request_tools = _safe_format_request_tools
+
+        # Patch 2: Safe streaming for optional thought/reasoning attributes
+        async def _safe_stream(self, messages, tool_specs=None, system_prompt=None, *, tool_choice=None, **kwargs):
+            request = self._format_request(messages, tool_specs, system_prompt, self.config.get("params"), tool_choice=tool_choice)
+            client = self._get_client().aio
+            response = await client.models.generate_content_stream(**request)
+            yield self._format_chunk({"chunk_type": "message_start"})
+            data_type = None
+            tool_used = False
+            candidate = None
+            event = None
+            async for event in response:
+                candidates = event.candidates
+                candidate = candidates[0] if candidates else None
+                content = candidate.content if candidate else None
+                parts = content.parts if content and content.parts else []
+                for part in parts:
+                    if getattr(part, "function_call", None):
+                        if data_type is not None:
+                            yield self._format_chunk({"chunk_type": "content_stop", "data_type": data_type})
+                            data_type = None
+                        yield self._format_chunk({"chunk_type": "content_start", "data_type": "tool", "data": part})
+                        yield self._format_chunk({"chunk_type": "content_delta", "data_type": "tool", "data": part})
+                        yield self._format_chunk({"chunk_type": "content_stop", "data_type": "tool", "data": part})
+                        tool_used = True
+                    if getattr(part, "text", None):
+                        is_thought = getattr(part, "thought", False)
+                        new_data_type = "reasoning_content" if is_thought else "text"
+                        if new_data_type != data_type:
+                            if data_type is not None:
+                                yield self._format_chunk({"chunk_type": "content_stop", "data_type": data_type})
+                            yield self._format_chunk({"chunk_type": "content_start", "data_type": new_data_type})
+                            data_type = new_data_type
+                        yield self._format_chunk({"chunk_type": "content_delta", "data_type": data_type, "data": part})
+                    if getattr(part, "thought_signature", None) and not getattr(part, "function_call", None):
+                        if data_type != "reasoning_content":
+                            if data_type is not None:
+                                yield self._format_chunk({"chunk_type": "content_stop", "data_type": data_type})
+                            yield self._format_chunk({"chunk_type": "content_start", "data_type": "reasoning_content"})
+                            data_type = "reasoning_content"
+                        yield self._format_chunk({"chunk_type": "content_delta", "data_type": "reasoning_signature", "data": part})
+            if data_type is not None:
+                yield self._format_chunk({"chunk_type": "content_stop", "data_type": data_type})
+            finish_reason = getattr(candidate, "finish_reason", "STOP") if candidate else "STOP"
+            yield self._format_chunk({"chunk_type": "message_stop", "data": "TOOL_USE" if tool_used else finish_reason})
+            if event:
+                yield self._format_chunk({"chunk_type": "metadata", "data": getattr(event, "usage_metadata", None)})
+
+        _smg.GeminiModel.stream = _safe_stream
+    except Exception as patch_err:
+        logger.debug(f"Gemini compatibility patch not applied: {patch_err}")
+
 
 # Safe internal imports from K-CLI
 try:
@@ -413,9 +502,16 @@ class StrandsModelFactory:
         aws_region: Optional[str] = None,
     ) -> Any:
         """Instantiates a Strands Model provider (Bedrock, Gemini, Anthropic, OpenAI, or Ollama)."""
+        # Ensure credentials from key.json / .env are in os.environ
+        if CredentialsManager is not None:
+            try:
+                CredentialsManager.load_all_credentials()
+            except Exception:
+                pass
+
         provider = provider.lower()
 
-        # 1. Explicit or Auto Amazon Bedrock
+        # 1. Explicit Amazon Bedrock
         if provider in ("bedrock", "aws") or (
             provider == "auto" and (os.getenv("AWS_ACCESS_KEY_ID") or os.getenv("AWS_DEFAULT_REGION") or os.getenv("AWS_REGION"))
         ):
@@ -433,7 +529,7 @@ class StrandsModelFactory:
             provider == "auto" and (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"))
         ):
             if GeminiModel is not None:
-                m_id = model_name or "gemini-2.0-flash"
+                m_id = model_name or os.getenv("GEMINI_MODEL_ID", "gemini-2.5-flash")
                 try:
                     logger.info(f"Initializing Strands GeminiModel: {m_id}")
                     return GeminiModel(model_id=m_id)

@@ -34,6 +34,7 @@ from k_cli.agents.orchestrator import Orchestrator, OrchestratorResult, Persona
 from k_cli.agents.subagents import SubagentDispatcher, SubagentRole, SubagentStatus
 from k_cli.agents.adversarial_swarm import AdversarialConsensusSwarm, SwarmConsensusResult, AdversarialAttack
 from k_cli.agents.scaffold_engine import FullStackScaffolder, ScaffoldResult, GeneratedFile
+from k_cli.agents.strands_agent import StrandsDevAgent, StrandsModelFactory, create_strands_agent, STRANDS_DEV_TOOLS
 
 # ── Tools & Diagnostics ───────────────────────────────────────────────────
 from k_cli.tools.security_healer import SecurityHealer, SecurityScanReport, VulnerabilityFinding, VulnerabilityHealResult, VulnerabilitySeverity, VulnerabilityType

@@ -1533,24 +1533,40 @@ class SecurityScannerModal(ModalScreen[None]):
                 yield Button("✖ Close", variant="default", id="btn-sec-close")
 
     def on_mount(self) -> None:
-        self.on_scan()
+        self.run_worker(self._async_scan, thread=True)
+
+    def _async_scan(self) -> None:
+        rep = SecurityHealer().scan_repository()
+        def update():
+            try:
+                log = self.query_one("#sec-log", RichLog)
+                log.clear()
+                log.write(f"Scanned {rep.total_files_scanned} files in workspace.\nFound {rep.total_findings} potential security finding(s).\nStatus: {'✔ Clean' if rep.total_findings == 0 else '⚠️ Vulnerabilities Detected'}")
+            except Exception:
+                pass
+        self.app.call_from_thread(update)
 
     @on(Button.Pressed, "#btn-sec-scan")
     def on_scan(self) -> None:
-        rep = SecurityHealer().scan_repository()
-        log = self.query_one("#sec-log", RichLog)
-        log.clear()
-        log.write(f"Scanned {rep.total_files_scanned} files in workspace.\nFound {rep.total_findings} potential security finding(s).\nStatus: {'✔ Clean' if rep.total_findings == 0 else '⚠️ Vulnerabilities Detected'}")
+        self.run_worker(self._async_scan, thread=True)
 
     @on(Button.Pressed, "#btn-sec-heal")
     def on_heal(self) -> None:
-        healed = SecurityHealer().heal_all_vulnerabilities(verifier=Verifier(), patcher=Patcher(), llm_driver=LLMDriver(mock_mode=True))
-        log = self.query_one("#sec-log", RichLog)
-        log.write(f"\n✔ Successfully healed {len(healed)} vulnerabilities with verified test passes!")
-        self.app.notify("All security vulnerabilities healed.", title="Security Healer", severity="information")
+        def _heal_work():
+            healed = SecurityHealer().heal_all_vulnerabilities(verifier=Verifier(), patcher=Patcher(), llm_driver=LLMDriver(mock_mode=True))
+            def update():
+                try:
+                    log = self.query_one("#sec-log", RichLog)
+                    log.write(f"\n✔ Successfully healed {len(healed)} vulnerabilities with verified test passes!")
+                    self.app.notify("All security vulnerabilities healed.", title="Security Healer", severity="information")
+                except Exception:
+                    pass
+            self.app.call_from_thread(update)
+        self.run_worker(_heal_work, thread=True)
 
     @on(Button.Pressed, "#btn-sec-close")
     def on_close(self) -> None:
+        import gc; gc.collect(1)
         self.dismiss()
 
 
@@ -1598,32 +1614,48 @@ class ChaosImmunityModal(ModalScreen[None]):
                 yield Button("✖ Close", variant="default", id="btn-chaos-close")
 
     def on_mount(self) -> None:
-        self.on_probe()
+        self.run_worker(self._async_probe, thread=True)
+
+    def _async_probe(self) -> None:
+        from k_cli.tools.chaos_immunity import ChaosImmunityEngine
+        engine = ChaosImmunityEngine(repo_path=".")
+        reports = engine.scan_and_inoculate_repo(max_files=10)
+        total_patterns = sum(len(r.patterns_detected) for r in reports)
+        total_tests = sum(r.generated_tests_count for r in reports)
+        def update():
+            try:
+                log = self.query_one("#chaos-log", RichLog)
+                log.clear()
+                log.write(f"🔬 Scanned {len(reports)} core modules for brittle AST patterns.\nFound {total_patterns} edge-case risk points (KeyError, None dereference, timeout hangs).\nSynthesized {total_tests} adversarial test cases.\nStatus: {'✔ 100% Resilient' if total_patterns == 0 else '⚠️ Inoculation Recommended'}")
+            except Exception:
+                pass
+        self.app.call_from_thread(update)
 
     @on(Button.Pressed, "#btn-chaos-probe")
     def on_probe(self) -> None:
-        from k_cli.tools.chaos_immunity import ChaosImmunityEngine
-        engine = ChaosImmunityEngine(repo_path=".")
-        reports = engine.scan_and_inoculate_repo(max_files=10)
-        log = self.query_one("#chaos-log", RichLog)
-        log.clear()
-        total_patterns = sum(len(r.patterns_detected) for r in reports)
-        total_tests = sum(r.generated_tests_count for r in reports)
-        log.write(f"🔬 Scanned {len(reports)} core modules for brittle AST patterns.\nFound {total_patterns} edge-case risk points (KeyError, None dereference, timeout hangs).\nSynthesized {total_tests} adversarial test cases.\nStatus: {'✔ 100% Resilient' if total_patterns == 0 else '⚠️ Inoculation Recommended'}")
+        self.run_worker(self._async_probe, thread=True)
 
     @on(Button.Pressed, "#btn-chaos-inoculate")
     def on_inoculate(self) -> None:
-        from k_cli.tools.chaos_immunity import ChaosImmunityEngine
-        engine = ChaosImmunityEngine(repo_path=".")
-        reports = engine.scan_and_inoculate_repo(max_files=10)
-        log = self.query_one("#chaos-log", RichLog)
-        log.write("\n💉 Inoculating modules with defensive guards and AST ground-truth verification...")
-        for r in reports:
-            log.write(f"  • {r.target_file}: {r.patches_applied_count} surgical patch(es) applied. AST Verified: {'✔' if r.verification_passed else '✘'}")
-        self.app.notify("Codebase successfully inoculated against edge cases.", title="Chaos Immunity", severity="information")
+        def _inoculate_work():
+            from k_cli.tools.chaos_immunity import ChaosImmunityEngine
+            engine = ChaosImmunityEngine(repo_path=".")
+            reports = engine.scan_and_inoculate_repo(max_files=10)
+            def update():
+                try:
+                    log = self.query_one("#chaos-log", RichLog)
+                    log.write("\n💉 Inoculating modules with defensive guards and AST ground-truth verification...")
+                    for r in reports:
+                        log.write(f"  • {r.target_file}: {r.patches_applied_count} surgical patch(es) applied. AST Verified: {'✔' if r.verification_passed else '✘'}")
+                    self.app.notify("Codebase successfully inoculated against edge cases.", title="Chaos Immunity", severity="information")
+                except Exception:
+                    pass
+            self.app.call_from_thread(update)
+        self.run_worker(_inoculate_work, thread=True)
 
     @on(Button.Pressed, "#btn-chaos-close")
     def on_close(self) -> None:
+        import gc; gc.collect(1)
         self.dismiss()
 
 
@@ -2056,18 +2088,27 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
     def _update_hud(self) -> None:
         try:
             import psutil
-            import subprocess
             import random
             import time
+            import gc
             
-            # RAM
+            # RAM (Lightweight calculation)
             rss_mb = psutil.Process().memory_info().rss / (1024 * 1024)
             self.query_one("#hud-ram", Label).update(f"💾 {rss_mb:.1f}MB RSS")
             
-            # Git branch
-            branch_res = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True)
-            branch = branch_res.stdout.strip() if branch_res.returncode == 0 else "main"
-            self.query_one("#hud-branch", Label).update(f" {branch}")
+            # Cached Git branch (zero blocking subprocesses on UI loop)
+            if not hasattr(self, "_cached_branch"):
+                self._cached_branch = "main"
+                def _fetch_branch():
+                    import subprocess
+                    try:
+                        res = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True, timeout=1.0)
+                        self._cached_branch = res.stdout.strip() if res.returncode == 0 else "main"
+                    except Exception:
+                        pass
+                self.run_worker(_fetch_branch, thread=True)
+
+            self.query_one("#hud-branch", Label).update(f" {self._cached_branch}")
             
             # Speed
             speeds = [158, 173, 192, 204, 185, 197]
@@ -2096,6 +2137,10 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
             if not hasattr(self, "_start_time"): self._start_time = time.time()
             uptime = int(time.time() - self._start_time)
             self.query_one("#drawer-uptime", Label).update(f"⏱️ Uptime: {uptime}s")
+
+            # Periodic GC for ultra-low memory retention
+            if uptime % 30 == 0:
+                gc.collect(1)
             
         except Exception:
             pass
@@ -2135,8 +2180,10 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
         self.push_screen(TrendingModal())
 
     def action_clear_screen(self) -> None:
+        import gc
         scroll = self.query_one("#chat-scroll", VerticalScroll)
         scroll.remove_children()
+        gc.collect()
         scroll.mount(Markdown("# 🧹 Workspace Cleared\nReady for new tasks."))
 
     # Button click routing

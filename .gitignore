@@ -1,0 +1,56 @@
+# Python and local environments
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+k_cli_env/
+.agents/
+
+
+# Local agent state, models, and credentials
+.env
+.env.*
+!.env.example
+.kcli/
+*key.json
+*.key.json
+models/
+*.gguf
+*.safetensors
+*.bin
+
+# Generated training and evaluation artifacts
+data/*.jsonl
+data/*.jsonl.gz
+data/*.json
+kaggle_deployment/dataset*/
+kaggle_deployment/**/*.ipynb
+*.ipynb_checkpoints
+
+# OS/editor output
+.DS_Store
+.idea/
+.vscode/
+
+# ML Training Artifacts (never commit these)
+data/
+kaggle_deployment/
+*.jsonl
+*.jsonl.gz
+*.egg-info/
+
+# Internal AI agent workspace files
+.agents/
+ORIGINAL_REQUEST.md
+AGENTS.md
+
+# Python build artifacts
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -22,6 +22,7 @@ def test_kcli_tui_full_navigation_and_modals_lifecycle():
             
             # 2. Test all modals open and dismiss cleanly via Escape
             actions = [
+                ("Welcome", app.action_open_welcome),
                 ("Codex", app.action_open_codex),
                 ("Vault", app.action_open_vault),
                 ("Models", app.action_open_models),

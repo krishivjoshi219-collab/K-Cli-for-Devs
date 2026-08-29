@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 import urllib.request
 import urllib.error
 from dataclasses import dataclass, field
@@ -199,6 +200,29 @@ class CredentialsManager:
         return loaded
 
     @classmethod
+    def has_any_active_credentials(cls) -> bool:
+        """
+        Checks whether at least 1 cloud API key or local model endpoint is configured/active.
+        """
+        cls.load_all_credentials()
+        for key_name, _, _ in SUPPORTED_KEYS:
+            val = os.environ.get(key_name, "").strip()
+            if val:
+                return True
+        # Check AWS Bedrock keys
+        if os.environ.get("AWS_ACCESS_KEY_ID", "").strip() or os.environ.get("BEDROCK_MODEL_ID", "").strip():
+            return True
+        # Check credentials file
+        if cls.JSON_FILE.exists():
+            try:
+                data = json.loads(cls.JSON_FILE.read_text(encoding="utf-8"))
+                if any(isinstance(v, str) and v.strip() for v in data.values()):
+                    return True
+            except Exception:
+                pass
+        return False
+
+    @classmethod
     def set_key(cls, key_name: str, key_val: str) -> None:
         """
         Saves a single key to persistent storage and active os.environ.
@@ -372,3 +396,81 @@ class DevPreferencesManager:
         if mode == "safe":
             return action_type in ("safe", "test", "read", "verify", "diff")
         return False
+
+    @classmethod
+    def is_first_time_setup(cls) -> bool:
+        """
+        Returns True if K-CLI is running for the first time or if no config/memory/credentials exist.
+        """
+        config_path = Path.home() / ".kcli" / "config.json"
+        memory_path = Path.home() / ".kcli" / "memory.json"
+        credentials_path = Path.home() / ".kcli" / "credentials.json"
+        
+        # If config explicitly records setup complete, we are not first time
+        if config_path.exists():
+            try:
+                data = json.loads(config_path.read_text(encoding="utf-8"))
+                if data.get("setup_completed", False):
+                    return False
+            except Exception:
+                pass
+
+        # If any active credential exists in environment or files, check if config exists
+        has_creds = CredentialsManager.has_any_active_credentials()
+        return not has_creds
+
+    @classmethod
+    def mark_setup_complete(cls, persona: Optional[str] = None, model: Optional[str] = None) -> None:
+        """Marks onboarding setup as complete and initializes memory.json."""
+        updates: Dict[str, Any] = {"setup_completed": True}
+        if persona:
+            updates["default_persona"] = persona
+        if model:
+            updates["default_model"] = model
+        cls.save_preferences(updates)
+
+        # Initialize memory.json if not present
+        mem_file = Path.home() / ".kcli" / "memory.json"
+        if not mem_file.exists():
+            try:
+                mem_file.parent.mkdir(parents=True, exist_ok=True)
+                mem_file.write_text(json.dumps({
+                    "initialized_at": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "persona": persona or "Fullstack AI Systems Engineer",
+                    "active_model": model or cls.get_best_available_model(),
+                    "pinned_files": ["main.py", "orchestrator.py", "sdk.py"],
+                    "session_history": [],
+                }, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+
+    @classmethod
+    def get_best_available_model(cls) -> str:
+        """
+        Dynamically auto-detects and returns the best model based on available API keys or local endpoints.
+        """
+        CredentialsManager.load_all_credentials()
+        # 1. Check user configured preference
+        pref_model = cls.get("default_model")
+        if pref_model and pref_model != "gemini-2.0-flash":
+            return pref_model
+
+        # 2. Dynamic detection based on active environment credentials
+        if os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"):
+            return "gemini-2.5-flash"
+        if os.environ.get("BEDROCK_MODEL_ID") or os.environ.get("AWS_ACCESS_KEY_ID"):
+            return os.environ.get("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0")
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            return "claude-3-5-sonnet"
+        if os.environ.get("OPENAI_API_KEY"):
+            return "gpt-4o"
+        if os.environ.get("GROQ_API_KEY"):
+            return "llama-3.3-70b-versatile"
+        if os.environ.get("DEEPSEEK_API_KEY"):
+            return "deepseek-chat"
+        if os.environ.get("OPENROUTER_API_KEY"):
+            return "anthropic/claude-3.5-sonnet"
+        if os.environ.get("OLLAMA_URL"):
+            return "qwen2.5-coder:1.5b"
+        return "gemini-2.5-flash"
+

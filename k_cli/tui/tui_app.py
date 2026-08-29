@@ -90,6 +90,198 @@ except (ModuleNotFoundError, ImportError):
 
 
 # =============================================================================
+# 0a. First-Time Workstation Welcome & Onboarding Modal
+# =============================================================================
+
+class WelcomeOnboardingModal(ModalScreen[bool]):
+    """
+    First-Time Workstation Onboarding & AI Engine Gating Screen.
+    Guides the developer to configure at least 1 Cloud API or Local Model and choose their Persona.
+    """
+
+    DEFAULT_CSS = """
+    WelcomeOnboardingModal {
+        align: center middle;
+        background: rgba(8, 12, 24, 0.95);
+    }
+
+    #welcome-box {
+        width: 86%;
+        height: 86%;
+        background: #0d1117;
+        border: heavy #00f0ff;
+        padding: 1 2;
+    }
+
+    .welcome-title {
+        text-align: center;
+        color: #00f0ff;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+
+    .welcome-desc {
+        text-align: center;
+        color: #8b949e;
+        margin-bottom: 1;
+    }
+
+    .welcome-section {
+        background: #161b22;
+        border: round #30363d;
+        padding: 1 2;
+        margin-bottom: 1;
+        height: auto;
+    }
+
+    .welcome-sec-title {
+        color: #58a6ff;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+
+    .welcome-act-row {
+        height: 3;
+        align: center middle;
+        margin-top: 1;
+    }
+
+    .welcome-act-row Button {
+        margin: 0 1;
+    }
+    """
+
+    BINDINGS = [Binding("escape", "dismiss", "Close")]
+
+    def compose(self) -> ComposeResult:
+        with Container(id="welcome-box"):
+            yield Label("👋 Welcome to K-CLI for Devs — First-Time Workstation Onboarding", classes="welcome-title")
+            yield Label("Activate your autonomous engineering workstation with a Cloud API Key or Local SLM.", classes="welcome-desc")
+
+            with VerticalScroll():
+                # Step 1 & 2: AI Engine Configuration
+                with Container(classes="welcome-section"):
+                    yield Label("1. Select & Configure Your AI Engine (Cloud or Local):", classes="welcome-sec-title")
+                    yield Input(
+                        placeholder="Paste ANY API Key (Gemini, Claude, OpenAI, Groq, DeepSeek) or Ollama URL (http://localhost:11434)...",
+                        id="input-welcome-key",
+                        password=True,
+                    )
+                    yield Label("💡 Auto-detection active: paste any key or endpoint", id="lbl-welcome-detection", classes="badge-detected")
+                    with Horizontal(classes="welcome-act-row"):
+                        yield Button("💾 Save & Verify AI Engine", variant="success", id="btn-welcome-save-key")
+                        yield Button("🔄 Auto-Detect Existing Keys", variant="primary", id="btn-welcome-auto-detect")
+
+                # Step 3: Developer Persona
+                with Container(classes="welcome-section"):
+                    yield Label("2. Select Your Primary Role / Persona:", classes="welcome-sec-title")
+                    with Horizontal():
+                        yield Button("⚡ Fullstack Engineer", variant="primary", id="btn-role-fullstack")
+                        yield Button("🚨 DevOps & SRE", variant="default", id="btn-role-devops")
+                        yield Button("🛡️ Security Auditor", variant="default", id="btn-role-security")
+                        yield Button("🧠 Software Architect", variant="default", id="btn-role-architect")
+                    yield Label("Active Persona: ⚡ Fullstack AI Systems Engineer", id="lbl-welcome-active-role", classes="badge-detected")
+
+                # Status / Gating Warning Label
+                yield Label("", id="lbl-welcome-gate-error")
+
+            # Step 4: Launch Actions
+            with Horizontal(classes="welcome-act-row"):
+                yield Button("🚀 Launch Cyber Workstation", variant="primary", id="btn-welcome-launch")
+                yield Button("⏩ Skip to TUI", variant="default", id="btn-welcome-skip")
+                yield Button("🎭 Pure Demo Mode (No AI Required)", variant="warning", id="btn-welcome-demo")
+
+    def on_mount(self) -> None:
+        self.selected_persona = "Fullstack AI Systems Engineer"
+        self._refresh_detection_status()
+
+    def _refresh_detection_status(self) -> None:
+        has_creds = CredentialsManager.has_any_active_credentials()
+        lbl = self.query_one("#lbl-welcome-detection", Label)
+        if has_creds:
+            best_model = DevPreferencesManager.get_best_available_model()
+            lbl.update(f"✔ Active AI Engine Detected: [bold green]{best_model}[/bold green] — Ready to Launch!")
+        else:
+            lbl.update("⚠️ No active API key or local model detected yet.")
+
+    @on(Input.Changed, "#input-welcome-key")
+    def on_key_input_changed(self, event: Input.Changed) -> None:
+        val = event.value.strip()
+        lbl = self.query_one("#lbl-welcome-detection", Label)
+        if not val:
+            self._refresh_detection_status()
+            return
+        key_name, prov_name = detect_key_type(val)
+        lbl.update(f"🔍 Auto-detected: [bold cyan]{prov_name}[/bold cyan] ({key_name})")
+
+    @on(Button.Pressed, "#btn-welcome-save-key")
+    def on_save_key(self) -> None:
+        inp = self.query_one("#input-welcome-key", Input)
+        val = inp.value.strip()
+        if not val:
+            self.app.notify("Please paste an API key or Ollama URL.", title="Key Required", severity="warning")
+            return
+        key_name, prov_name = CredentialsManager.save_any_key(val)
+        self.app.notify(f"Saved {prov_name}!", title="Key Stored", severity="information")
+        self._refresh_detection_status()
+
+    @on(Button.Pressed, "#btn-welcome-auto-detect")
+    def on_auto_detect(self) -> None:
+        CredentialsManager.load_all_credentials()
+        self._refresh_detection_status()
+        self.app.notify("Credentials re-scanned.", title="Auto-Detect", severity="information")
+
+    @on(Button.Pressed, "#btn-role-fullstack")
+    def on_role_fullstack(self) -> None:
+        self.selected_persona = "Fullstack AI Systems Engineer"
+        self.query_one("#lbl-welcome-active-role", Label).update("Active Persona: ⚡ Fullstack AI Systems Engineer")
+
+    @on(Button.Pressed, "#btn-role-devops")
+    def on_role_devops(self) -> None:
+        self.selected_persona = "DevOps & Incident SRE Specialist"
+        self.query_one("#lbl-welcome-active-role", Label).update("Active Persona: 🚨 DevOps & Incident SRE Specialist")
+
+    @on(Button.Pressed, "#btn-role-security")
+    def on_role_security(self) -> None:
+        self.selected_persona = "Security & Chaos Immunity Auditor"
+        self.query_one("#lbl-welcome-active-role", Label).update("Active Persona: 🛡️ Security & Chaos Immunity Auditor")
+
+    @on(Button.Pressed, "#btn-role-architect")
+    def on_role_architect(self) -> None:
+        self.selected_persona = "Autonomous Software Architect"
+        self.query_one("#lbl-welcome-active-role", Label).update("Active Persona: 🧠 Autonomous Software Architect")
+
+    @on(Button.Pressed, "#btn-welcome-launch")
+    @on(Button.Pressed, "#btn-welcome-skip")
+    def on_launch_or_skip(self) -> None:
+        has_creds = CredentialsManager.has_any_active_credentials()
+        if not has_creds and not getattr(self.app, "mock_mode", False):
+            err_lbl = self.query_one("#lbl-welcome-gate-error", Label)
+            err_lbl.update("[bold red]⚠️ Access Gated: Please enter at least 1 Cloud API Key or Local Model before launching. (Or click 'Pure Demo Mode' to explore without AI).[/bold red]")
+            self.app.notify("At least 1 API key or local model required.", title="AI Engine Required", severity="error")
+            return
+        
+        best_model = DevPreferencesManager.get_best_available_model()
+        DevPreferencesManager.mark_setup_complete(persona=getattr(self, "selected_persona", "Fullstack AI Systems Engineer"), model=best_model)
+        self.app.notify("Welcome to K-CLI Cyber Workstation!", title="Workstation Activated", severity="information")
+        self.dismiss(True)
+
+    @on(Button.Pressed, "#btn-welcome-demo")
+    def on_demo_mode(self) -> None:
+        self.app.mock_mode = True
+        DevPreferencesManager.mark_setup_complete(persona="Fullstack AI Systems Engineer", model="gemini-2.5-flash (Demo Mode)")
+        self.app.notify("Launched in Zero-AI Pure Demo Mode.", title="Demo Mode", severity="warning")
+        self.dismiss(True)
+
+    def on_escape(self) -> None:
+        has_creds = CredentialsManager.has_any_active_credentials()
+        if has_creds or getattr(self.app, "mock_mode", False):
+            self.dismiss(True)
+        else:
+            self.on_demo_mode()
+
+
+# =============================================================================
 # 0. The Codex Starting & Onboarding Hub Screen (Ctrl+O)
 # =============================================================================
 
@@ -1692,19 +1884,21 @@ class KCliCyberWorkstation(App):
     def __init__(
         self,
         workspace_dir: str = ".",
-        model_name: str = "gemini-2.0-flash",
+        model_name: Optional[str] = None,
         persona: str = "Fullstack AI Systems Engineer",
         mock_mode: bool = False,
         show_codex_on_start: bool = False,
+        show_welcome_on_start: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.workspace_dir = workspace_dir
-        self.model_name = DevPreferencesManager.get("default_model", model_name)
-        self.persona_label = persona
+        CredentialsManager.load_all_credentials()
+        self.model_name = model_name or DevPreferencesManager.get("default_model") or DevPreferencesManager.get_best_available_model()
+        self.persona_label = persona or DevPreferencesManager.get("default_persona", "Fullstack AI Systems Engineer")
         self.mock_mode = mock_mode
         self.show_codex_on_start = show_codex_on_start
-        CredentialsManager.load_all_credentials()
+        self.show_welcome_on_start = show_welcome_on_start
 
     def compose(self) -> ComposeResult:
         # 1. Top Cyber HUD
@@ -1799,7 +1993,11 @@ class KCliCyberWorkstation(App):
     def on_mount(self) -> None:
         if hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
             os.system("clear" if os.name == "posix" else "cls")
-        if self.show_codex_on_start:
+        
+        # Check if first-time onboarding or explicit welcome requested
+        if self.show_welcome_on_start or (DevPreferencesManager.is_first_time_setup() and not self.mock_mode):
+            self.action_open_welcome()
+        elif self.show_codex_on_start:
             self.action_open_codex()
             
         self.set_interval(2.0, self._update_hud)
@@ -1879,6 +2077,9 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
             pass
 
     # Action Handlers for Modals
+    def action_open_welcome(self) -> None:
+        self.push_screen(WelcomeOnboardingModal())
+
     def action_open_codex(self) -> None:
         self.push_screen(CodexStartingModal())
 

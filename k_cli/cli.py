@@ -901,30 +901,53 @@ def doctor_cmd(
 
 @app.command(name="ui", help="Launch the full-screen K-CLI Textual workstation.")
 def ui_cmd(
-    model: str = typer.Option("gemini-2.0-flash", "--model", "-m", help="Active model label."),
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Active model label (auto-detected if omitted)."),
     persona: str = typer.Option("Fullstack AI Systems Engineer", "--persona", "-p", help="Active persona label."),
     mock: bool = typer.Option(False, "--mock", help="Use the offline mock driver."),
+    demo: bool = typer.Option(False, "--demo", "-d", help="Launch in pure zero-AI demo exploration mode."),
     codex: bool = typer.Option(False, "--codex", "-c", help="Open the Codex onboarding hub on launch."),
+    welcome: bool = typer.Option(False, "--welcome", help="Force open the first-time welcome onboarding modal."),
     workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root."),
 ):
-    """Launch the polished Textual UI without changing the caller's workspace."""
+    """Launch the polished Textual UI with dynamic model auto-detection and first-time onboarding."""
     try:
         from k_cli.tui.tui_app import KCliApp
     except ModuleNotFoundError:
         from k_cli.tui.tui_app import KCliCyberWorkstation as KCliApp
-    KCliApp(workspace_dir=str(workspace), model_name=model, persona=persona, mock_mode=mock, show_codex_on_start=codex).run()
+    
+    is_mock = mock or demo
+    effective_model = model or DevPreferencesManager.get_best_available_model()
+
+    KCliApp(
+        workspace_dir=str(workspace),
+        model_name=effective_model,
+        persona=persona,
+        mock_mode=is_mock,
+        show_codex_on_start=codex,
+        show_welcome_on_start=welcome,
+    ).run()
 
 
 @app.command(name="tui", help="Alias for launching the full-screen K-CLI Textual workstation.")
 def tui_cmd(
-    model: str = typer.Option("gemini-2.0-flash", "--model", "-m", help="Active model label."),
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Active model label."),
     persona: str = typer.Option("Fullstack AI Systems Engineer", "--persona", "-p", help="Active persona label."),
     mock: bool = typer.Option(False, "--mock", help="Use the offline mock driver."),
+    demo: bool = typer.Option(False, "--demo", "-d", help="Launch in pure zero-AI demo exploration mode."),
     codex: bool = typer.Option(False, "--codex", "-c", help="Open the Codex onboarding hub on launch."),
+    welcome: bool = typer.Option(False, "--welcome", help="Force open the first-time welcome onboarding modal."),
     workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root."),
 ):
     """Launch the polished Textual UI workstation."""
-    ui_cmd(model=model, persona=persona, mock=mock, codex=codex, workspace=workspace)
+    ui_cmd(model=model, persona=persona, mock=mock, demo=demo, codex=codex, welcome=welcome, workspace=workspace)
+
+
+@app.command(name="demo-ui", help="Launch the TUI in Pure Zero-AI Demo Mode (no API key or model needed).")
+def demo_ui_cmd(
+    workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root."),
+):
+    """Launch the full-screen Textual workstation in pure exploration mode without requiring any AI backend."""
+    ui_cmd(mock=True, demo=True, workspace=workspace)
 
 
 @app.command(name="codex", help="Launch the Codex Starting & Onboarding Hub (Cloud APIs, Local Models, Bankai HF, DevDocs).")
@@ -2988,9 +3011,13 @@ def main(
     ctx: typer.Context,
     version: Optional[bool] = typer.Option(None, "--version", "-v", help="Show K-CLI version and exit.", callback=version_callback, is_eager=True),
     prompt: Optional[str] = typer.Option(None, "--prompt", "-p", help="Prompt text if running main entrypoint directly."),
+    demo_ui: bool = typer.Option(False, "--demo-ui", help="Launch the TUI in pure Zero-AI demo mode without needing any API key."),
 ):
     if ctx.invoked_subcommand is None:
-        if prompt:
+        if demo_ui:
+            ui_cmd(mock=True, demo=True)
+            raise typer.Exit()
+        elif prompt:
             execute_run(prompt=prompt, show_banner=True)
             raise typer.Exit()
         elif ctx.args:

@@ -1,0 +1,5 @@
+file '/home/k/K-Cli-for-Devs/demo_artifacts/scene1_intro.mp4'
+file '/home/k/K-Cli-for-Devs/demo_artifacts/scene2_triage.mp4'
+file '/home/k/K-Cli-for-Devs/demo_artifacts/scene3_strands.mp4'
+file '/home/k/K-Cli-for-Devs/demo_artifacts/scene4_immunity.mp4'
+file '/home/k/K-Cli-for-Devs/demo_artifacts/scene5_tui_summary.mp4'

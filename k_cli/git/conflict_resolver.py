@@ -42,18 +42,23 @@ except ModuleNotFoundError:
         GitGuard = None  # type: ignore
 
 
+import tempfile
+
 def _sanitize_path(path_input: Union[str, Path], base_dir: Optional[Union[str, Path]] = None) -> Path:
     """Sanitizes user-provided path inputs to prevent directory traversal vulnerabilities."""
-    p = Path(path_input).resolve()
+    resolved_path = Path(path_input).resolve()
     if base_dir is not None:
         base = Path(base_dir).resolve()
-        try:
-            if p.is_relative_to(base) or os.path.commonpath([str(base), str(p)]) == str(base):
-                return p
-            return (base / Path(path_input).name).resolve()
-        except Exception:
-            return (base / Path(path_input).name).resolve()
-    return p
+        if not (resolved_path == base or resolved_path.is_relative_to(base)):
+            raise ValueError(f"Path '{path_input}' escapes base directory '{base}'")
+        return resolved_path
+
+    cwd = Path.cwd().resolve()
+    tmp_dir = Path(tempfile.gettempdir()).resolve()
+    if not (resolved_path == cwd or resolved_path.is_relative_to(cwd) or resolved_path == tmp_dir or resolved_path.is_relative_to(tmp_dir)):
+        resolved_path = (cwd / resolved_path.name).resolve()
+
+    return resolved_path
 
 
 @dataclass

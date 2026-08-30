@@ -3,48 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-CLI Agentic Workstation | World-Class Web UI</title>
-    <!-- Fonts and FontAwesome -->
+    <title>K-CLI Cyber Station | Autonomous DevOps & Code Agent</title>
+    <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="bg-cyber-dark text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-black">
+<body class="cyber-station">
+
+    <!-- Ambient Grid & Glow Background -->
+    <div class="cyber-grid-bg"></div>
+    <div class="ambient-glow cyan"></div>
+    <div class="ambient-glow magenta"></div>
 
     <!-- App Container -->
     <div class="app-layout">
 
-        <!-- Header Bar -->
+        <!-- Top Header & Telemetry HUD -->
         <header class="header-bar">
             <div class="logo-group">
                 <div class="logo-icon">
                     <i class="fa-solid fa-terminal"></i>
                 </div>
                 <div class="logo-text">
-                    <span class="brand-name">K-CLI <span class="badge-v">v1.0.0</span></span>
-                    <span class="brand-sub">Verification-First DevOps Agent</span>
+                    <div class="brand-row">
+                        <span class="brand-name">K-CLI</span>
+                        <span class="badge-tag">CYBER v1.0.0</span>
+                        <span class="badge-author">by Krishiv Joshi</span>
+                    </div>
+                    <span class="brand-sub">Verification-First Autonomous AI DevOps Workstation</span>
                 </div>
             </div>
 
             <!-- Header System Status Bar -->
             <div class="system-status-pills">
-                <div class="status-pill" id="pill-model">
-                    <i class="fa-solid fa-brain"></i>
-                    <span id="stat-model">Loading...</span>
+                <div class="status-pill" id="pill-model" title="Active Model">
+                    <i class="fa-solid fa-brain text-cyan"></i>
+                    <span id="stat-model">Auto-Detecting...</span>
                 </div>
-                <div class="status-pill" id="pill-branch">
-                    <i class="fa-solid fa-code-branch"></i>
+                <div class="status-pill" id="pill-branch" title="Git Branch">
+                    <i class="fa-solid fa-code-branch text-magenta"></i>
                     <span id="stat-branch">main</span>
                 </div>
-                <div class="status-pill" id="pill-ram">
-                    <i class="fa-solid fa-memory"></i>
+                <div class="status-pill" id="pill-ram" title="Memory Allocation">
+                    <i class="fa-solid fa-microchip text-green"></i>
                     <span id="stat-ram">0.00 MB / 1024 MB</span>
                 </div>
                 <div class="status-pill pill-online" id="pill-status">
                     <span class="pulse-dot"></span>
-                    <span id="stat-online">ONLINE</span>
+                    <span id="stat-online">LIVE HUD</span>
                 </div>
             </div>
         </header>
@@ -52,26 +61,27 @@
         <!-- Main Workspace -->
         <div class="main-container">
 
-            <!-- Navigation Sidebar -->
+            <!-- Sidebar Navigation -->
             <nav class="sidebar-nav">
+                <div class="nav-section-title">ENGINEERING SUITE</div>
                 <button class="nav-item active" data-tab="tab-agent">
                     <i class="fa-solid fa-bolt"></i>
-                    <span>Agent Runner</span>
+                    <span>Cyber Agent</span>
                 </button>
                 <button class="nav-item" data-tab="tab-triage">
                     <i class="fa-solid fa-heart-pulse"></i>
-                    <span>Crash Triage</span>
+                    <span>Incident Triage</span>
                 </button>
                 <button class="nav-item" data-tab="tab-conflicts">
                     <i class="fa-solid fa-code-merge"></i>
-                    <span>Conflict Studio</span>
+                    <span>3-Way Conflict Studio</span>
                 </button>
                 <button class="nav-item" data-tab="tab-security">
                     <i class="fa-solid fa-shield-halved"></i>
                     <span>Security Shield</span>
                 </button>
                 <button class="nav-item" data-tab="tab-chaos">
-                    <i class="fa-solid fa-bug"></i>
+                    <i class="fa-solid fa-shield-virus"></i>
                     <span>Chaos Immunity</span>
                 </button>
                 <button class="nav-item" data-tab="tab-devdocs">
@@ -80,8 +90,15 @@
                 </button>
                 <button class="nav-item" data-tab="tab-models">
                     <i class="fa-solid fa-cubes"></i>
-                    <span>Model Hub</span>
+                    <span>Model Hub & Bankai</span>
                 </button>
+
+                <!-- Sidebar Footer Info -->
+                <div class="sidebar-author-box">
+                    <div class="author-label">PROJECT BANKAI</div>
+                    <div class="author-name"><i class="fa-brands fa-github"></i> krishivjoshi219</div>
+                    <div class="author-engine">Dual T4 Fine-Tuned Models</div>
+                </div>
             </nav>
 
             <!-- Tab Contents -->
@@ -89,16 +106,31 @@
 
                 <!-- 1. AGENT RUNNER TAB -->
                 <section id="tab-agent" class="tab-pane active">
+                    <!-- Quick Action Chips -->
+                    <div class="quick-chips-row">
+                        <span class="chip-label"><i class="fa-solid fa-bolt-lightning"></i> Quick Actions:</span>
+                        <button class="quick-chip" data-prompt="Write a thread-safe LRU Cache in Python with O(1) ops and pytest unit tests">⚡ LRU Cache</button>
+                        <button class="quick-chip" data-prompt="Scan this codebase for security vulnerabilities and hardcoded secrets">🛡️ Audit Secrets</button>
+                        <button class="quick-chip" data-prompt="Implement a high-throughput lock-free SPSC ring buffer in C++23">🚀 Lock-Free Queue</button>
+                        <button class="quick-chip" data-prompt="Design an asynchronous distributed task worker pool with Redis streams and backpressure">📐 Distributed Plan</button>
+                        <button class="quick-chip" data-prompt="Analyze and fix the off-by-one index error in binary search with surgical SEARCH/REPLACE diff">🔧 Fix Off-by-One</button>
+                    </div>
+
                     <div class="card card-hero">
-                        <div class="card-header">
-                            <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Autonomous Strands Agent & Prompt Runner</h2>
-                            <span class="card-subtitle">AST Ground-Truth Compiler Verification Closed-Loop</span>
+                        <div class="card-header flex-between">
+                            <div>
+                                <h2><i class="fa-solid fa-wand-magic-sparkles text-cyan"></i> Autonomous Strands Agent & Prompt Runner</h2>
+                                <span class="card-subtitle">Real-time Intent Sensor • AST Compiler Verification • Zero Latency</span>
+                            </div>
+                            <div class="intent-badge-container">
+                                <span class="badge badge-intent" id="badge-intent-mode">⚡ ADAPTIVE INTENT</span>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="input-grid">
                                 <div class="form-group full-width">
-                                    <label for="agent-prompt">Engineering Task / Goal Prompt</label>
-                                    <textarea id="agent-prompt" rows="3" placeholder="e.g. Write a thread-safe LRU Cache with O(1) ops and pytest unit tests..."></textarea>
+                                    <label for="agent-prompt">Engineering Task / Goal / Conversational Query</label>
+                                    <textarea id="agent-prompt" rows="3" placeholder="Ask anything: conversation, architectural planning, or complex code refactoring..."></textarea>
                                 </div>
                                 <div class="form-group">
                                     <label for="agent-lang">Target Language</label>
@@ -106,15 +138,20 @@
                                         <option value="python">Python 3.12</option>
                                         <option value="bash">Bash / Shell</option>
                                         <option value="cpp">C++23</option>
+                                        <option value="rust">Rust</option>
+                                        <option value="typescript">TypeScript</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
                                     <label for="agent-model">Model Engine</label>
                                     <select id="agent-model">
+                                        <option value="bankai-14b">Bankai-14B (Krishiv Joshi Custom Adapter)</option>
+                                        <option value="bankai-7b">Bankai-7B (Krishiv Joshi Custom Adapter)</option>
                                         <option value="qwen2.5-coder:1.5b">qwen2.5-coder:1.5b (Local SLM)</option>
-                                        <option value="anthropic.claude-3-5-sonnet-20241022-v2:0">Claude 3.5 Sonnet (Bedrock)</option>
-                                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                        <option value="anthropic.claude-3-5-sonnet-20241022-v2:0">Claude 3.5 Sonnet (AWS Bedrock)</option>
+                                        <option value="gemini-2.0-flash">Google Gemini 2.0 Flash</option>
                                         <option value="gpt-4o">OpenAI GPT-4o</option>
+                                        <option value="deepseek-coder">DeepSeek Coder</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -132,10 +169,10 @@
                                 <div class="form-group flex-row align-end">
                                     <label class="checkbox-label">
                                         <input type="checkbox" id="agent-mock" aria-label="Enable Offline Mock Mode">
-                                        <span>Offline Mock Mode</span>
+                                        <span>Offline Demo Mode</span>
                                     </label>
                                     <button id="btn-run-agent" class="btn btn-primary btn-glow">
-                                        <i class="fa-solid fa-play"></i> Execute Agent Task
+                                        <i class="fa-solid fa-play"></i> Execute Stream
                                     </button>
                                 </div>
                             </div>
@@ -145,10 +182,14 @@
                     <!-- Output Panel -->
                     <div class="card card-output hidden" id="agent-output-card">
                         <div class="card-header flex-between">
-                            <h3><i class="fa-solid fa-terminal"></i> Live Stream & Output</h3>
+                            <div class="output-header-left">
+                                <h3><i class="fa-solid fa-terminal text-cyan"></i> Live Agent Stream & Verification</h3>
+                                <span class="stream-stats" id="stream-stats">0 tokens • 0.0s</span>
+                            </div>
                             <div class="output-badges" id="agent-output-badges">
-                                <span class="badge badge-info" id="badge-persona">RESEARCHER</span>
-                                <span class="badge badge-success" id="badge-verif">VERIFIED</span>
+                                <span class="badge badge-info" id="badge-persona">AI AGENT</span>
+                                <span class="badge badge-success" id="badge-verif">AST VERIFIED</span>
+                                <button class="btn btn-sm btn-secondary" id="btn-copy-output"><i class="fa-regular fa-copy"></i> Copy</button>
                             </div>
                         </div>
                         <div class="card-body">
@@ -161,13 +202,13 @@
                 <section id="tab-triage" class="tab-pane">
                     <div class="card">
                         <div class="card-header">
-                            <h2><i class="fa-solid fa-laptop-code"></i> Multi-Language Crash Triage & Closed-Loop Auto-Heal</h2>
-                            <span class="card-subtitle">Parses stack traces across 7 environments (Python, Node, Rust, Go, C++, Docker, CI/CD)</span>
+                            <h2><i class="fa-solid fa-laptop-code text-magenta"></i> Multi-Language Crash Triage & Auto-Heal</h2>
+                            <span class="card-subtitle">Parses stack traces across Python, Node, Rust, Go, C++, Docker, CI/CD and synthesizes surgical patches</span>
                         </div>
                         <div class="card-body">
                             <div class="form-group full-width">
                                 <label for="triage-log">Paste Stack Trace or Incident Log</label>
-                                <textarea id="triage-log" rows="6" placeholder="Paste traceback or docker log here..."></textarea>
+                                <textarea id="triage-log" rows="6" placeholder="Paste python traceback, rust panic, or docker error log here..."></textarea>
                             </div>
                             <button id="btn-triage" class="btn btn-primary btn-glow">
                                 <i class="fa-solid fa-stethoscope"></i> Diagnose & Auto-Heal Incident
@@ -176,7 +217,7 @@
                     </div>
                     <div class="card hidden" id="triage-result-card">
                         <div class="card-header">
-                            <h3><i class="fa-solid fa-clipboard-check"></i> Diagnostic Report</h3>
+                            <h3><i class="fa-solid fa-clipboard-check text-green"></i> Diagnostic & Surgical Patch Report</h3>
                         </div>
                         <div class="card-body">
                             <pre class="code-terminal" id="triage-output"></pre>
@@ -189,8 +230,8 @@
                     <div class="card">
                         <div class="card-header flex-between">
                             <div>
-                                <h2><i class="fa-solid fa-code-branch"></i> Git 3-Way Merge Conflict Resolver</h2>
-                                <span class="card-subtitle">AST-aware semantic conflict resolution</span>
+                                <h2><i class="fa-solid fa-code-branch text-cyan"></i> Git 3-Way Merge Conflict Resolver</h2>
+                                <span class="card-subtitle">AST-aware semantic conflict resolution with side-by-side diffing</span>
                             </div>
                             <button id="btn-scan-conflicts" class="btn btn-secondary">
                                 <i class="fa-solid fa-rotate"></i> Scan Repo Conflicts
@@ -209,8 +250,8 @@
                     <div class="card">
                         <div class="card-header flex-between">
                             <div>
-                                <h2><i class="fa-solid fa-shield-cat"></i> AST Security Scanner & Surgical Auto-Healer</h2>
-                                <span class="card-subtitle">Detects Secrets, SQLi, ReDoS, Command Injection & unsafe execution</span>
+                                <h2><i class="fa-solid fa-shield-cat text-green"></i> AST Security Scanner & Surgical Auto-Healer</h2>
+                                <span class="card-subtitle">Detects Hardcoded Secrets, SQLi, ReDoS, Command Injection & Insecure Subprocesses</span>
                             </div>
                             <div class="btn-group">
                                 <button id="btn-scan-security" class="btn btn-primary">
@@ -234,8 +275,8 @@
                     <div class="card">
                         <div class="card-header flex-between">
                             <div>
-                                <h2><i class="fa-solid fa-shield-virus"></i> Autonomous Chaos Immunity Engine</h2>
-                                <span class="card-subtitle">Probes brittle AST patterns, synthesizes adversarial tests, and inoculates codebase</span>
+                                <h2><i class="fa-solid fa-shield-virus text-magenta"></i> Autonomous Chaos Immunity Engine</h2>
+                                <span class="card-subtitle">Probes brittle AST patterns, synthesizes adversarial edge-case tests, and inoculates codebase</span>
                             </div>
                             <button id="btn-run-chaos" class="btn btn-primary btn-glow">
                                 <i class="fa-solid fa-virus-slash"></i> Run Chaos Immunity Probe
@@ -253,8 +294,8 @@
                 <section id="tab-devdocs" class="tab-pane">
                     <div class="card">
                         <div class="card-header">
-                            <h2><i class="fa-solid fa-book"></i> DevDocs Precision Hybrid Search</h2>
-                            <span class="card-subtitle">SQLite FTS5 BM25 + Cosine Similarity (< 2ms SLA) for Python, C++, Rust, Syscalls, FastAPI, Redis, Postgres</span>
+                            <h2><i class="fa-solid fa-book text-cyan"></i> DevDocs Precision Hybrid Search</h2>
+                            <span class="card-subtitle">SQLite FTS5 BM25 + Cosine Similarity (&lt; 2ms SLA) for Python, C++, Rust, Syscalls, FastAPI, Redis, Postgres</span>
                         </div>
                         <div class="card-body">
                             <div class="search-box">
@@ -270,21 +311,50 @@
                     </div>
                 </section>
 
-                <!-- 7. MODEL HUB TAB -->
+                <!-- 7. MODEL HUB & CUSTOM BANKAI TAB -->
                 <section id="tab-models" class="tab-pane">
-                    <div class="card">
+                    <!-- Featured Custom Models Spotlight -->
+                    <div class="spotlight-grid">
+                        <div class="spotlight-card">
+                            <div class="spotlight-header">
+                                <span class="spotlight-badge">FINE-TUNED BY KRISHIV JOSHI</span>
+                                <a href="https://huggingface.co/krishivjoshi/bankai-10b" target="_blank" class="hf-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> HF Model</a>
+                            </div>
+                            <h3>⚡ Bankai-14B Frontier Coder</h3>
+                            <p>Dual Tesla T4 fine-tuned LoRA adapter on Qwen2.5-Coder-14B-Instruct. Optimized for surgical diffs and compiler safety.</p>
+                            <div class="spotlight-footer">
+                                <code>krishivjoshi/bankai-10b</code>
+                                <button class="btn btn-sm btn-primary" onclick="setActiveModel('bankai-14b')">Set Active</button>
+                            </div>
+                        </div>
+
+                        <div class="spotlight-card">
+                            <div class="spotlight-header">
+                                <span class="spotlight-badge">FINE-TUNED BY KRISHIV JOSHI</span>
+                                <a href="https://huggingface.co/krishivjoshi/bankai-7b" target="_blank" class="hf-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> HF Model</a>
+                            </div>
+                            <h3>🧠 Bankai-7B Ultra-Fast Coder</h3>
+                            <p>Dual Tesla T4 fine-tuned LoRA adapter on Qwen2.5-Coder-7B-Instruct. High-throughput edge inference for local dev.</p>
+                            <div class="spotlight-footer">
+                                <code>krishivjoshi/bankai-7b</code>
+                                <button class="btn btn-sm btn-primary" onclick="setActiveModel('bankai-7b')">Set Active</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card margin-top-md">
                         <div class="card-header flex-between">
                             <div>
-                                <h2><i class="fa-solid fa-server"></i> Universal AI Model Catalog & Telemetry</h2>
-                                <span class="card-subtitle">Local SLMs (Ollama) & Cloud Providers (Bedrock, Gemini, Claude, OpenAI)</span>
+                                <h2><i class="fa-solid fa-server text-cyan"></i> Live Discovered Models & Telemetry</h2>
+                                <span class="card-subtitle">Real-time pings across Local SLMs (Ollama) & Cloud APIs (Bedrock, Gemini, OpenAI, Claude, Groq)</span>
                             </div>
                             <button id="btn-refresh-models" class="btn btn-secondary">
-                                <i class="fa-solid fa-sync"></i> Refresh Status
+                                <i class="fa-solid fa-sync"></i> Refresh Live Models
                             </button>
                         </div>
                         <div class="card-body">
                             <div id="models-list-container">
-                                <p class="text-dim">Loading model catalog...</p>
+                                <p class="text-dim">Discovering active models in real time...</p>
                             </div>
                         </div>
                     </div>
@@ -292,6 +362,16 @@
 
             </main>
         </div>
+
+        <!-- Footer Bar -->
+        <footer class="footer-bar">
+            <div class="footer-left">
+                <span>⚡ <strong>K-CLI Cyber Station</strong> • Engineered by <strong>Krishiv Joshi</strong> (<code>@krishivjoshi</code>)</span>
+            </div>
+            <div class="footer-right">
+                <span>AWS Strands Agents SDK • AST Compiler Guarded</span>
+            </div>
+        </footer>
     </div>
 
     <!-- Scripts -->

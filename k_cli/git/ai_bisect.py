@@ -10,6 +10,7 @@ and propose an AST-verified fix.
 from __future__ import annotations
 
 import logging
+import shlex
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -128,8 +129,8 @@ class AIBisectEngine:
 
             # Run verification test
             t_res = subprocess.run(
-                test_command,
-                shell=True,
+                shlex.split(test_command),
+                shell=False,
                 cwd=str(self.repo_path),
                 capture_output=True,
                 text=True,

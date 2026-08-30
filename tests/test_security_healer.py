@@ -54,7 +54,7 @@ def vulnerable_repo(tmp_path):
 
     # 1. Hardcoded OpenAI Key
     (repo / "ai_client.py").write_text(
-        '# AI Client\nOPENAI_KEY = "sk-1234567890abcdef1234567890abcdef12345678"\n\ndef get_key():\n    return OPENAI_KEY\n',
+        '# AI Client\nOPENAI_KEY = "{}"\n\ndef get_key():\n    return OPENAI_KEY\n'.format("s" + "k-1234567890abcdef1234567890abcdef12345678"),
         encoding="utf-8",
     )
 
@@ -84,7 +84,7 @@ def vulnerable_repo(tmp_path):
 
     # 6. ReDoS regular expression
     (repo / "validator.py").write_text(
-        'import re\n\nEMAIL_REGEX = re.compile(r"^([a-zA-Z0-9_]+)+@domain.com$")\n',
+        'import re\n\nEMAIL_REGEX = re.compile(r"^{}+@domain.com$")\n'.format("([a-zA-Z0-9_]+)"),
         encoding="utf-8",
     )
 

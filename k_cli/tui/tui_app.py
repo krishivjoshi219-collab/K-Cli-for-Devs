@@ -24,6 +24,7 @@ import asyncio
 import os
 import psutil
 import sys
+import subprocess
 import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -894,7 +895,7 @@ class CredentialsVaultModal(ModalScreen[bool]):
                     yield Input(
                         value=os.environ.get("ANTHROPIC_API_KEY", ""),
                         password=True,
-                        placeholder="sk-ant-xxxxxxxxxxxxxxxxxxxx",
+                        placeholder="sk-ant-xxxxxxxxx",
                         id="input-anthropic",
                         classes="key-input",
                     )
@@ -906,7 +907,7 @@ class CredentialsVaultModal(ModalScreen[bool]):
                     yield Input(
                         value=os.environ.get("OPENAI_API_KEY", ""),
                         password=True,
-                        placeholder="sk-proj-xxxxxxxxxxxxxxxxxxxx",
+                        placeholder="sk-proj-xxxxxxxxx",
                         id="input-openai",
                         classes="key-input",
                     )
@@ -918,7 +919,7 @@ class CredentialsVaultModal(ModalScreen[bool]):
                     yield Input(
                         value=os.environ.get("DEEPSEEK_API_KEY", ""),
                         password=True,
-                        placeholder="sk-xxxxxxxxxxxxxxxxxxxx",
+                        placeholder="sk-xxxxxxxxx",
                         id="input-deepseek",
                         classes="key-input",
                     )
@@ -954,7 +955,7 @@ class CredentialsVaultModal(ModalScreen[bool]):
                     yield Input(
                         value=os.environ.get("OPENROUTER_API_KEY", ""),
                         password=True,
-                        placeholder="sk-or-xxxxxxxxxxxxxxxxxxxx",
+                        placeholder="sk-or-xxxxxxxxx",
                         id="input-openrouter",
                         classes="key-input",
                     )
@@ -2048,7 +2049,7 @@ class KCliCyberWorkstation(App):
 
     def on_mount(self) -> None:
         if hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
-            os.system("clear" if os.name == "posix" else "cls")
+            print("\033c", end="")
         
         # Check if first-time onboarding or explicit welcome requested
         if self.show_welcome_on_start or (DevPreferencesManager.is_first_time_setup() and not self.mock_mode):
@@ -2100,7 +2101,6 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
             if not hasattr(self, "_cached_branch"):
                 self._cached_branch = "main"
                 def _fetch_branch():
-                    import subprocess
                     try:
                         res = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True, timeout=1.0)
                         self._cached_branch = res.stdout.strip() if res.returncode == 0 else "main"

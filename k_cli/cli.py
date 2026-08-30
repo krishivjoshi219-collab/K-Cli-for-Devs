@@ -942,6 +942,51 @@ def web_sub_ui_cmd(
 app.add_typer(web_app, name="web")
 
 
+# =============================================================================
+# Tier 3: Streamlined Interactive Terminal REPL (`k-cli simple` / `k-cli simple ui`)
+# =============================================================================
+simple_app = typer.Typer(name="simple", help="Launch the streamlined, mouse-enabled text REPL UI.", invoke_without_command=True)
+
+
+@app.command(name="simple-ui", help="Launch the streamlined text REPL with mouse and slash command support.")
+@app.command(name="chat", help="Launch the streamlined interactive AI coding chat REPL.")
+@app.command(name="repl", help="Launch the streamlined interactive AI coding chat REPL.")
+def simple_ui_cmd(
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Active model label."),
+    persona: Optional[str] = typer.Option(None, "--persona", "-p", help="Active persona label."),
+    mock: bool = typer.Option(False, "--mock", help="Use offline mock driver."),
+    workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root directory."),
+):
+    """Launch the streamlined Tier 3 interactive terminal REPL."""
+    from k_cli.ui.simple_repl import run_simple_cli
+    run_simple_cli(workspace_dir=str(workspace), model_name=model, persona=persona, mock_mode=mock)
+
+
+@simple_app.callback(invoke_without_command=True)
+def simple_callback(
+    ctx: typer.Context,
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Active model label."),
+    persona: Optional[str] = typer.Option(None, "--persona", "-p", help="Active persona label."),
+    mock: bool = typer.Option(False, "--mock", help="Use offline mock driver."),
+    workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root directory."),
+):
+    if ctx.invoked_subcommand is None:
+        simple_ui_cmd(model=model, persona=persona, mock=mock, workspace=workspace)
+
+
+@simple_app.command(name="ui", help="Launch the streamlined text REPL with mouse support.")
+def simple_sub_ui_cmd(
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Active model label."),
+    persona: Optional[str] = typer.Option(None, "--persona", "-p", help="Active persona label."),
+    mock: bool = typer.Option(False, "--mock", help="Use offline mock driver."),
+    workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root directory."),
+):
+    simple_ui_cmd(model=model, persona=persona, mock=mock, workspace=workspace)
+
+
+app.add_typer(simple_app, name="simple")
+
+
 @app.command(name="ui", help="Launch the full-screen K-CLI Textual workstation.")
 def ui_cmd(
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Active model label (auto-detected if omitted)."),
@@ -2388,6 +2433,23 @@ def models_providers(
     console.print(table)
 
 
+@models_app.command("set-default", help="Set and persist the default AI model (e.g. 'k-cli models set-default claude-3-5-sonnet' or 'auto').")
+def models_set_default(
+    model_name: str = typer.Argument(..., help="Model identifier to set as default (or 'auto' for adaptive intent routing)."),
+):
+    """Sets and saves the developer's default preferred AI model."""
+    DevPreferencesManager.set_default_model(model_name)
+    console.print(f"[bold green]✔ Default model successfully set to:[/bold green] [bold cyan]{model_name}[/bold cyan]")
+    console.print("[dim]K-CLI will automatically route to this model when in default mode.[/dim]")
+
+
+@models_app.command("get-default", help="Display the currently active default AI model.")
+def models_get_default():
+    """Prints the currently configured default AI model."""
+    current = DevPreferencesManager.get_default_model()
+    console.print(f"[bold cyan]Current Default Model:[/bold cyan] [bold green]{current}[/bold green]")
+
+
 # =============================================================================
 # GitHub Ecosystem Commands (`k-cli gh` / `k-cli issue` / `k-cli release`)
 # =============================================================================
@@ -2642,6 +2704,40 @@ def trending_cmd(
     console.print(table)
 
 
+rules_app = typer.Typer(name="rules", help="Manage custom developer instructions & workspace rules (.kclirules).")
+
+
+@rules_app.command(name="init", help="Create a .kclirules template in the current workspace.")
+def rules_init(
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing rules file."),
+):
+    """Initializes a starter .kclirules template in the workspace root."""
+    from k_cli.tools.rules import create_default_rules_file
+    path = create_default_rules_file(force=force)
+    console.print(f"[bold green]✔ Initialized custom rules template at:[/bold green] [cyan]{path}[/cyan]")
+
+
+@rules_app.command(name="get", help="Display currently active developer instructions & rules.")
+def rules_get():
+    """Displays active developer rules from workspace or global settings."""
+    from k_cli.tools.rules import load_project_rules
+    rules_text = load_project_rules(".")
+    if rules_text:
+        console.print(Panel(rules_text, title="[bold green]Active Developer Rules & Instructions[/bold green]", border_style="green"))
+    else:
+        console.print("[yellow]No custom rules found in workspace. Run 'k-cli rules init' to create a .kclirules file.[/yellow]")
+
+
+@rules_app.command(name="set", help="Set custom global developer instructions.")
+def rules_set(
+    instructions: str = typer.Argument(..., help="Custom system prompt instructions for the AI."),
+):
+    """Sets global developer instructions saved to ~/.kcli/rules.md."""
+    from k_cli.tools.rules import set_global_rules
+    path = set_global_rules(instructions)
+    console.print(f"[bold green]✔ Successfully saved global developer instructions to:[/bold green] [cyan]{path}[/cyan]")
+
+
 # Mount sub-applications onto root CLI app
 app.add_typer(conflict_app, name="conflict")
 app.add_typer(pr_app, name="pr")
@@ -2649,6 +2745,7 @@ app.add_typer(mcp_app, name="mcp")
 app.add_typer(dedup_app, name="dedup")
 app.add_typer(security_app, name="security")
 app.add_typer(models_app, name="models")
+app.add_typer(rules_app, name="rules")
 app.add_typer(gh_app, name="gh")
 app.add_typer(issue_app, name="issue")
 app.add_typer(release_app, name="release")

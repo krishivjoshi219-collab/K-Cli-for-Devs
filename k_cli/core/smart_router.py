@@ -1,20 +1,25 @@
 """
-smart_router.py - Cost & Latency Smart Model Router for K-CLI
+smart_router.py - Cost, Latency & Intent-Adaptive Smart Model Router for K-CLI
 Project Bankai v1.0.0
 
-Analyzes task complexity, required reasoning depth, and context size, then
-dynamically routes queries to the optimal local SLM or cloud LLM, calculating
-and logging cumulative financial savings against a baseline model.
+Provides:
+1. Adaptive Intent Routing: Automatically routes casual chat to ultra-fast & cheap models (Gemini Flash, Claude Haiku, GPT-4o-mini, Groq)
+   and routes architectural planning & heavy coding to premier frontier models (Claude 3.5 Sonnet, Bankai-14B, DeepSeek Coder).
+2. Pinned Default Model: Respects user-pinned default model preferences when 'default' mode is active.
+3. Cost & Latency Financial Optimization: Estimates cumulative cost savings against frontier baselines.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
+from k_cli.core.credentials import CredentialsManager, DevPreferencesManager
+from k_cli.core.intent_sensor import IntentSensor, UserIntent
 from k_cli.core.llm_driver import LLMDriver, ProviderType
 from k_cli.core.models_hub import ModelHub, ModelProvider, ModelSpec
 
@@ -22,9 +27,9 @@ logger = logging.getLogger("k_cli.core.smart_router")
 
 
 class TaskTier(str, Enum):
-    TRIVIAL = "trivial"      # Docstrings, typos, formatting -> Local SLM (Ollama, FREE)
-    STANDARD = "standard"    # Standard functions, bug fixes -> Fast Cloud/Local (Groq/DeepSeek)
-    COMPLEX = "complex"      # Full multi-file refactors, security, AST -> Claude Sonnet / GPT-4
+    TRIVIAL = "trivial"      # Docstrings, typos, formatting, greetings -> Fast / Cheap (Gemini Flash, Local SLM)
+    STANDARD = "standard"    # Standard functions, bug fixes -> High Throughput (DeepSeek, Groq)
+    COMPLEX = "complex"      # Multi-file refactors, AST verification, planning -> Claude Sonnet, Bankai-14B, GPT-4
 
 
 @dataclass
@@ -38,6 +43,46 @@ class RouteDecision:
     baseline_gpt4_cost_usd: float
     savings_usd: float
     reasoning: str
+
+
+class AdaptiveIntentRouter:
+    """
+    Real-time dynamic model selector based on sensed user intent and active API keys.
+    """
+
+    @classmethod
+    def resolve_model_for_prompt(cls, prompt: str, requested_model: Optional[str] = None) -> Tuple[str, str]:
+        """
+        Determines the optimal model for a given prompt:
+        - If requested_model is specific (e.g. 'bankai-14b', 'claude-3-5-sonnet'), returns it directly.
+        - If requested_model is 'default', returns the user's pinned default model.
+        - If requested_model is None or 'auto', dynamically senses intent and chooses the optimal online model.
+        """
+        if requested_model and requested_model.lower() not in ("auto", "dynamic", "none", "default"):
+            return requested_model, f"User-selected model: {requested_model}"
+
+        if requested_model and requested_model.lower() == "default":
+            def_m = DevPreferencesManager.get_default_model()
+            return def_m, f"Using user-pinned default model: {def_m}"
+
+        # Sensed Intent Routing
+        intent_res = IntentSensor.sense(prompt)
+        
+        if intent_res.intent == UserIntent.CHAT:
+            model = DevPreferencesManager.get_fast_chat_model()
+            return model, f"⚡ Fast Chat Path ({intent_res.mode_label}): Routed to low-latency model '{model}'"
+
+        elif intent_res.intent == UserIntent.PLAN:
+            model = DevPreferencesManager.get_frontier_reasoning_model()
+            return model, f"📐 Architectural Planner ({intent_res.mode_label}): Routed to frontier reasoning model '{model}'"
+
+        elif intent_res.intent in (UserIntent.BUILD, UserIntent.TRIAGE, UserIntent.IMMUNITY):
+            model = DevPreferencesManager.get_coding_specialist_model()
+            return model, f"🔨 Autonomous Coding ({intent_res.mode_label}): Routed to compiler-grounded specialist '{model}'"
+
+        # Fallback to default
+        fallback = DevPreferencesManager.get_default_model()
+        return fallback, f"Standard route to '{fallback}'"
 
 
 class SmartModelRouter:
@@ -66,7 +111,7 @@ class SmartModelRouter:
             score += 25
 
         # Simplicity reducers
-        if any(w in text for w in ("typo", "docstring", "comment", "format", "rename", "add log", "hello")):
+        if any(w in text for w in ("typo", "docstring", "comment", "format", "rename", "add log", "hello", "hi", "hey")):
             score -= 30
         if len(task_prompt.split()) < 8 and "fix" not in text:
             score -= 15
@@ -74,7 +119,7 @@ class SmartModelRouter:
         score = max(0, min(100, score))
 
         if score < 30:
-            return TaskTier.TRIVIAL, score, "Low-complexity task suitable for local zero-cost SLM."
+            return TaskTier.TRIVIAL, score, "Low-complexity conversational/trivial task suitable for fast/local SLM."
         elif score < 70:
             return TaskTier.STANDARD, score, "Moderate complexity suitable for high-throughput inference."
         else:
@@ -87,16 +132,16 @@ class SmartModelRouter:
         tier, score, reason = self.analyze_complexity(task_prompt, context_length)
 
         if force_local or tier == TaskTier.TRIVIAL:
-            selected_model = "qwen2.5-coder:1.5b"
-            provider = "ollama (local)"
+            selected_model = DevPreferencesManager.get_fast_chat_model()
+            provider = "fast-tier"
             cost = 0.0000
         elif tier == TaskTier.STANDARD:
             selected_model = "deepseek-coder"
             provider = "deepseek"
             cost = 0.0002
         else:
-            selected_model = "claude-3-5-sonnet-20241022"
-            provider = "anthropic"
+            selected_model = DevPreferencesManager.get_frontier_reasoning_model()
+            provider = "frontier"
             cost = 0.0030
 
         # Compare against GPT-4 baseline ($0.030 per 1k input/output avg)

@@ -267,6 +267,15 @@ def create_app() -> FastAPI:
         res = hub.benchmark_model(model_name=req.model_name, prompt=req.prompt)
         return res.to_dict()
 
+    @app.get("/api/models/default")
+    async def get_default_model():
+        return {"default_model": DevPreferencesManager.get_default_model()}
+
+    @app.post("/api/models/default")
+    async def set_default_model(req: ModelTestRequest):
+        DevPreferencesManager.set_default_model(req.model_name)
+        return {"success": True, "default_model": req.model_name}
+
     # WebSocket for real-time agent token streaming
     @app.websocket("/ws/agent")
     async def websocket_agent(websocket: WebSocket):
@@ -276,11 +285,14 @@ def create_app() -> FastAPI:
             data = json.loads(data_raw)
             prompt = data.get("prompt", "")
             language = data.get("language", "python")
-            model = data.get("model", "qwen2.5-coder:1.5b")
+            raw_model = data.get("model", "auto")
             mock = data.get("mock", False)
             persona = data.get("persona")
 
-            await websocket.send_json({"type": "start", "prompt": prompt, "model": model})
+            from k_cli.core.smart_router import AdaptiveIntentRouter
+            model, route_reason = AdaptiveIntentRouter.resolve_model_for_prompt(prompt, raw_model)
+
+            await websocket.send_json({"type": "start", "prompt": prompt, "model": model, "route_reason": route_reason})
 
             loop = asyncio.get_running_loop()
 

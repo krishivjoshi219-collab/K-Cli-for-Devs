@@ -53,7 +53,7 @@ class IntentSensor:
 
     # Regex patterns for fast-path detection
     CHAT_GREETINGS = re.compile(
-        r"^(hi|hello|hey|hey there|yo|greetings|howdy|sup|what's up|good (morning|afternoon|evening)|who are you|what is your name|how are you|what can you do|thanks|thank you|thanks a lot|cool|awesome|great|bye|goodbye)[!?.]*$",
+        r"^(hi|hello|hey|hey there|yo|greetings|howdy|sup|what's up|good (morning|afternoon|evening)|who are you|what is your name|how are you|how's it going|what can you do|thanks|thank you|thanks a lot|cool|awesome|great|bye|goodbye)\b",
         re.IGNORECASE,
     )
 

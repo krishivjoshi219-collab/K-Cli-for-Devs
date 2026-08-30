@@ -109,7 +109,8 @@ class CredentialsManager:
                         k, v = line.split("=", 1)
                         k, v = k.strip(), v.strip()
                         if k and v:
-                            os.environ[k] = v
+                            if k not in os.environ:
+                                os.environ[k] = v
                             loaded[k] = v
             except Exception:
                 pass
@@ -120,7 +121,8 @@ class CredentialsManager:
                 data = json.loads(cls.JSON_FILE.read_text(encoding="utf-8"))
                 for k, v in data.items():
                     if isinstance(v, str) and v.strip():
-                        os.environ[k] = v.strip()
+                        if k not in os.environ:
+                            os.environ[k] = v.strip()
                         loaded[k] = v.strip()
             except Exception:
                 pass
@@ -443,6 +445,75 @@ class DevPreferencesManager:
                 }, indent=2), encoding="utf-8")
             except Exception:
                 pass
+
+    @classmethod
+    def set_default_model(cls, model_name: str) -> None:
+        """Sets and persists the user's preferred default model."""
+        cls.set("default_model", model_name.strip())
+        logger.info(f"Set user default model to: {model_name}")
+
+    @classmethod
+    def get_default_model(cls) -> str:
+        """Retrieves the user's preferred default model or falls back to best available."""
+        pref = cls.get("default_model")
+        return pref if pref else cls.get_best_available_model()
+
+    @classmethod
+    def get_fast_chat_model(cls) -> str:
+        """
+        Returns the fastest & most cost-effective online model for casual chat and quick Q&A.
+        Prioritizes Gemini Flash-Lite / Groq / GPT-4o-mini / Claude Haiku / Local SLM.
+        """
+        CredentialsManager.load_all_credentials()
+        if os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"):
+            return "gemini-2.0-flash"
+        if os.environ.get("GROQ_API_KEY"):
+            return "groq/llama-3.1-8b-instant"
+        if os.environ.get("OPENAI_API_KEY"):
+            return "gpt-4o-mini"
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            return "claude-3-5-haiku-20241022"
+        if os.environ.get("DEEPSEEK_API_KEY"):
+            return "deepseek-chat"
+        return "qwen2.5-coder:1.5b"
+
+    @classmethod
+    def get_frontier_reasoning_model(cls) -> str:
+        """
+        Returns the premier reasoning model for architectural planning and system design.
+        """
+        CredentialsManager.load_all_credentials()
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            return "claude-3-5-sonnet-20241022"
+        if os.environ.get("BEDROCK_MODEL_ID") or os.environ.get("AWS_ACCESS_KEY_ID"):
+            return "anthropic.claude-3-5-sonnet-20241022-v2:0"
+        if os.environ.get("OPENAI_API_KEY"):
+            return "gpt-4o"
+        if os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"):
+            return "gemini-2.5-pro"
+        if os.environ.get("DEEPSEEK_API_KEY"):
+            return "deepseek-reasoner"
+        return cls.get_default_model()
+
+    @classmethod
+    def get_coding_specialist_model(cls) -> str:
+        """
+        Returns the premier code generation & surgical refactoring model.
+        """
+        CredentialsManager.load_all_credentials()
+        # Prefer user pinned Bankai custom models if active
+        pref = cls.get("default_model")
+        if pref and ("bankai" in pref.lower() or "coder" in pref.lower()):
+            return pref
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            return "claude-3-5-sonnet-20241022"
+        if os.environ.get("DEEPSEEK_API_KEY"):
+            return "deepseek-coder"
+        if os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"):
+            return "gemini-2.0-flash"
+        if os.environ.get("OPENAI_API_KEY"):
+            return "gpt-4o"
+        return "qwen2.5-coder:1.5b"
 
     @classmethod
     def get_best_available_model(cls) -> str:

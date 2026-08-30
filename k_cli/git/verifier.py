@@ -27,6 +27,23 @@ except ImportError:  # pragma: no cover - non-POSIX hosts
     resource = None  # type: ignore
 
 
+def _sanitize_path(path_input: Union[str, Path], base_dir: Optional[Union[str, Path]] = None) -> Path:
+    """Sanitizes user-provided path inputs to prevent directory traversal vulnerabilities."""
+    resolved_path = Path(path_input).resolve()
+    if base_dir is not None:
+        base = Path(base_dir).resolve()
+        if not (resolved_path == base or resolved_path.is_relative_to(base)):
+            raise ValueError(f"Path '{path_input}' escapes base directory '{base}'")
+        return resolved_path
+
+    cwd = Path.cwd().resolve()
+    tmp_dir = Path(tempfile.gettempdir()).resolve()
+    if not (resolved_path == cwd or resolved_path.is_relative_to(cwd) or resolved_path == tmp_dir or resolved_path.is_relative_to(tmp_dir)):
+        resolved_path = (cwd / resolved_path.name).resolve()
+
+    return resolved_path
+
+
 class TestFramework(str, Enum):
     """Supported auto-detected project test frameworks."""
     PYTEST = "pytest"
@@ -145,8 +162,11 @@ class Verifier:
         timeout: float,
     ) -> subprocess.CompletedProcess:
         """Run a verifier child with bounded resources and reliable descendant cleanup."""
+        safe_cwd = Path(cwd).resolve()
+        if not safe_cwd.exists():
+            raise FileNotFoundError(f"Subprocess working directory does not exist: {cwd}")
         kwargs: Dict[str, Any] = {
-            "cwd": str(cwd),
+            "cwd": str(safe_cwd),
             "stdout": subprocess.PIPE,
             "stderr": subprocess.PIPE,
             "text": True,
@@ -467,7 +487,7 @@ class Verifier:
         Returns:
             Detected framework name ("pytest", "cargo", "npm", "go", "make") or None.
         """
-        p_dir = Path(project_dir).resolve()
+        p_dir = _sanitize_path(project_dir)
         if not p_dir.exists() or not p_dir.is_dir():
             return None
 
@@ -558,7 +578,7 @@ class Verifier:
         Auto-detects project test framework (pytest, cargo test, npm test, go test, make test)
         and runs post-patch verification suite in the target project directory.
         """
-        p_dir = Path(project_dir).resolve()
+        p_dir = _sanitize_path(project_dir)
         detected_fw = framework or self.detect_test_framework(p_dir)
 
         if not detected_fw:
@@ -666,7 +686,7 @@ class Verifier:
         Returns:
             VerificationResult with `rolled_back=True` if rollback was performed.
         """
-        p_dir = Path(project_dir).resolve()
+        p_dir = _sanitize_path(project_dir)
 
         # Step 1: Pre-scan Python files in workspace for AST syntax errors
         py_files = list(p_dir.glob("*.py"))

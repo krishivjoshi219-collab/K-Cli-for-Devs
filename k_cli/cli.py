@@ -899,6 +899,28 @@ def doctor_cmd(
         console.print(f"[yellow]Potential {finding.rule}: {finding.path}:{finding.line} (value intentionally hidden)[/yellow]")
 
 
+@app.command(name="web-ui", help="Launch the world-class K-CLI Web UI dashboard server.")
+def web_ui_cmd(
+    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Web server host interface."),
+    port: int = typer.Option(8000, "--port", "-p", help="Web server port number."),
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Automatically open browser on server startup."),
+):
+    """Launch the world-class FastAPI Web UI dashboard."""
+    from k_cli.web.server import start_web_server
+    console.print(f"[bold cyan]⚡ Launching K-CLI World-Class Web UI on http://{host}:{port}...[/bold cyan]")
+    start_web_server(host=host, port=port, open_browser=open_browser)
+
+
+@app.command(name="web", help="Alias for launching the K-CLI Web UI dashboard server.")
+def web_cmd(
+    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Web server host interface."),
+    port: int = typer.Option(8000, "--port", "-p", help="Web server port number."),
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Automatically open browser on server startup."),
+):
+    """Alias for launching the Web UI dashboard."""
+    web_ui_cmd(host=host, port=port, open_browser=open_browser)
+
+
 @app.command(name="ui", help="Launch the full-screen K-CLI Textual workstation.")
 def ui_cmd(
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Active model label (auto-detected if omitted)."),

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-CLI Agentic Workstation | World-Class Web UI</title>
+    <!-- Fonts and FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-cyber-dark text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-black">
+
+    <!-- App Container -->
+    <div class="app-layout">
+
+        <!-- Header Bar -->
+        <header class="header-bar">
+            <div class="logo-group">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-terminal"></i>
+                </div>
+                <div class="logo-text">
+                    <span class="brand-name">K-CLI <span class="badge-v">v1.0.0</span></span>
+                    <span class="brand-sub">Verification-First DevOps Agent</span>
+                </div>
+            </div>
+
+            <!-- Header System Status Bar -->
+            <div class="system-status-pills">
+                <div class="status-pill" id="pill-model">
+                    <i class="fa-solid fa-brain"></i>
+                    <span id="stat-model">Loading...</span>
+                </div>
+                <div class="status-pill" id="pill-branch">
+                    <i class="fa-solid fa-code-branch"></i>
+                    <span id="stat-branch">main</span>
+                </div>
+                <div class="status-pill" id="pill-ram">
+                    <i class="fa-solid fa-memory"></i>
+                    <span id="stat-ram">0.00 MB / 1024 MB</span>
+                </div>
+                <div class="status-pill pill-online" id="pill-status">
+                    <span class="pulse-dot"></span>
+                    <span id="stat-online">ONLINE</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <div class="main-container">
+
+            <!-- Navigation Sidebar -->
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-tab="tab-agent">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>Agent Runner</span>
+                </button>
+                <button class="nav-item" data-tab="tab-triage">
+                    <i class="fa-solid fa-heart-pulse"></i>
+                    <span>Crash Triage</span>
+                </button>
+                <button class="nav-item" data-tab="tab-conflicts">
+                    <i class="fa-solid fa-code-merge"></i>
+                    <span>Conflict Studio</span>
+                </button>
+                <button class="nav-item" data-tab="tab-security">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Security Shield</span>
+                </button>
+                <button class="nav-item" data-tab="tab-chaos">
+                    <i class="fa-solid fa-bug"></i>
+                    <span>Chaos Immunity</span>
+                </button>
+                <button class="nav-item" data-tab="tab-devdocs">
+                    <i class="fa-solid fa-book-bookmark"></i>
+                    <span>DevDocs Search</span>
+                </button>
+                <button class="nav-item" data-tab="tab-models">
+                    <i class="fa-solid fa-cubes"></i>
+                    <span>Model Hub</span>
+                </button>
+            </nav>
+
+            <!-- Tab Contents -->
+            <main class="content-area">
+
+                <!-- 1. AGENT RUNNER TAB -->
+                <section id="tab-agent" class="tab-pane active">
+                    <div class="card card-hero">
+                        <div class="card-header">
+                            <h2><i class="fa-solid fa-wand-magic-sparkles"></i> Autonomous Strands Agent & Prompt Runner</h2>
+                            <span class="card-subtitle">AST Ground-Truth Compiler Verification Closed-Loop</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="input-grid">
+                                <div class="form-group full-width">
+                                    <label for="agent-prompt">Engineering Task / Goal Prompt</label>
+                                    <textarea id="agent-prompt" rows="3" placeholder="e.g. Write a thread-safe LRU Cache with O(1) ops and pytest unit tests..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="agent-lang">Target Language</label>
+                                    <select id="agent-lang">
+                                        <option value="python">Python 3.12</option>
+                                        <option value="bash">Bash / Shell</option>
+                                        <option value="cpp">C++23</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="agent-model">Model Engine</label>
+                                    <select id="agent-model">
+                                        <option value="qwen2.5-coder:1.5b">qwen2.5-coder:1.5b (Local SLM)</option>
+                                        <option value="anthropic.claude-3-5-sonnet-20241022-v2:0">Claude 3.5 Sonnet (Bedrock)</option>
+                                        <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                        <option value="gpt-4o">OpenAI GPT-4o</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="agent-persona">Specialized Persona</label>
+                                    <select id="agent-persona">
+                                        <option value="">Auto-Detect Persona</option>
+                                        <option value="RESEARCHER">Researcher</option>
+                                        <option value="ARCHITECT">Architect</option>
+                                        <option value="CODER">Coder</option>
+                                        <option value="DEBUGGER">Debugger</option>
+                                        <option value="SECURITY">Security Engineer</option>
+                                        <option value="DEVOPS">DevOps Specialist</option>
+                                    </select>
+                                </div>
+                                <div class="form-group flex-row align-end">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="agent-mock">
+                                        <span>Offline Mock Mode</span>
+                                    </label>
+                                    <button id="btn-run-agent" class="btn btn-primary btn-glow">
+                                        <i class="fa-solid fa-play"></i> Execute Agent Task
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Output Panel -->
+                    <div class="card card-output hidden" id="agent-output-card">
+                        <div class="card-header flex-between">
+                            <h3><i class="fa-solid fa-terminal"></i> Live Stream & Output</h3>
+                            <div class="output-badges" id="agent-output-badges">
+                                <span class="badge badge-info" id="badge-persona">RESEARCHER</span>
+                                <span class="badge badge-success" id="badge-verif">VERIFIED</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <pre class="code-terminal" id="agent-terminal">Ready for execution...</pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. CRASH TRIAGE TAB -->
+                <section id="tab-triage" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fa-solid fa-laptop-code"></i> Multi-Language Crash Triage & Closed-Loop Auto-Heal</h2>
+                            <span class="card-subtitle">Parses stack traces across 7 environments (Python, Node, Rust, Go, C++, Docker, CI/CD)</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group full-width">
+                                <label for="triage-log">Paste Stack Trace or Incident Log</label>
+                                <textarea id="triage-log" rows="6" placeholder="Paste traceback or docker log here..."></textarea>
+                            </div>
+                            <button id="btn-triage" class="btn btn-primary btn-glow">
+                                <i class="fa-solid fa-stethoscope"></i> Diagnose & Auto-Heal Incident
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card hidden" id="triage-result-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-clipboard-check"></i> Diagnostic Report</h3>
+                        </div>
+                        <div class="card-body">
+                            <pre class="code-terminal" id="triage-output"></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. CONFLICT STUDIO TAB -->
+                <section id="tab-conflicts" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header flex-between">
+                            <div>
+                                <h2><i class="fa-solid fa-code-branch"></i> Git 3-Way Merge Conflict Resolver</h2>
+                                <span class="card-subtitle">AST-aware semantic conflict resolution</span>
+                            </div>
+                            <button id="btn-scan-conflicts" class="btn btn-secondary">
+                                <i class="fa-solid fa-rotate"></i> Scan Repo Conflicts
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="conflicts-list-container">
+                                <p class="text-dim">Click "Scan Repo Conflicts" to check workspace for 3-way git merge conflicts.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. SECURITY SHIELD TAB -->
+                <section id="tab-security" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header flex-between">
+                            <div>
+                                <h2><i class="fa-solid fa-shield-cat"></i> AST Security Scanner & Surgical Auto-Healer</h2>
+                                <span class="card-subtitle">Detects Secrets, SQLi, ReDoS, Command Injection & unsafe execution</span>
+                            </div>
+                            <div class="btn-group">
+                                <button id="btn-scan-security" class="btn btn-primary">
+                                    <i class="fa-solid fa-magnifying-glass"></i> Scan Vulnerabilities
+                                </button>
+                                <button id="btn-heal-all-security" class="btn btn-success">
+                                    <i class="fa-solid fa-kit-medical"></i> Auto-Heal All Findings
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="security-results-container">
+                                <p class="text-dim">Click "Scan Vulnerabilities" to run AST and Regex security inspection.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. CHAOS IMMUNITY TAB -->
+                <section id="tab-chaos" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header flex-between">
+                            <div>
+                                <h2><i class="fa-solid fa-shield-virus"></i> Autonomous Chaos Immunity Engine</h2>
+                                <span class="card-subtitle">Probes brittle AST patterns, synthesizes adversarial tests, and inoculates codebase</span>
+                            </div>
+                            <button id="btn-run-chaos" class="btn btn-primary btn-glow">
+                                <i class="fa-solid fa-virus-slash"></i> Run Chaos Immunity Probe
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="chaos-results-container">
+                                <p class="text-dim">Click "Run Chaos Immunity Probe" to scan for brittle edge-case failure modes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. DEVDOCS SEARCH TAB -->
+                <section id="tab-devdocs" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2><i class="fa-solid fa-book"></i> DevDocs Precision Hybrid Search</h2>
+                            <span class="card-subtitle">SQLite FTS5 BM25 + Cosine Similarity (< 2ms SLA) for Python, C++, Rust, Syscalls, FastAPI, Redis, Postgres</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="search-box">
+                                <input type="text" id="devdocs-query" placeholder="Search API symbol or function signature (e.g. asyncio.run, epoll_create1, std::vector)...">
+                                <button id="btn-search-devdocs" class="btn btn-primary">
+                                    <i class="fa-solid fa-search"></i> Search
+                                </button>
+                            </div>
+                            <div id="devdocs-results-container" class="margin-top-md">
+                                <p class="text-dim">Enter search query to inspect offline developer documentation.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. MODEL HUB TAB -->
+                <section id="tab-models" class="tab-pane">
+                    <div class="card">
+                        <div class="card-header flex-between">
+                            <div>
+                                <h2><i class="fa-solid fa-server"></i> Universal AI Model Catalog & Telemetry</h2>
+                                <span class="card-subtitle">Local SLMs (Ollama) & Cloud Providers (Bedrock, Gemini, Claude, OpenAI)</span>
+                            </div>
+                            <button id="btn-refresh-models" class="btn btn-secondary">
+                                <i class="fa-solid fa-sync"></i> Refresh Status
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="models-list-container">
+                                <p class="text-dim">Loading model catalog...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

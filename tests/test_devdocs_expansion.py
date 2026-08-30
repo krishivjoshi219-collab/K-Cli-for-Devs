@@ -30,7 +30,8 @@ DEFAULT_DB_PATH = Path.home() / ".kcli" / "docs.db"
 @pytest.fixture(scope="module")
 def db_conn():
     """Provides an optimized connection to the knowledge database."""
-    assert DEFAULT_DB_PATH.exists(), f"Database file {DEFAULT_DB_PATH} must exist"
+    if not DEFAULT_DB_PATH.exists():
+        pytest.skip(f"Database file {DEFAULT_DB_PATH} does not exist")
     conn = sqlite3.connect(str(DEFAULT_DB_PATH))
     conn.execute("PRAGMA journal_mode = WAL;")
     conn.execute("PRAGMA synchronous = NORMAL;")

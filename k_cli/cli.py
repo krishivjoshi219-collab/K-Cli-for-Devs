@@ -57,6 +57,7 @@ try:
         execute_subagents,
     )
     from k_cli.tui.diff_viewer import DiffVisualizer
+    from k_cli.core.credentials import CredentialsManager, DevPreferencesManager
     from k_cli.core.sdk import create_plan
     from k_cli.git.git_guard import GitGuard
     from k_cli.tools.audit import run_audit
@@ -901,6 +902,9 @@ def doctor_cmd(
         console.print(f"[yellow]Potential {finding.rule}: {finding.path}:{finding.line} (value intentionally hidden)[/yellow]")
 
 
+web_app = typer.Typer(name="web", help="Launch the world-class K-CLI Web UI dashboard server.", invoke_without_command=True)
+
+
 @app.command(name="web-ui", help="Launch the world-class K-CLI Web UI dashboard server.")
 def web_ui_cmd(
     host: str = typer.Option("127.0.0.1", "--host", "-h", help="Web server host interface."),
@@ -913,14 +917,29 @@ def web_ui_cmd(
     start_web_server(host=host, port=port, open_browser=open_browser)
 
 
-@app.command(name="web", help="Alias for launching the K-CLI Web UI dashboard server.")
-def web_cmd(
+@web_app.callback(invoke_without_command=True)
+def web_callback(
+    ctx: typer.Context,
     host: str = typer.Option("127.0.0.1", "--host", "-h", help="Web server host interface."),
     port: int = typer.Option(8000, "--port", "-p", help="Web server port number."),
     open_browser: bool = typer.Option(True, "--open/--no-open", help="Automatically open browser on server startup."),
 ):
-    """Alias for launching the Web UI dashboard."""
+    """Launch the world-class FastAPI Web UI dashboard."""
+    if ctx.invoked_subcommand is None:
+        web_ui_cmd(host=host, port=port, open_browser=open_browser)
+
+
+@web_app.command(name="ui", help="Launch the world-class K-CLI Web UI dashboard.")
+def web_sub_ui_cmd(
+    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Web server host interface."),
+    port: int = typer.Option(8000, "--port", "-p", help="Web server port number."),
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Automatically open browser on server startup."),
+):
+    """Launch the Web UI dashboard."""
     web_ui_cmd(host=host, port=port, open_browser=open_browser)
+
+
+app.add_typer(web_app, name="web")
 
 
 @app.command(name="ui", help="Launch the full-screen K-CLI Textual workstation.")

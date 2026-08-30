@@ -50,6 +50,12 @@ kaggle_deployment/
 ORIGINAL_REQUEST.md
 AGENTS.md
 
+# Video / Audio / Demo Artifacts (keep assets/ clean)
+demo_artifacts/
+*.mp3
+*.wav
+k_cli_demo_5min.mp4
+
 # Python build artifacts
 __pycache__/
 *.pyc

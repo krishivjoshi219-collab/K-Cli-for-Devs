@@ -35,6 +35,7 @@ def run_cli_subprocess(args: List[str], timeout: float = 6.0) -> Tuple[int, str,
     try:
         proc = subprocess.run(
             cmd,
+            input="/exit\n",
             capture_output=True,
             text=True,
             timeout=timeout,

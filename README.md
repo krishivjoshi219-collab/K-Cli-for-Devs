@@ -199,6 +199,23 @@ All 13 Strands Agent and tool verification tests run in isolated sandboxes and v
 
 ---
 
+## 🏆 Hackathon Roadmap & Devpost Rules Compliance
+
+### Proposed 5 Killer Features (Professional Agents Track)
+1. **Autonomous Infrastructure-as-Code (IaC) & Cloud Drift Self-Healer (`IaCDriftAgent`)**: Ingests Terraform / AWS CloudFormation drift reports and autonomously synthesizes verified IaC patches with closed-loop validation.
+2. **Self-Healing API Contract & Breaking-Change Inoculator (`ContractInoculatorAgent`)**: Scans OpenAPI / GraphQL spec modifications, detects breaking microservice contract changes, updates client stubs, and executes closed-loop integration tests.
+3. **Autonomous DevSecOps Vulnerability Inoculator (`DevSecOpsHealerAgent`)**: Ingests CVE alerts, uses AST symbol analysis to verify if vulnerable code paths are reachable, and applies surgical verified dependency updates or guards.
+4. **Multi-Agent Collaborative Incident Response Swarm (`IncidentSwarmAgent`)**: Deploys a swarm of specialized sub-agents (Log Analyzer, AST Correlator, Patch Synthesizer, Verifier) that debate root cause theories and reach consensus on verified fixes.
+5. **Autonomous PR Review & Interactive Code Health Remediation Agent (`PRHealthAgent`)**: Continuously monitors incoming Pull Requests, evaluates code health metrics, posts inline review comments, and opens auto-fix patches directly to PR branches.
+
+### Devpost Official Rules Compliance Audit
+* **Track**: Professional Agents Track (built with AWS Strands Agents SDK & Bedrock).
+* **Closed-Loop Verification**: Code is executed and verified with AST precision and pytest before acceptance.
+* **License**: Public GitHub repository under **MIT License**.
+* **Deliverables**: Includes Architecture Diagram, Pitch text (Problem, Audience, Value), and AWS Strands Agents integration.
+
+---
+
 ## 📄 License & Open Source Compliance
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details. Open source, transparent, and ready for community extension.

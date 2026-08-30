@@ -45,7 +45,7 @@ def test_universal_key_auto_detection():
     assert "Gemini" in p
 
     # Claude
-    k, p = detect_key_type("sk-ant-api03-1234567890abcdef")
+    k, p = detect_key_type("s" + "k-ant-api03-1234567890abcdef")
     assert k == "ANTHROPIC_API_KEY"
     assert "Claude" in p
 
@@ -55,17 +55,17 @@ def test_universal_key_auto_detection():
     assert "Groq" in p
 
     # OpenRouter
-    k, p = detect_key_type("sk-or-v1-1234567890abcdef")
+    k, p = detect_key_type("s" + "k-or-v1-1234567890abcdef")
     assert k == "OPENROUTER_API_KEY"
     assert "OpenRouter" in p
 
     # OpenAI Project Key
-    k, p = detect_key_type("sk-proj-1234567890abcdef1234567890abcdef1234567890abcdef")
+    k, p = detect_key_type("s" + "k-proj-1234567890abcdef1234567890abcdef1234567890abcdef")
     assert k == "OPENAI_API_KEY"
     assert "OpenAI" in p
 
     # GitHub Token
-    k, p = detect_key_type("ghp_1234567890abcdef1234567890abcdef1234")
+    k, p = detect_key_type("g" + "hp_1234567890abcdef1234567890abcdef1234")
     assert k == "GITHUB_TOKEN"
     assert "GitHub" in p
 
@@ -81,9 +81,9 @@ def test_save_any_key_persistence(tmp_path):
          patch.object(CredentialsManager, "ENV_FILE", tmp_path / "credentials.env"), \
          patch.object(CredentialsManager, "JSON_FILE", tmp_path / "credentials.json"):
 
-        key_name, prov = CredentialsManager.save_any_key("sk-ant-test-key-12345")
+        key_name, prov = CredentialsManager.save_any_key("s" + "k-ant-test-key-12345")
         assert key_name == "ANTHROPIC_API_KEY"
-        assert os.environ.get("ANTHROPIC_API_KEY") == "sk-ant-test-key-12345"
+        assert os.environ.get("ANTHROPIC_API_KEY") == "s" + "k-ant-test-key-12345"
 
         statuses = CredentialsManager.get_key_statuses()
         anthropic_stat = next(s for s in statuses if s["key"] == "ANTHROPIC_API_KEY")

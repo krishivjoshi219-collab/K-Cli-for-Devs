@@ -471,7 +471,7 @@ class ConflictResolver:
 
         # Search backwards from start_idx for enclosing definition
         def_patterns = [
-            re.compile(r"^\s*(?:(?:export|public|private|protected|async|static|def|func|fn)\s+)*(?:class|struct|interface|trait|enum|function|def|func|fn)\s+([A-Za-z0-9_$]+)"),
+            re.compile(r"^\s*(?:(?:export|public|private|protected|async|static|def|func|fn)\s+)?(?:(?:export|public|private|protected|async|static|def|func|fn)\s+)?(?:(?:export|public|private|protected|async|static|def|func|fn)\s+)?(?:(?:export|public|private|protected|async|static|def|func|fn)\s+)?(?:(?:export|public|private|protected|async|static|def|func|fn)\s+)?(?:class|struct|interface|trait|enum|function|def|func|fn)\s+([A-Za-z0-9_$]+)"),
             re.compile(r"^\s*([A-Za-z0-9_$]+)\s*\([^)]*\)\s*\{"),
         ]
 

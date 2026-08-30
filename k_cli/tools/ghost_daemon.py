@@ -10,6 +10,7 @@ verified surgical patches, and presents an interactive terminal fix prompt.
 from __future__ import annotations
 
 import logging
+import shlex
 import os
 import pty
 import select
@@ -94,8 +95,8 @@ class GhostTerminalDaemon:
         Runs the command in a subprocess, monitors output, and prompts when an error occurs.
         """
         proc = subprocess.Popen(
-            command_str,
-            shell=True,
+            shlex.split(command_str),
+            shell=False,
             cwd=str(self.repo_path),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

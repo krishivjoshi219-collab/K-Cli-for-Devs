@@ -192,6 +192,11 @@ body {
     font-weight: 600;
 }
 
+.nav-item:focus-visible {
+    outline: 2px solid var(--primary-cyan);
+    outline-offset: -2px;
+}
+
 /* Content Area */
 .content-area {
     flex: 1;
@@ -287,6 +292,11 @@ textarea {
 textarea:focus, select:focus, input[type="text"]:focus {
     border-color: var(--primary-cyan);
     box-shadow: 0 0 8px var(--primary-glow);
+}
+
+textarea:focus-visible, select:focus-visible, input:focus-visible, button:focus-visible {
+    outline: 2px solid var(--primary-cyan);
+    outline-offset: 2px;
 }
 
 .flex-row {

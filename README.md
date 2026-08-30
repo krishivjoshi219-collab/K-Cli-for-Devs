@@ -202,9 +202,12 @@ k-cli models list        # List verified online models
 k-cli models set-default claude-3-5-sonnet  # Pin default model
 k-cli models set-default auto               # Enable Adaptive Intent routing
 
-# Autonomous Workflows
+# Autonomous Workflows & Background Self-Healing
 k-cli strands "Fix authentication token expiry in auth_service.py"
 k-cli auto-heal crash_report.log
+k-cli daemon             # Autonomous background healing daemon (runs quietly, surfaces only on decisions)
+k-cli bedrock export     # Export Amazon Bedrock AgentCore OpenAPI Action Groups & SAM bundle
+k-cli bedrock deploy     # Deploy directly to Amazon Bedrock AgentCore
 k-cli immune src/engine.py
 k-cli conflict src/router.py
 k-cli devdocs search "FastAPI Depends OAuth2"

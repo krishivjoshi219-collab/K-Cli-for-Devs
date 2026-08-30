@@ -3125,6 +3125,77 @@ def chaos_cmd(
     immune_cmd(target_file=target_file, repo=repo, apply_patches=True, json_output=False)
 
 
+# =============================================================================
+# Amazon Bedrock AgentCore Deployment & Integration (`k-cli bedrock`)
+# =============================================================================
+bedrock_app = typer.Typer(name="bedrock", help="Deploy and manage Amazon Bedrock AgentCore for K-CLI Strands Agent.")
+
+
+@bedrock_app.command(name="export", help="Export Amazon Bedrock AgentCore OpenAPI schema and CloudFormation bundle.")
+def bedrock_export_cmd(
+    output_dir: str = typer.Option(".kcli/agent_core_bundle", "--output", "-o", help="Output directory for AgentCore bundle."),
+):
+    """Exports Bedrock AgentCore OpenAPI 3.0 schemas and CloudFormation SAM templates."""
+    from k_cli.agents.agent_core import BedrockAgentCoreEngine
+    engine = BedrockAgentCoreEngine()
+    bundle_path = engine.export_deployment_bundle(output_dir=output_dir)
+    console.print(Panel(
+        f"[bold green]✔ Amazon Bedrock AgentCore Bundle Exported[/bold green]\n\n"
+        f"• [cyan]Bundle Directory:[/cyan] {bundle_path}\n"
+        f"• [yellow]OpenAPI Action Group:[/yellow] {bundle_path / 'openapi_schema.json'}\n"
+        f"• [magenta]CloudFormation SAM Template:[/magenta] {bundle_path / 'template.yaml'}\n"
+        f"• [green]Agent Configuration:[/green] {bundle_path / 'agent_config.json'}\n\n"
+        f"[dim]Ready to deploy with AWS CLI or SAM: `sam deploy --guided`[/dim]",
+        title="⚡ Amazon Bedrock AgentCore",
+        border_style="green",
+    ))
+
+
+@bedrock_app.command(name="deploy", help="Deploy K-CLI Strands Agent to Amazon Bedrock AgentCore.")
+def bedrock_deploy_cmd():
+    """Deploys K-CLI Strands Agent directly to Amazon Bedrock."""
+    from k_cli.agents.agent_core import BedrockAgentCoreEngine
+    engine = BedrockAgentCoreEngine()
+    res = engine.deploy_to_bedrock()
+    console.print(Panel(
+        f"[bold green]✔ Amazon Bedrock AgentCore Deployment Status: {res['status']}[/bold green]\n\n"
+        f"• [cyan]Agent Name:[/cyan] {res['agent_name']}\n"
+        f"• [yellow]Foundation Model:[/yellow] {res['model_id']}\n"
+        f"• [magenta]AWS Region:[/magenta] {res['region']}\n"
+        f"• [white]Summary:[/white] {res['message']}\n",
+        title="⚡ Amazon Bedrock AgentCore Deployment",
+        border_style="cyan",
+    ))
+
+
+app.add_typer(bedrock_app, name="bedrock")
+
+
+# =============================================================================
+# Autonomous Background Healing Daemon (`k-cli daemon` / `k-cli watch`)
+# =============================================================================
+@app.command(name="daemon", help="Run K-CLI autonomous self-healing daemon in the background.")
+@app.command(name="watch", help="Continuously monitor repository and auto-heal broken builds in the background.")
+def daemon_cmd(
+    repo: str = typer.Option(".", "--repo", "-r", help="Repository directory to monitor."),
+    interval: float = typer.Option(10.0, "--interval", "-i", help="Poll interval in seconds."),
+):
+    """Runs autonomous developer daemon quietly in the background; surfaces only on critical decisions."""
+    from k_cli.agents.background_daemon import BackgroundHealerDaemon
+    import asyncio
+    console.print(f"[bold cyan]⚡ K-CLI Background Healer Daemon starting on '{repo}' (interval: {interval}s)...[/bold cyan]")
+    console.print("[dim]Runs quietly in the background and surfaces only when a decision is needed. Press Ctrl+C to stop.[/dim]\n")
+    
+    def on_decision(dec):
+        console.print(f"\n[bold green]🚨 [DAEMON NOTICE][/bold green] [yellow]{dec['summary']}[/yellow]")
+    
+    daemon = BackgroundHealerDaemon(workspace_dir=repo, poll_interval_seconds=interval, decision_callback=on_decision)
+    try:
+        asyncio.run(daemon.start())
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Daemon stopped by user.[/yellow]")
+
+
 def interactive_mode(model: str = "qwen2.5-coder:1.5b", mock: bool = False):
     """Interactive multi-turn prompt shell when typing 'k' without arguments."""
     if hasattr(console, "is_terminal") and console.is_terminal:

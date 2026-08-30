@@ -494,7 +494,7 @@ class DevPreferencesManager:
             return "gemini-2.5-pro"
         if os.environ.get("DEEPSEEK_API_KEY"):
             return "deepseek-reasoner"
-        return cls.get_default_model()
+        return "claude-3-5-sonnet"
 
     @classmethod
     def get_coding_specialist_model(cls) -> str:

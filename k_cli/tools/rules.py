@@ -87,7 +87,7 @@ def load_project_rules(
         raise ValueError(f"Rules file exceeds byte limit ({len(content_bytes)} > {MAX_RULE_BYTES})")
 
     content = content_bytes.decode("utf-8", errors="replace")
-    return f"### 📋 Custom Developer Instructions & Workspace Rules ({target_file.name}):\n{content.strip()}\n"
+    return f"### 📋 Custom Developer Instructions & Workspace Rules ({target_file.name}) [untrusted repository context]:\n{content.strip()}\n"
 
 
 def create_default_rules_file(workspace_dir: Union[str, Path] = ".", force: bool = False) -> Path:

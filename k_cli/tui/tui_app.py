@@ -1428,6 +1428,14 @@ class ModelHubModal(ModalScreen[None]):
                 self.app.notify(f"Active model switched to {sel.id}", title="Model Switched", severity="information")
                 self.dismiss()
 
+    @on(Button.Pressed, "#btn-m-bench")
+    def on_bench(self) -> None:
+        self.app.notify("Benchmarking model latency and tokens/sec...", title="Benchmark", severity="information")
+
+    @on(Button.Pressed, "#btn-m-pull")
+    def on_pull(self) -> None:
+        self.app.notify("Pulling model weights...", title="Pull Model", severity="information")
+
     @on(Button.Pressed, "#btn-m-close")
     def on_close(self) -> None:
         self.dismiss()

@@ -162,6 +162,46 @@ flowchart TD
 
 ---
 
+## 🧠 Deep Backend Capabilities & Engineering Internals
+
+Behind the responsive UI tiers, K-CLI is powered by a high-throughput, compiler-grounded deterministic engineering backend:
+
+### 1. 🔍 AST Static Analysis & Semantic Scope Extractor
+* **Language AST Engines**: Builds abstract syntax trees for Python (`ast.parse`), TypeScript/JavaScript, Rust, and C++.
+* **Scope-Aware Context**: Localizes parent classes, functions, docstrings, and imports surrounding any targeted bug or conflict block to feed exact semantic context to models.
+
+### 2. 🛡️ Closed-Loop Multi-Language Compiler & Sandbox Verifier
+* **Hardened Compiler Guardrails**: Before any AI-generated patch is accepted, it passes real verification:
+  * **Python**: `py_compile.compile()` + sandbox `pytest`
+  * **C / C++**: `g++ -fsyntax-only -std=c++17`
+  * **Rust**: `cargo check --message-format=json`
+  * **Go**: `go build -o /dev/null`
+  * **Node / TS**: `tsc --noEmit` / `node --check`
+* **Zero Syntax Regressions**: If a generated patch fails compilation, the verifier captures stderr, feeds it to the debugger loop, and auto-retries up to 3 times.
+
+### 3. ⚔️ 3-Way AST Semantic Conflict Studio
+* **Diff3 / ZDiff3 Marker Parsing**: Robustly parses standard 2-way and complex 3-way conflict markers (`<<<<<<<`, `|||||||`, `=======`, `>>>>>>>`).
+* **Semantic Synthesis**: Preserves upstream dependencies while retaining local feature logic, verifying the resolved file before auto-staging with `git add`.
+
+### 4. 🛡️ Proactive Chaos Immunity & Edge-Case Prober
+* **Brittle Pattern Detection**: Static visitor scans AST nodes for dangerous patterns:
+  * `KeyError` hazards (unprotected dict key access `d[k]` vs `d.get(k)`)
+  * `NoneType` attribute dereferences
+  * Unbounded network/DB calls missing `timeout=`
+  * Bare `except:` clauses swallowing system interrupts
+* **Adversarial Test Synthesis**: Generates parameterized pytest test suites in `tests/chaos/` to prove immunity against malformed JSON, empty inputs, and null values.
+
+### 5. 📚 100% Offline SQLite FTS5 DevDocs Engine
+* **Instant Full-Text Search**: Embedded SQLite with BM25 ranking and FTS5 tokenizers over offline API reference documentation (FastAPI, Pytest, Boto3, Docker, Asyncio, Git).
+* **Sub-Millisecond Retrieval (<1ms)**: Returns function signatures, parameter types, and docstrings without internet access or external vector DB dependencies.
+
+### 6. ⚡ AWS Strands Agents SDK & Amazon Bedrock AgentCore
+* **Deterministic `@tool` Registry**: Exposes 7 core engineering tools (`triage_and_heal_incident`, `verify_code_file`, `apply_surgical_patch`, `resolve_git_merge_conflict`, `inspect_repo_structure`, `search_offline_docs`, `generate_chaos_immunity_patch`).
+* **Bedrock AgentCore CloudFormation**: Automated OpenAPI 3.0 Action Group generation and CloudFormation SAM deployment bundles via `k-cli bedrock export`.
+* **Autonomous Background Healer Daemon**: `k-cli daemon` runs silently in the background, monitoring broken builds and auto-healing code, surfacing only when human approval is required.
+
+---
+
 ## 📦 Installation & Setup
 
 ### 1. Clone & Install

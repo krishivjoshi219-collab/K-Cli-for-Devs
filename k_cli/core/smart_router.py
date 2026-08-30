@@ -102,18 +102,20 @@ class SmartModelRouter:
         text = task_prompt.lower()
         score = 20  # base standard
 
+        words = set(re.findall(r"[\w-]+", text))
+
         # Complexity boosters
-        if any(w in text for w in ("architecture", "refactor", "security", "distributed", "concurrency", "lock-free", "ast", "compiler", "multi-thread")):
+        if any(w in text for w in ("architect", "architecture", "refactor", "security", "distributed", "consensus", "concurrency", "lock-free", "ast", "compiler", "multi-thread")):
             score += 45
         if any(w in text for w in ("red-team", "adversarial", "cryptographic", "memory leak", "race condition")):
             score += 30
         if context_length > 20000:
             score += 25
 
-        # Simplicity reducers
-        if any(w in text for w in ("typo", "docstring", "comment", "format", "rename", "add log", "hello", "hi", "hey")):
+        # Simplicity reducers (word boundary safe)
+        if any(w in words for w in ("typo", "docstring", "comment", "format", "rename", "hello", "hi", "hey")) or "add log" in text:
             score -= 30
-        if len(task_prompt.split()) < 8 and "fix" not in text:
+        if len(task_prompt.split()) < 8 and "fix" not in text and score <= 20:
             score -= 15
 
         score = max(0, min(100, score))

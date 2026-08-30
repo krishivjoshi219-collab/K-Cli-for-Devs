@@ -3196,6 +3196,19 @@ def daemon_cmd(
         console.print("\n[yellow]Daemon stopped by user.[/yellow]")
 
 
+# =============================================================================
+# Cinematic 5-Minute Interactive Demo & AI Voiceover (`k-cli demo`)
+# =============================================================================
+@app.command(name="demo", help="Run the cinematic 5-minute interactive demo with AI voiceover cues.")
+def demo_cmd(
+    speed: float = typer.Option(1.0, "--speed", "-s", help="Playback speed multiplier (e.g. 1.5 for fast demo)."),
+    act: Optional[int] = typer.Option(None, "--act", "-a", help="Run a specific act (1 to 5). If omitted, runs all 5 acts."),
+):
+    """Executes the ultra-cinematic 5-minute production demo with live agent telemetry."""
+    from k_cli.demo.demo_runner import start_cinematic_demo
+    start_cinematic_demo(speed=speed, act=act)
+
+
 def interactive_mode(model: str = "qwen2.5-coder:1.5b", mock: bool = False):
     """Interactive multi-turn prompt shell when typing 'k' without arguments."""
     if hasattr(console, "is_terminal") and console.is_terminal:

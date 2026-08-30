@@ -12,6 +12,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import difflib
+import functools
 import json
 import os
 import shlex
@@ -279,6 +280,7 @@ def _resolve_val(val, default):
     return val if val is not None else default
 
 
+@functools.lru_cache(maxsize=128)
 def get_persona_color(persona: str) -> str:
     """Returns Rich color string corresponding to persona string or Enum."""
     p_str = str(persona).upper().strip()

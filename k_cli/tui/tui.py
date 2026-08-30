@@ -13,6 +13,7 @@ Features:
 
 from __future__ import annotations
 
+import functools
 import os
 import sys
 import time
@@ -138,6 +139,7 @@ PERSONA_METADATA: Dict[str, Dict[str, str]] = {
 }
 
 
+@functools.lru_cache(maxsize=128)
 def get_persona_style(persona_name: str) -> Tuple[str, str, str]:
     """Returns (color, icon, description) for a given persona."""
     if not persona_name:

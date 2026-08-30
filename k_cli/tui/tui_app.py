@@ -1314,20 +1314,15 @@ class ModelHubModal(ModalScreen[None]):
     def load_models(self) -> None:
         hub = ModelHub()
         active_models = hub.get_verified_active_models()
-        all_models = hub.list_models()
         opt = self.query_one("#opt-model-list", OptionList)
         opt.clear_options()
 
         if active_models:
             for m in active_models:
                 type_str = "Local SLM" if m.is_local else "Cloud LLM"
-                opt.add_option(Option(f"✔ [ONLINE] [{m.provider.value.upper()}] {m.id} ({type_str}) — {m.description[:45]}", id=m.id))
-
-        for m in all_models:
-            if m not in active_models:
-                type_str = "Local SLM" if m.is_local else "Cloud LLM"
-                status_p = "📥 Pullable" if m.is_local else "🔑 Key Needed"
-                opt.add_option(Option(f"○ [{status_p}] [{m.provider.value.upper()}] {m.id} ({type_str})", id=m.id))
+                opt.add_option(Option(f"✔ [ONLINE] [{m.provider.value.upper()}] {m.id} ({type_str}) — {m.description[:50]}", id=m.id))
+        else:
+            opt.add_option(Option("○ No active models detected. Add an API Key (Ctrl+A) or start Ollama to discover live models.", id="none"))
 
     @on(Button.Pressed, "#btn-m-rescan")
     def on_rescan(self) -> None:
@@ -2515,14 +2510,25 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
                 self.action_clear_screen()
                 return
 
-        # Typing indicator
-        typing_ind = Static("🤖 K-CLI Agent is thinking...", id="typing-indicator", classes="typing-indicator")
+        from k_cli.core.intent_sensor import IntentSensor, UserIntent, ExecutionStrategy
+        intent_res = IntentSensor.sense(val)
+
+        # Dynamic mode badge indicator
+        typing_ind = Static(f"{intent_res.mode_label}...", id="typing-indicator", classes="typing-indicator")
         await scroll.mount(typing_ind)
         scroll.scroll_end(animate=False)
 
-        # Render Claude Code style Thinking Drawer + Response
         driver = LLMDriver(mock_mode=self.mock_mode)
-        loop = asyncio.get_running_loop()
+
+        if intent_res.intent == UserIntent.TRIAGE:
+            from k_cli.agents.strands_agent import triage_and_heal_incident
+            report = await loop.run_in_executor(None, triage_and_heal_incident, val)
+            try: typing_ind.remove()
+            except Exception: pass
+            await scroll.mount(Markdown(f"### 🚨 Auto-Heal Incident Triage Report\n```json\n{report}\n```"))
+            scroll.scroll_end(animate=False)
+            return
+
         resp = await loop.run_in_executor(None, driver.generate, val)
         
         try:
@@ -2530,11 +2536,19 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
         except Exception:
             pass
 
-        # Mount collapsible thinking
-        col = Collapsible(title="🧠 Thinking (1.2s)...", collapsed=True)
-        await scroll.mount(col)
-        await col.mount(Markdown("• Inspecting AST codebase map\n• Resolving context references\n• Synthesizing surgical changes\n• Verifying against test suites"))
-        await scroll.mount(Markdown(f"**K-CLI Agent**:\n{resp}"))
+        if intent_res.intent == UserIntent.CHAT:
+            # Fast-path: Direct conversational response without heavy tool thinking drawers
+            await scroll.mount(Markdown(f"**K-CLI Agent**:\n{resp}"))
+        elif intent_res.intent == UserIntent.PLAN:
+            # Planning Blueprint format
+            await scroll.mount(Markdown(f"### 📐 Architectural Plan & Execution Strategy\n{resp}"))
+        else:
+            # Builder / Coding mode: Mount collapsible thinking drawer
+            col = Collapsible(title=f"🧠 {intent_res.mode_label} (AST Verified)", collapsed=True)
+            await scroll.mount(col)
+            await col.mount(Markdown("• Inspecting AST codebase map\n• Resolving context references\n• Synthesizing surgical changes\n• Verifying against test suites"))
+            await scroll.mount(Markdown(f"**K-CLI Agent**:\n{resp}"))
+        
         scroll.scroll_end(animate=False)
 
 

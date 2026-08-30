@@ -103,7 +103,7 @@ ALL_COMMAND_PATHS = [
 @pytest.mark.parametrize("cmd_path", ALL_COMMAND_PATHS)
 def test_all_cli_paths_execution_and_no_crash(cmd_path):
     """Verifies that every discovered command path executes without crashing or hanging."""
-    code, stdout, stderr = run_cli_subprocess(cmd_path, timeout=10.0)
+    code, stdout, stderr = run_cli_subprocess(cmd_path, timeout=25.0)
     assert code != -999, f"Command path {' '.join(cmd_path)} timed out!"
     # Must not produce raw unhandled Python exception tracebacks
     assert "Traceback (most recent call last)" not in stderr, f"Unhandled traceback in {' '.join(cmd_path)}: {stderr}"

@@ -667,6 +667,83 @@ class ModelHub:
             except Exception:
                 pass
 
+        # 7. Anthropic Dynamic Models
+        anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+        if anthropic_key:
+            try:
+                req = urllib.request.Request(
+                    "https://api.anthropic.com/v1/models",
+                    headers={
+                        "x-api-key": anthropic_key,
+                        "anthropic-version": "2023-06-01",
+                        "User-Agent": "K-CLI",
+                    },
+                )
+                with urllib.request.urlopen(req, timeout=2.5) as resp:
+                    if resp.status == 200:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        for item in data.get("data", []):
+                            m_id = item.get("id", "")
+                            if m_id:
+                                spec = ModelSpec(
+                                    id=f"anthropic/{m_id}",
+                                    name=f"Anthropic: {m_id}",
+                                    provider=ModelProvider.ANTHROPIC,
+                                    env_var_key="ANTHROPIC_API_KEY",
+                                    description=item.get("display_name", f"Anthropic model {m_id}"),
+                                )
+                                self.registry[spec.id] = spec
+            except Exception:
+                for m_id in ("claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022"):
+                    spec = ModelSpec(
+                        id=f"anthropic/{m_id}",
+                        name=f"Anthropic: {m_id}",
+                        provider=ModelProvider.ANTHROPIC,
+                        env_var_key="ANTHROPIC_API_KEY",
+                        description=f"Anthropic state-of-the-art model {m_id}",
+                    )
+                    self.registry[spec.id] = spec
+
+        # 8. OpenRouter Dynamic Models
+        openrouter_key = os.environ.get("OPENROUTER_API_KEY")
+        if openrouter_key:
+            try:
+                req = urllib.request.Request(
+                    "https://openrouter.ai/api/v1/models",
+                    headers={"Authorization": f"Bearer {openrouter_key}", "User-Agent": "K-CLI"},
+                )
+                with urllib.request.urlopen(req, timeout=3.0) as resp:
+                    if resp.status == 200:
+                        data = json.loads(resp.read().decode("utf-8"))
+                        for item in data.get("data", [])[:20]:
+                            m_id = item.get("id", "")
+                            if m_id:
+                                spec = ModelSpec(
+                                    id=f"openrouter/{m_id}",
+                                    name=f"OpenRouter: {m_id}",
+                                    provider=ModelProvider.OPENROUTER,
+                                    base_url="https://openrouter.ai/api/v1",
+                                    env_var_key="OPENROUTER_API_KEY",
+                                    description=item.get("description", f"OpenRouter model {m_id}")[:60],
+                                )
+                                self.registry[spec.id] = spec
+            except Exception:
+                pass
+
+        # 9. AWS Bedrock Models
+        if os.environ.get("AWS_ACCESS_KEY_ID") or os.environ.get("BEDROCK_MODEL_ID"):
+            for m_id, label in [
+                ("anthropic.claude-3-5-sonnet-20241022-v2:0", "Bedrock Claude 3.5 Sonnet v2"),
+                ("amazon.nova-pro-v1:0", "Bedrock Amazon Nova Pro"),
+            ]:
+                spec = ModelSpec(
+                    id=m_id,
+                    name=f"AWS Bedrock: {label}",
+                    provider=ModelProvider.BEDROCK,
+                    description=f"AWS Bedrock Foundation Model {m_id}",
+                )
+                self.registry[spec.id] = spec
+
         return list(self.registry.values())
 
     def get_verified_active_models(self) -> List[ModelSpec]:

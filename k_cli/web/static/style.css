@@ -613,12 +613,33 @@ input[type="text"]:focus, textarea:focus, select:focus {
 
 .hidden { display: none !important; }
 .margin-top-md { margin-top: 1rem; }
+.margin-top-sm { margin-top: 0.5rem; }
+.gap-sm { gap: 0.5rem; }
+.text-xs { font-size: 0.72rem; }
 
 /* Text Utilities */
 .text-cyan { color: var(--primary-cyan); }
 .text-magenta { color: var(--accent-magenta); }
 .text-green { color: var(--accent-green); }
+.text-amber, .text-yellow { color: var(--accent-amber); }
 .text-dim { color: var(--text-muted); font-size: 0.85rem; }
+
+.btn-text {
+    background: transparent;
+    border: none;
+    color: var(--primary-cyan);
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+.btn-text:hover {
+    color: #fff;
+}
+
+.btn-group {
+    display: inline-flex;
+    gap: 0.4rem;
+}
 
 /* Footer */
 .footer-bar {

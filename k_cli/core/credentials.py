@@ -260,7 +260,8 @@ class CredentialsManager:
 
         if explicit_key_name:
             key_name = explicit_key_name.strip().upper()
-            provider_name = dict(SUPPORTED_KEYS).get(key_name, key_name)
+            provider_map = {k: label for k, label, _ in SUPPORTED_KEYS}
+            provider_name = provider_map.get(key_name, key_name)
         else:
             key_name, provider_name = detect_key_type(raw_key_val)
 

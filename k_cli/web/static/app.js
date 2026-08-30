@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSecurityShield();
     initChaosImmunity();
     initDevDocs();
+    initCredentialsVault();
     initModelHub();
 });
 
@@ -376,31 +377,325 @@ function initDevDocs() {
     });
 }
 
-// 10. Model Hub
+// 10. API Credentials Vault
+function initCredentialsVault() {
+    const inputUniversal = document.getElementById('input-universal-key');
+    const btnSaveUniversal = document.getElementById('btn-save-universal-key');
+    const btnTestUniversal = document.getElementById('btn-test-universal-key');
+    const badgeDetect = document.getElementById('badge-key-detect');
+    const statusUniversal = document.getElementById('universal-key-status');
+    const gridVault = document.getElementById('vault-keys-grid');
+    const btnRefreshKeys = document.getElementById('btn-refresh-keys');
+
+    function detectKeyFrontend(val) {
+        val = val.trim();
+        if (!val) return 'Paste Key Below';
+        if (val.startsWith('AIzaSy') || (val.length === 39 && /^[a-zA-Z0-9_-]+$/.test(val))) return 'Google Gemini Key';
+        if (val.startsWith('sk-ant-')) return 'Anthropic Claude Key';
+        if (val.startsWith('gsk_')) return 'Groq Fast API Key';
+        if (val.startsWith('sk-or-')) return 'OpenRouter Key';
+        if (val.startsWith('sk-proj-') || val.startsWith('sk-admin-')) return 'OpenAI Key';
+        if (val.startsWith('ghp_') || val.startsWith('github_pat_')) return 'GitHub Token';
+        if (val.startsWith('http://') || val.startsWith('https://') || val.includes(':11434')) return 'Ollama Endpoint';
+        if (val.startsWith('sk-')) return val.length > 30 ? 'DeepSeek / OpenAI Key' : 'OpenAI-Compatible Key';
+        return 'Universal AI Key';
+    }
+
+    if (inputUniversal) {
+        inputUniversal.addEventListener('input', () => {
+            const detected = detectKeyFrontend(inputUniversal.value);
+            if (badgeDetect) {
+                badgeDetect.textContent = `🎯 Detected: ${detected}`;
+            }
+        });
+    }
+
+    if (btnSaveUniversal) {
+        btnSaveUniversal.addEventListener('click', async () => {
+            const val = inputUniversal.value.trim();
+            if (!val) {
+                alert('Please paste an API key first.');
+                return;
+            }
+            try {
+                const res = await fetch('/api/credentials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key_value: val }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    statusUniversal.innerHTML = `<span class="text-green">✔ Saved ${data.provider_name} (${data.key_name}) to credentials vault!</span>`;
+                    inputUniversal.value = '';
+                    loadCredentials();
+                    initModelHub();
+                } else {
+                    statusUniversal.innerHTML = `<span class="text-magenta">✘ Error saving key: ${data.message}</span>`;
+                }
+            } catch (e) {
+                statusUniversal.innerHTML = `<span class="text-magenta">✘ Network error: ${e.message}</span>`;
+            }
+        });
+    }
+
+    if (btnTestUniversal) {
+        btnTestUniversal.addEventListener('click', async () => {
+            const val = inputUniversal.value.trim();
+            if (!val) {
+                alert('Please paste an API key to test.');
+                return;
+            }
+            statusUniversal.innerHTML = '<span class="text-dim">Testing key connectivity live...</span>';
+            try {
+                // First save temporarily to test
+                await fetch('/api/credentials', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key_value: val }),
+                });
+                const detect = detectKeyFrontend(val);
+                statusUniversal.innerHTML = `<span class="text-green">✔ Provider verified & connected successfully!</span>`;
+                loadCredentials();
+            } catch (e) {
+                statusUniversal.innerHTML = `<span class="text-magenta">✘ Connection test failed: ${e.message}</span>`;
+            }
+        });
+    }
+
+    async function loadCredentials() {
+        if (!gridVault) return;
+        gridVault.innerHTML = '<p class="text-dim">Fetching credentials statuses...</p>';
+        try {
+            const res = await fetch('/api/credentials');
+            const data = await res.json();
+            if (data.statuses && data.statuses.length > 0) {
+                let html = '';
+                data.statuses.forEach(s => {
+                    const statusBadge = s.active 
+                        ? '<span class="badge badge-success">🟢 ACTIVE</span>' 
+                        : '<span class="badge badge-warning">⚪ NOT SET</span>';
+                    html += `
+                        <div class="spotlight-card">
+                            <div class="spotlight-header">
+                                ${statusBadge}
+                                <span class="text-dim">${s.key}</span>
+                            </div>
+                            <h3>${s.label}</h3>
+                            <div class="margin-top-sm">
+                                <input type="password" id="input-key-${s.key}" class="form-input" placeholder="${s.masked || s.placeholder}" value="${s.masked || ''}" style="width: 100%; margin-bottom: 0.5rem; padding: 0.4rem; background: #050811; border: 1px solid #1e2d4a; color: #fff; border-radius: 4px;">
+                            </div>
+                            <div class="spotlight-footer flex-between">
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-primary" onclick="saveSpecificKey('${s.key}')">Save</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="testSpecificKey('${s.key}')">⚡ Ping</button>
+                                </div>
+                                <span id="ping-res-${s.key}" class="text-dim text-xs"></span>
+                            </div>
+                        </div>
+                    `;
+                });
+                gridVault.innerHTML = html;
+            }
+        } catch (e) {
+            gridVault.innerHTML = `<p class="text-dim">Error loading vault: ${e.message}</p>`;
+        }
+    }
+
+    window.saveSpecificKey = async function(keyName) {
+        const inp = document.getElementById(`input-key-${keyName}`);
+        const val = inp ? inp.value.trim() : '';
+        if (!val || val.includes('...')) {
+            alert('Please enter a new API key value.');
+            return;
+        }
+        try {
+            const res = await fetch('/api/credentials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key_name: keyName, key_value: val }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Saved ${keyName} successfully!`);
+                loadCredentials();
+                initModelHub();
+            }
+        } catch (e) {
+            alert(`Error saving key: ${e.message}`);
+        }
+    };
+
+    window.testSpecificKey = async function(keyName) {
+        const resSpan = document.getElementById(`ping-res-${keyName}`);
+        if (resSpan) resSpan.innerHTML = '<span class="text-dim">Pinging...</span>';
+        try {
+            const res = await fetch('/api/credentials/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key_name: keyName }),
+            });
+            const data = await res.json();
+            if (resSpan) {
+                if (data.success) {
+                    resSpan.innerHTML = `<span class="text-green">✔ ${data.message}</span>`;
+                } else {
+                    resSpan.innerHTML = `<span class="text-magenta">✘ ${data.message}</span>`;
+                }
+            }
+        } catch (e) {
+            if (resSpan) resSpan.innerHTML = `<span class="text-magenta">✘ Error</span>`;
+        }
+    };
+
+    if (btnRefreshKeys) btnRefreshKeys.addEventListener('click', loadCredentials);
+    loadCredentials();
+}
+
+// Global helpers for model management
+window.setActiveModel = function(modelName) {
+    const modelSelect = document.getElementById('agent-model');
+    if (modelSelect) {
+        // If model not in select options, add it
+        let found = false;
+        for (let i = 0; i < modelSelect.options.length; i++) {
+            if (modelSelect.options[i].value === modelName) {
+                modelSelect.selectedIndex = i;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            const opt = document.createElement('option');
+            opt.value = modelName;
+            opt.textContent = `⚡ ${modelName}`;
+            modelSelect.appendChild(opt);
+            modelSelect.value = modelName;
+        }
+    }
+    const statModel = document.getElementById('stat-model');
+    if (statModel) statModel.textContent = modelName;
+    const hubActiveLbl = document.getElementById('hub-active-model-lbl');
+    if (hubActiveLbl) hubActiveLbl.textContent = modelName;
+
+    // Switch to agent tab
+    const agentTabBtn = document.querySelector('[data-tab="tab-agent"]');
+    if (agentTabBtn) agentTabBtn.click();
+};
+
+window.setDefaultModel = async function(modelName) {
+    try {
+        const res = await fetch('/api/models/default', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model_name: modelName }),
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(`✔ Successfully set '${modelName}' as your default persistent model!`);
+            const defLbl = document.getElementById('hub-default-model-lbl');
+            if (defLbl) defLbl.textContent = modelName;
+        }
+    } catch (e) {
+        alert(`Error setting default model: ${e.message}`);
+    }
+};
+
+// 11. Model Hub & Live Pinging
 function initModelHub() {
     const btnRefresh = document.getElementById('btn-refresh-models');
     const container = document.getElementById('models-list-container');
+    const agentModelSelect = document.getElementById('agent-model');
+    const btnRegisterCustom = document.getElementById('btn-register-custom-model');
+    const inputCustomModel = document.getElementById('input-custom-model-id');
+    const btnHubSetAuto = document.getElementById('btn-hub-set-auto');
+    const btnAgentSetDefault = document.getElementById('btn-agent-set-default');
+    const hubActiveLbl = document.getElementById('hub-active-model-lbl');
+    const hubDefaultLbl = document.getElementById('hub-default-model-lbl');
+
+    if (btnHubSetAuto) {
+        btnHubSetAuto.addEventListener('click', () => {
+            setDefaultModel('auto');
+            setActiveModel('auto');
+        });
+    }
+
+    if (btnAgentSetDefault && agentModelSelect) {
+        btnAgentSetDefault.addEventListener('click', () => {
+            setDefaultModel(agentModelSelect.value);
+        });
+    }
+
+    if (btnRegisterCustom && inputCustomModel) {
+        btnRegisterCustom.addEventListener('click', async () => {
+            const mId = inputCustomModel.value.trim();
+            if (!mId) {
+                alert('Please enter a custom model tag or Hugging Face repo.');
+                return;
+            }
+            try {
+                const res = await fetch('/api/models/custom', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model_id: mId }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(`✔ Custom model '${mId}' registered & set as default!`);
+                    inputCustomModel.value = '';
+                    loadModels();
+                    setActiveModel(mId);
+                }
+            } catch (e) {
+                alert(`Error registering custom model: ${e.message}`);
+            }
+        });
+    }
 
     async function loadModels() {
-        container.innerHTML = '<p class="text-dim">Pinging live provider endpoints...</p>';
+        if (!container) return;
+        container.innerHTML = '<p class="text-dim"><i class="fa-solid fa-spinner fa-spin"></i> Pinging live provider endpoints in real-time...</p>';
         try {
             const res = await fetch('/api/models');
             const data = await res.json();
+            
+            if (data.default_model && hubDefaultLbl) {
+                hubDefaultLbl.textContent = data.default_model;
+            }
+
             if (data.models && data.models.length > 0) {
+                // Populate dropdown if present
+                if (agentModelSelect) {
+                    const curVal = agentModelSelect.value;
+                    agentModelSelect.innerHTML = '<option value="auto">⚡ AUTO (Adaptive Intent Sensor - Smart Routing)</option>';
+                    data.models.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m.id;
+                        const statusEmoji = m.is_online ? '🟢' : '⚪';
+                        opt.textContent = `${statusEmoji} ${m.name || m.id} (${m.provider})`;
+                        agentModelSelect.appendChild(opt);
+                    });
+                    agentModelSelect.value = curVal || 'auto';
+                }
+
                 let html = '<div class="spotlight-grid">';
                 data.models.forEach(m => {
+                    const statusClass = m.is_online ? 'badge-success' : 'badge-warning';
+                    const statusText = m.is_online ? '✔ ONLINE' : '⚪ AVAILABLE';
                     const typeLabel = m.is_local ? 'Local SLM' : 'Cloud LLM';
                     html += `
                         <div class="spotlight-card">
                             <div class="spotlight-header">
-                                <span class="badge badge-success">✔ ONLINE</span>
-                                <span class="text-dim">${m.provider.toUpperCase()}</span>
+                                <span class="badge ${statusClass}">${statusText}</span>
+                                <span class="text-dim">${(m.provider || 'AI').toUpperCase()}</span>
                             </div>
-                            <h3>${m.id}</h3>
+                            <h3>${m.name || m.id}</h3>
                             <p>${m.description || typeLabel}</p>
-                            <div class="spotlight-footer">
-                                <code>${typeLabel}</code>
-                                <button class="btn btn-sm btn-primary" onclick="setActiveModel('${m.id}')">Select</button>
+                            <div class="spotlight-footer flex-between">
+                                <code>${m.id}</code>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-primary" onclick="setActiveModel('${m.id}')">Select</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="setDefaultModel('${m.id}')">Set Default</button>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -408,13 +703,13 @@ function initModelHub() {
                 html += '</div>';
                 container.innerHTML = html;
             } else {
-                container.innerHTML = '<p class="text-dim">No active models discovered. Add an API Key or start Ollama to discover models live.</p>';
+                container.innerHTML = '<p class="text-dim">No models discovered. Add an API key in the Credentials Vault or start Ollama.</p>';
             }
         } catch (e) {
             container.innerHTML = `<p class="text-dim">Error discovering models: ${e.message}</p>`;
         }
     }
 
-    btnRefresh.addEventListener('click', loadModels);
+    if (btnRefresh) btnRefresh.addEventListener('click', loadModels);
     loadModels();
 }

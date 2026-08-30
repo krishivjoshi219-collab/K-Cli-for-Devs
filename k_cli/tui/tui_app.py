@@ -1902,11 +1902,15 @@ class KCliCyberWorkstation(App):
 
     /* Left Control Sidebar (Antigravity Navigator) */
     #sidebar-left {
-        width: 28;
+        width: 26;
         overflow-y: auto;
         background: #161b22;
         border-right: solid #30363d;
         padding: 1;
+    }
+
+    #sidebar-left.hide-pane {
+        display: none;
     }
 
     .sidebar-section-title {
@@ -1950,10 +1954,14 @@ class KCliCyberWorkstation(App):
 
     /* Right Auxiliary Inspector Drawer */
     #drawer-right {
-        width: 32;
+        width: 30;
         background: #161b22;
         border-left: solid #30363d;
         padding: 1;
+    }
+
+    #drawer-right.hide-pane {
+        display: none;
     }
 
     /* Bottom Action Chips Bar */
@@ -1962,6 +1970,7 @@ class KCliCyberWorkstation(App):
         background: #161b22;
         padding: 0 1;
         border-top: solid #30363d;
+        overflow-x: auto;
     }
 
     .chip-btn {
@@ -2105,10 +2114,45 @@ class KCliCyberWorkstation(App):
 
         yield Footer()
 
+    def on_resize(self, event: events.Resize) -> None:
+        self._apply_adaptive_viewport(event.size.width, event.size.height)
+
+    def _apply_adaptive_viewport(self, width: int, height: int) -> None:
+        try:
+            from k_cli.core.viewport_engine import ViewportEngine
+            geom = ViewportEngine.compute_geometry(width, height)
+            
+            try:
+                side = self.query_one("#sidebar-left", Vertical)
+                if geom.show_left_sidebar:
+                    side.remove_class("hide-pane")
+                    side.styles.width = geom.sidebar_width
+                else:
+                    side.add_class("hide-pane")
+            except Exception:
+                pass
+
+            try:
+                drawer = self.query_one("#drawer-right", VerticalScroll)
+                if geom.show_right_drawer:
+                    drawer.remove_class("hide-pane")
+                    drawer.styles.width = geom.drawer_width
+                else:
+                    drawer.add_class("hide-pane")
+            except Exception:
+                pass
+        except Exception:
+            pass
+
     def on_mount(self) -> None:
         if hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
             print("\033c", end="")
         
+        try:
+            self._apply_adaptive_viewport(self.size.width, self.size.height)
+        except Exception:
+            pass
+
         # Check if first-time onboarding or explicit welcome requested
         if self.show_welcome_on_start or (DevPreferencesManager.is_first_time_setup() and not self.mock_mode):
             self.action_open_welcome()

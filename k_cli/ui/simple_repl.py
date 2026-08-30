@@ -98,26 +98,37 @@ class SimpleCyberCLI:
         )
 
     def print_banner(self) -> None:
+        from k_cli.core.viewport_engine import ViewportEngine, ViewportMode
+        geom = ViewportEngine.compute_geometry()
         console.clear()
+
         banner_text = Text()
         banner_text.append("⚡ K-CLI FOR DEVS — STREAMLINED CYBER REPL\n", style="bold cyan")
-        banner_text.append("Project Bankai | Developer: Krishiv Joshi (@krishivjoshi)\n", style="dim")
+        if geom.mode != ViewportMode.COMPACT:
+            banner_text.append("Project Bankai | Developer: Krishiv Joshi (@krishivjoshi)\n", style="dim")
         banner_text.append(f"• Active Model: {self.model_name} (Adaptive Intent Active)\n", style="bold green")
         banner_text.append(f"• Persona: {self.persona}\n", style="magenta")
-        banner_text.append("• Mouse Navigation & Click Support: ENABLED\n", style="yellow")
-        banner_text.append("• Type any prompt or /help for slash commands. Press Ctrl+C or /exit to quit.", style="dim")
+        banner_text.append("• Mouse Click & Scroll: ENABLED\n", style="yellow")
+        banner_text.append("• Type any prompt or /help. Press Ctrl+C or /exit to quit.", style="dim")
 
         panel = Panel(
             banner_text,
             title="[bold cyan]K-CLI SIMPLE UI[/bold cyan]",
             border_style="cyan",
-            padding=(0, 2),
+            padding=(0, 1 if geom.mode == ViewportMode.COMPACT else 2),
+            width=min(geom.width, 100) if geom.mode != ViewportMode.COMPACT else None,
         )
         console.print(panel)
         console.print()
 
     def print_help(self) -> None:
-        table = Table(title="📖 K-CLI Simple REPL Slash Commands", border_style="cyan")
+        from k_cli.core.viewport_engine import ViewportEngine
+        geom = ViewportEngine.compute_geometry()
+        table = Table(
+            title="📖 K-CLI Simple REPL Slash Commands",
+            border_style="cyan",
+            width=min(geom.width, 90) if geom.width > 90 else None,
+        )
         table.add_column("Command", style="bold green")
         table.add_column("Description", style="white")
 

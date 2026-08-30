@@ -631,3 +631,77 @@ input[type="text"]:focus, textarea:focus, select:focus {
     font-size: 0.75rem;
     color: var(--text-muted);
 }
+
+/* =============================================================================
+   Auto-Adjusting Responsive Engine (Mobile, Tablet, Desktop, UltraWide 4K)
+   ============================================================================= */
+
+@media (max-width: 1024px) {
+    .main-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow-y: visible;
+    }
+
+    .app-layout {
+        height: auto;
+        min-height: 100vh;
+    }
+
+    .workspace-pane, .drawer-pane {
+        max-height: 550px;
+    }
+
+    .chips-carousel {
+        padding-bottom: 0.5rem;
+    }
+
+    .telemetry-cluster {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .header-bar {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: flex-start;
+        padding: 0.75rem 1rem;
+    }
+
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .main-grid {
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+
+    .chat-card {
+        max-height: 400px;
+    }
+
+    .prompt-input-wrapper {
+        flex-direction: column;
+    }
+
+    .btn-send {
+        width: 100%;
+    }
+
+    .footer-bar {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+}
+
+@media (min-width: 1920px) {
+    .main-grid {
+        max-width: 2200px;
+        margin: 0 auto;
+        width: 100%;
+    }
+}

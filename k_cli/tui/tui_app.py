@@ -2048,7 +2048,8 @@ class KCliCyberWorkstation(App):
 
     def on_mount(self) -> None:
         if hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
-            os.system("clear" if os.name == "posix" else "cls")
+            import subprocess
+            subprocess.run(["clear" if os.name == "posix" else "cls"], shell=False, check=False)
         
         # Check if first-time onboarding or explicit welcome requested
         if self.show_welcome_on_start or (DevPreferencesManager.is_first_time_setup() and not self.mock_mode):

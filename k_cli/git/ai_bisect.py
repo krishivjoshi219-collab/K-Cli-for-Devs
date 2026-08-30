@@ -127,9 +127,11 @@ class AIBisectEngine:
             current_msg = msg_res.stdout.strip()
 
             # Run verification test
+            import shlex
+            cmd_args = shlex.split(test_command) if isinstance(test_command, str) else test_command
             t_res = subprocess.run(
-                test_command,
-                shell=True,
+                cmd_args,
+                shell=False,
                 cwd=str(self.repo_path),
                 capture_output=True,
                 text=True,

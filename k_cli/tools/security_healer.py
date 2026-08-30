@@ -370,7 +370,7 @@ class SecurityHealer:
                     match = rule["pattern"].search(line)
                     if match:
                         matched_val = match.group(0)
-                        if any(ph in matched_val.lower() for ph in ("example", "your_key", "placeholder", "dummy")):
+                        if any(ph in matched_val.lower() for ph in ("example", "your_key", "placeholder", "dummy", "xxxx")):
                             continue
 
                         v_id = f"SEC-KEY-{vuln_counter:03d}"

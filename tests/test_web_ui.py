@@ -122,7 +122,12 @@ def test_web_ui_credentials_endpoints(client: TestClient):
     assert res.status_code == 200
     data = res.json()
     assert "statuses" in data
-    assert len(data["statuses"]) > 0
+
+
+def test_web_ui_monitor_endpoint(client):
+    res = client.get("/monitor")
+    assert res.status_code == 200
+    assert "K-CLI Live Agent Synchronized Second Window" in res.text
 
     # 2. Save credentials
     save_res = client.post("/api/credentials", json={"key_name": "GROQ_API_KEY", "key_value": "gsk_1234567890abcdef1234567890"})

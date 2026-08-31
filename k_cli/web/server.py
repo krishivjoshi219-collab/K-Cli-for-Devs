@@ -102,6 +102,36 @@ class CustomModelRequest(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Real-Time Agent Activity Broadcast Manager
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ActivityMonitorManager:
+    """Broadcaster for real-time dual-window agent execution tracking."""
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: Dict[str, Any]):
+        disconnected = []
+        for connection in list(self.active_connections):
+            try:
+                await connection.send_json(message)
+            except Exception:
+                disconnected.append(connection)
+        for conn in disconnected:
+            self.disconnect(conn)
+
+monitor_manager = ActivityMonitorManager()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # FastAPI App Factory
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -131,6 +161,24 @@ def create_app() -> FastAPI:
         if index_file.exists():
             return index_file.read_text(encoding="utf-8")
         return HTMLResponse("<html><body><h1>K-CLI Web UI</h1><p>Static index.html not found.</p></body></html>")
+
+    @app.get("/monitor", response_class=HTMLResponse)
+    async def get_monitor():
+        monitor_file = STATIC_DIR / "monitor.html"
+        if monitor_file.exists():
+            return monitor_file.read_text(encoding="utf-8")
+        return HTMLResponse("<html><body><h1>K-CLI Live Monitor</h1><p>Static monitor.html not found.</p></body></html>")
+
+    @app.websocket("/ws/monitor")
+    async def websocket_monitor(websocket: WebSocket):
+        await monitor_manager.connect(websocket)
+        try:
+            while True:
+                await websocket.receive_text()
+        except WebSocketDisconnect:
+            monitor_manager.disconnect(websocket)
+        except Exception:
+            monitor_manager.disconnect(websocket)
 
     @app.get("/api/status")
     async def get_status():
@@ -332,14 +380,17 @@ def create_app() -> FastAPI:
 
             model, route_reason = AdaptiveIntentRouter.resolve_model_for_prompt(prompt, raw_model)
 
-            await websocket.send_json({"type": "start", "prompt": prompt, "model": model, "route_reason": route_reason})
+            start_payload = {"type": "start", "prompt": prompt, "model": model, "route_reason": route_reason, "timestamp": time.time()}
+            await websocket.send_json(start_payload)
+            await monitor_manager.broadcast(start_payload)
 
             loop = asyncio.get_running_loop()
 
             def sync_stream_callback(current_persona, token: str):
                 p_str = current_persona.value if hasattr(current_persona, "value") else str(current_persona)
-                msg = {"type": "token", "persona": p_str, "token": token}
+                msg = {"type": "token", "persona": p_str, "token": token, "timestamp": time.time()}
                 asyncio.run_coroutine_threadsafe(websocket.send_json(msg), loop)
+                asyncio.run_coroutine_threadsafe(monitor_manager.broadcast(msg), loop)
 
             driver = LLMDriver(model_name=model, mock_mode=mock)
             verifier = Verifier()
@@ -355,18 +406,23 @@ def create_app() -> FastAPI:
                 ),
             )
 
-            await websocket.send_json({
+            comp_payload = {
                 "type": "complete",
                 "success": result.success,
                 "final_code": result.final_code,
                 "attempts": result.attempts,
                 "ram_usage_mb": round(result.ram_usage_mb, 2),
-            })
+                "timestamp": time.time(),
+            }
+            await websocket.send_json(comp_payload)
+            await monitor_manager.broadcast(comp_payload)
         except WebSocketDisconnect:
             pass
         except Exception as e:
             try:
-                await websocket.send_json({"type": "error", "message": str(e)})
+                err_payload = {"type": "error", "message": str(e), "timestamp": time.time()}
+                await websocket.send_json(err_payload)
+                await monitor_manager.broadcast(err_payload)
             except Exception:
                 pass
 

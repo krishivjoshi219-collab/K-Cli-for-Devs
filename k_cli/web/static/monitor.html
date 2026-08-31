@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-CLI Live Agent Activity Monitor | Dual-Window View</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            background-color: #030712;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 1rem;
+        }
+        .monitor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1.2rem;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            height: calc(100vh - 110px);
+        }
+        @media (max-width: 900px) {
+            .monitor-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .monitor-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .monitor-card-header {
+            padding: 0.8rem 1rem;
+            background: rgba(30, 41, 59, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .terminal-box {
+            flex: 1;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            overflow-y: auto;
+            color: #38bdf8;
+            background: #050811;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #4ade80;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #4ade80;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="monitor-header">
+        <div class="logo-group">
+            <h2 style="margin:0; font-size:1.1rem; color:#38bdf8;">
+                <i class="fa-solid fa-desktop text-cyan"></i> K-CLI Live Agent Synchronized Second Window
+            </h2>
+        </div>
+        <div class="status-badge" id="monitor-status">
+            <span class="pulse-dot"></span>
+            <span id="monitor-status-text">CONNECTED TO AGENT SWARM</span>
+        </div>
+    </header>
+
+    <div class="monitor-grid">
+        <!-- Pane 1: Token Stream -->
+        <div class="monitor-card">
+            <div class="monitor-card-header">
+                <span style="font-weight:600; font-size:0.9rem;"><i class="fa-solid fa-bolt text-cyan"></i> Live Thinking & Token Stream</span>
+                <span id="tok-stats" style="font-size:0.8rem; color:#94a3b8;">0 tokens</span>
+            </div>
+            <div class="terminal-box" id="token-stream-box">Waiting for agent execution...</div>
+        </div>
+
+        <!-- Pane 2: Telemetry & Compiler Events -->
+        <div class="monitor-card">
+            <div class="monitor-card-header">
+                <span style="font-weight:600; font-size:0.9rem;"><i class="fa-solid fa-microchip text-magenta"></i> Telemetry & AST Verification</span>
+                <span id="telemetry-stats" style="font-size:0.8rem; color:#94a3b8;">Idle</span>
+            </div>
+            <div class="terminal-box" id="telemetry-box" style="color:#a855f7;">[System] Monitor listener ready. Listening on /ws/monitor...</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tokenBox = document.getElementById('token-stream-box');
+            const telemetryBox = document.getElementById('telemetry-box');
+            const tokStats = document.getElementById('tok-stats');
+            const telemetryStats = document.getElementById('telemetry-stats');
+            const statusText = document.getElementById('monitor-status-text');
+
+            let tokenCount = 0;
+            let currentPrompt = "";
+
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}/ws/monitor`;
+
+            function connectWS() {
+                const ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    statusText.textContent = "CONNECTED TO AGENT SWARM";
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+
+                    if (data.type === 'start') {
+                        tokenCount = 0;
+                        currentPrompt = data.prompt;
+                        tokenBox.textContent = `[Task] ${data.prompt}\n[Model] ${data.model} (${data.route_reason || 'Auto'})\n\n`;
+                        telemetryBox.textContent = `[${new Date().toLocaleTimeString()}] ▶ EXECUTION STARTED\nPrompt: ${data.prompt}\nModel: ${data.model}\nRoute Reason: ${data.route_reason || 'Adaptive Intent'}\n`;
+                        telemetryStats.textContent = "EXECUTING";
+                    } else if (data.type === 'token') {
+                        tokenCount += 1;
+                        tokStats.textContent = `${tokenCount} tokens`;
+                        tokenBox.textContent += data.token;
+                        tokenBox.scrollTop = tokenBox.scrollHeight;
+                    } else if (data.type === 'complete') {
+                        telemetryBox.textContent += `\n[${new Date().toLocaleTimeString()}] ✔ COMPLETED SUCCESSFULLY\nAttempts: ${data.attempts}\nRAM RSS: ${data.ram_usage_mb} MB\n`;
+                        telemetryStats.textContent = "VERIFIED";
+                    } else if (data.type === 'error') {
+                        telemetryBox.textContent += `\n[${new Date().toLocaleTimeString()}] ✘ ERROR: ${data.message}\n`;
+                        telemetryStats.textContent = "ERROR";
+                    }
+                };
+
+                ws.onclose = () => {
+                    statusText.textContent = "DISCONNECTED - RETRYING...";
+                    setTimeout(connectWS, 3000);
+                };
+
+                ws.onerror = () => {
+                    statusText.textContent = "CONNECTION ERROR";
+                };
+            }
+
+            connectWS();
+        });
+    </script>
+</body>
+</html>

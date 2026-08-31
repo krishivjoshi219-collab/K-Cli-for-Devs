@@ -28,6 +28,40 @@
     --font-mono: 'Fira Code', monospace;
 }
 
+/* Responsive Cross-Device Media Queries */
+@media (max-width: 1024px) {
+    .main-container {
+        grid-template-columns: 220px 1fr !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-layout {
+        padding: 0.5rem !important;
+    }
+    .header-bar {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+    }
+    .system-status-pills {
+        flex-wrap: wrap !important;
+    }
+    .main-container {
+        grid-template-columns: 1fr !important;
+    }
+    .sidebar-nav {
+        display: flex !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        padding-bottom: 0.5rem !important;
+    }
+    .nav-item {
+        flex: 0 0 auto !important;
+    }
+}
+
 * {
     box-sizing: border-box;
     margin: 0;

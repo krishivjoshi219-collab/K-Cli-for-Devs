@@ -17,6 +17,7 @@ import json
 import os
 import shlex
 import sys
+import time
 from pathlib import Path
 
 # Ensure project root is in sys.path for direct CLI script execution
@@ -65,6 +66,10 @@ try:
     from k_cli.tools.security import scan_workspace
     from k_cli.tools.feature import inspect_feature
     from k_cli.tools.rules import load_project_rules
+    from k_cli.core.telemetry import TelemetryStore
+    from k_cli.core.run_history import RunHistoryStore
+    from k_cli.tools.plugin_registry import PluginRegistry
+    from k_cli.tools.workflow_templates import list_workflow_templates, get_workflow_template
     from k_cli.tui.tui import (
         StatusBar,
         LiveStreamRenderer,
@@ -171,6 +176,10 @@ except (ModuleNotFoundError, ImportError):
     from security import scan_workspace
     from k_cli.tools.feature import inspect_feature
     from k_cli.tools.rules import load_project_rules
+    from k_cli.core.telemetry import TelemetryStore
+    from k_cli.core.run_history import RunHistoryStore
+    from k_cli.tools.plugin_registry import PluginRegistry
+    from k_cli.tools.workflow_templates import list_workflow_templates, get_workflow_template
     from k_cli.tui.tui import (
         StatusBar,
         LiveStreamRenderer,
@@ -318,6 +327,25 @@ def compute_diff(initial_code: str, final_code: str) -> str:
     return "".join(diff_lines)
 
 
+def _track_command_telemetry(
+    command: str,
+    success: bool,
+    duration_ms: Optional[float] = None,
+    provider: Optional[str] = None,
+    model: Optional[str] = None,
+):
+    try:
+        TelemetryStore(Path.cwd()).record_event(
+            command=command,
+            success=success,
+            duration_ms=duration_ms,
+            provider=provider,
+            model=model,
+        )
+    except Exception:
+        pass
+
+
 def execute_run(
     prompt: str,
     language: str = "python",
@@ -355,6 +383,7 @@ def execute_run(
 
     if show_banner:
         print_banner()
+    started_at = time.perf_counter()
 
     driver = LLMDriver(
         model_name=model,
@@ -458,6 +487,21 @@ def execute_run(
         if save_to_path:
             save_to_path.write_text(result.final_code, encoding="utf-8")
             console.print(f"\n[bold blue]Saved verified code to:[/bold blue] {save_to_path.resolve()}")
+        duration_ms = (time.perf_counter() - started_at) * 1000.0
+        try:
+            RunHistoryStore(Path.cwd()).add_record(
+                prompt=prompt,
+                language=language,
+                model=model,
+                provider=provider,
+                success=True,
+                attempts=result.attempts,
+                duration_ms=duration_ms,
+                output=result.final_code,
+            )
+        except Exception:
+            pass
+        _track_command_telemetry(command="run", success=True, duration_ms=duration_ms, provider=provider, model=model)
 
     else:
         console.print(f"[bold red]✘ VERIFICATION FAILED AFTER RETRIES[/bold red] [dim](Line: {result.verification.line_number or 'Unknown'} | RAM: {result.ram_usage_mb:.2f} MB)[/dim]\n")
@@ -469,6 +513,21 @@ def execute_run(
         syntax = Syntax(result.final_code, language, theme="monokai", line_numbers=True)
         code_panel = Panel(syntax, title="Unverified Candidate Code", border_style="yellow")
         console.print(code_panel)
+        duration_ms = (time.perf_counter() - started_at) * 1000.0
+        try:
+            RunHistoryStore(Path.cwd()).add_record(
+                prompt=prompt,
+                language=language,
+                model=model,
+                provider=provider,
+                success=False,
+                attempts=result.attempts,
+                duration_ms=duration_ms,
+                output=result.final_code,
+            )
+        except Exception:
+            pass
+        _track_command_telemetry(command="run", success=False, duration_ms=duration_ms, provider=provider, model=model)
 
         raise typer.Exit(code=1)
 
@@ -746,6 +805,7 @@ def verify(
     test_code: Optional[str] = typer.Option(None, "--test-code", help="Inline test code string for pytest verification."),
     as_json: bool = typer.Option(False, "--json", help="Emit machine-readable verification results."),
 ):
+    started_at = time.perf_counter()
     if not as_json:
         print_banner()
 
@@ -757,6 +817,7 @@ def verify(
 
     if file_path_val is None and not code_val:
         console.print("[bold red]Error:[/bold red] Must specify a file path or code string to verify.")
+        _track_command_telemetry(command="verify", success=False, duration_ms=(time.perf_counter() - started_at) * 1000.0)
         raise typer.Exit(code=1)
 
     resolved_code = ""
@@ -767,6 +828,7 @@ def verify(
         fp = Path(file_path_val)
         if not fp.exists():
             console.print(f"[bold red]Error:[/bold red] File '{fp}' does not exist.")
+            _track_command_telemetry(command="verify", success=False, duration_ms=(time.perf_counter() - started_at) * 1000.0)
             raise typer.Exit(code=1)
         resolved_code = fp.read_text(encoding="utf-8")
         display_target = fp.name
@@ -792,15 +854,19 @@ def verify(
         payload["target"] = display_target
         console.print(json.dumps(payload, indent=2))
         if not result.success:
+            _track_command_telemetry(command="verify", success=False, duration_ms=(time.perf_counter() - started_at) * 1000.0)
             raise typer.Exit(code=1)
+        _track_command_telemetry(command="verify", success=True, duration_ms=(time.perf_counter() - started_at) * 1000.0)
         return
 
     if result.success:
         console.print(f"[bold green]✔ File '{display_target}' passed ground-truth {result.verification_type} verification![/bold green]")
+        _track_command_telemetry(command="verify", success=True, duration_ms=(time.perf_counter() - started_at) * 1000.0)
     else:
         console.print(f"[bold red]✘ File '{display_target}' failed verification at line {result.line_number or 'unknown'}.[/bold red]\n")
         err_trace = result.error_trace or "Verification failed."
         console.print(Panel(err_trace, title="Compiler / Verification Error Trace", border_style="red"))
+        _track_command_telemetry(command="verify", success=False, duration_ms=(time.perf_counter() - started_at) * 1000.0)
         raise typer.Exit(code=1)
 
 
@@ -2704,6 +2770,255 @@ def trending_cmd(
     console.print(table)
 
 
+@app.command(name="audit-aliases", help="Audit CLI command aliases and detect duplicate command registrations.")
+def audit_aliases_cmd(
+    as_json: bool = typer.Option(False, "--json", help="Emit machine-readable duplicate command data."),
+):
+    source_path = Path(__file__).resolve()
+    source = source_path.read_text(encoding="utf-8", errors="replace")
+    import re
+    from collections import Counter
+
+    names = re.findall(r'@app\\.command\\(name="([^"]+)"', source)
+    counts = Counter(names)
+    duplicates = [{"command": name, "count": count} for name, count in counts.items() if count > 1]
+    duplicates.sort(key=lambda item: (item["command"], item["count"]))
+    is_clean = len(duplicates) == 0
+
+    if as_json:
+        payload = {
+            "source": str(source_path),
+            "duplicate_commands": duplicates,
+            "clean": is_clean,
+        }
+        console.print(json.dumps(payload, indent=2))
+        if not is_clean:
+            raise typer.Exit(code=1)
+        return
+
+    if is_clean:
+        console.print("[bold green]✔ No duplicate @app.command registrations detected.[/bold green]")
+    else:
+        table = Table(title="Duplicate CLI Command Registrations", box=None)
+        table.add_column("Command", style="cyan")
+        table.add_column("Count", style="bold red")
+        for item in duplicates:
+            table.add_row(item["command"], str(item["count"]))
+        console.print(table)
+        raise typer.Exit(code=1)
+
+
+telemetry_app = typer.Typer(name="telemetry", help="Persistent command telemetry and observability summaries.")
+
+
+@telemetry_app.command(name="summary", help="Show telemetry aggregate metrics.")
+def telemetry_summary(
+    limit: int = typer.Option(2000, "--limit", "-n", help="Maximum recent events to include."),
+    as_json: bool = typer.Option(False, "--json", help="Emit machine-readable summary."),
+):
+    summary = TelemetryStore(Path.cwd()).summarize(limit=limit)
+    _track_command_telemetry(command="telemetry summary", success=True)
+    if as_json:
+        console.print(json.dumps(summary.to_dict(), indent=2))
+        return
+    table = Table(title="K-CLI Observability Summary", box=None)
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="bold white")
+    table.add_row("Total Events", str(summary.total_events))
+    table.add_row("Success Count", str(summary.success_count))
+    table.add_row("Failure Count", str(summary.failure_count))
+    table.add_row("Avg Duration", f"{summary.avg_duration_ms:.2f} ms")
+    table.add_row("P95 Duration", f"{summary.p95_duration_ms:.2f} ms")
+    table.add_row("Events (last 24h)", str(summary.events_last_24h))
+    console.print(table)
+    if summary.top_commands:
+        cmd_table = Table(title="Top Commands", box=None)
+        cmd_table.add_column("Command", style="magenta")
+        cmd_table.add_column("Count", style="bold green")
+        for row in summary.top_commands:
+            cmd_table.add_row(str(row["command"]), str(row["count"]))
+        console.print(cmd_table)
+    if summary.top_models:
+        model_table = Table(title="Top Models", box=None)
+        model_table.add_column("Model", style="yellow")
+        model_table.add_column("Count", style="bold green")
+        for row in summary.top_models:
+            model_table.add_row(str(row["model"]), str(row["count"]))
+        console.print(model_table)
+
+
+history_app = typer.Typer(name="history", help="Persistent run history listing and replay.")
+
+
+@history_app.command(name="list", help="List recent run records.")
+def history_list(
+    limit: int = typer.Option(10, "--limit", "-n", help="How many recent runs to show."),
+    as_json: bool = typer.Option(False, "--json", help="Emit machine-readable history."),
+):
+    records = RunHistoryStore(Path.cwd()).list_recent(limit=limit)
+    _track_command_telemetry(command="history list", success=True)
+    if as_json:
+        console.print(json.dumps([r.to_dict() for r in records], indent=2))
+        return
+    if not records:
+        console.print("[yellow]No run history found yet. Execute `k-cli run ...` first.[/yellow]")
+        return
+    table = Table(title="K-CLI Run History", box=None)
+    table.add_column("Run ID", style="cyan")
+    table.add_column("Status", style="bold")
+    table.add_column("Attempts", style="magenta")
+    table.add_column("Duration", style="yellow")
+    table.add_column("Model", style="green")
+    table.add_column("Prompt", style="white")
+    for rec in records:
+        status = "[green]PASS[/green]" if rec.success else "[red]FAIL[/red]"
+        table.add_row(rec.run_id, status, str(rec.attempts), f"{rec.duration_ms:.0f} ms", rec.model, rec.prompt[:50])
+    console.print(table)
+
+
+@history_app.command(name="replay", help="Replay a historical run output by run ID.")
+def history_replay(
+    run_id: str = typer.Argument(..., help="Run ID from `k-cli history list`."),
+    as_json: bool = typer.Option(False, "--json", help="Emit machine-readable replay payload."),
+):
+    rec = RunHistoryStore(Path.cwd()).get_record(run_id=run_id)
+    if rec is None:
+        console.print(f"[bold red]Run ID not found:[/bold red] {run_id}")
+        _track_command_telemetry(command="history replay", success=False)
+        raise typer.Exit(code=1)
+    _track_command_telemetry(command="history replay", success=True, model=rec.model, provider=rec.provider)
+    if as_json:
+        console.print(json.dumps(rec.to_dict(), indent=2))
+        return
+    status = "VERIFIED" if rec.success else "FAILED"
+    console.print(
+        Panel(
+            f"[bold cyan]Run ID:[/bold cyan] {rec.run_id}\n"
+            f"[bold cyan]Timestamp:[/bold cyan] {rec.timestamp}\n"
+            f"[bold cyan]Status:[/bold cyan] {status}\n"
+            f"[bold cyan]Model:[/bold cyan] {rec.model}\n"
+            f"[bold cyan]Attempts:[/bold cyan] {rec.attempts}\n"
+            f"[bold cyan]Duration:[/bold cyan] {rec.duration_ms:.0f} ms\n"
+            f"[bold cyan]Prompt:[/bold cyan] {rec.prompt}",
+            title="Run Replay Metadata",
+            border_style="cyan",
+        )
+    )
+    console.print(Panel(Syntax(rec.output, rec.language, theme="monokai", line_numbers=True), title="Replay Output", border_style="green" if rec.success else "yellow"))
+
+
+plugins_app = typer.Typer(name="plugins", help="Register and manage workspace plugin commands.")
+
+
+@plugins_app.command(name="list", help="List registered plugins.")
+def plugins_list(
+    as_json: bool = typer.Option(False, "--json", help="Emit machine-readable plugin list."),
+):
+    registry = PluginRegistry(Path.cwd())
+    plugins = registry.list_plugins()
+    _track_command_telemetry(command="plugins list", success=True)
+    if as_json:
+        console.print(json.dumps([p.to_dict() for p in plugins], indent=2))
+        return
+    if not plugins:
+        console.print("[yellow]No plugins registered yet. Use `k-cli plugins add` to register one.[/yellow]")
+        return
+    table = Table(title="K-CLI Plugin Registry", box=None)
+    table.add_column("Name", style="cyan")
+    table.add_column("Command", style="bold white")
+    table.add_column("Description", style="magenta")
+    for plugin in plugins:
+        table.add_row(plugin.name, plugin.command, plugin.description)
+    console.print(table)
+
+
+@plugins_app.command(name="add", help="Register a plugin command.")
+def plugins_add(
+    name: str = typer.Argument(..., help="Unique plugin name."),
+    command: str = typer.Argument(..., help="Shell command to execute for this plugin."),
+    description: str = typer.Option("", "--description", "-d", help="Optional plugin description."),
+):
+    try:
+        plugin = PluginRegistry(Path.cwd()).add_plugin(name=name, command=command, description=description)
+    except ValueError as exc:
+        console.print(f"[bold red]{exc}[/bold red]")
+        _track_command_telemetry(command="plugins add", success=False)
+        raise typer.Exit(code=1)
+    _track_command_telemetry(command="plugins add", success=True)
+    console.print(f"[bold green]✔ Plugin registered:[/bold green] {plugin.name}")
+
+
+@plugins_app.command(name="remove", help="Remove a registered plugin.")
+def plugins_remove(
+    name: str = typer.Argument(..., help="Plugin name to remove."),
+):
+    removed = PluginRegistry(Path.cwd()).remove_plugin(name=name)
+    if not removed:
+        console.print(f"[yellow]Plugin not found:[/yellow] {name}")
+        _track_command_telemetry(command="plugins remove", success=False)
+        raise typer.Exit(code=1)
+    _track_command_telemetry(command="plugins remove", success=True)
+    console.print(f"[bold green]✔ Plugin removed:[/bold green] {name}")
+
+
+@plugins_app.command(name="show", help="Show one plugin's command and metadata.")
+def plugins_show(
+    name: str = typer.Argument(..., help="Plugin name."),
+    as_json: bool = typer.Option(False, "--json", help="Emit machine-readable plugin data."),
+):
+    plugin = PluginRegistry(Path.cwd()).get_plugin(name=name)
+    if plugin is None:
+        console.print(f"[bold red]Plugin not found:[/bold red] {name}")
+        _track_command_telemetry(command="plugins show", success=False)
+        raise typer.Exit(code=1)
+    _track_command_telemetry(command="plugins show", success=True)
+    if as_json:
+        console.print(json.dumps(plugin.to_dict(), indent=2))
+        return
+    console.print(Panel(f"[bold cyan]Name:[/bold cyan] {plugin.name}\n[bold cyan]Command:[/bold cyan] {plugin.command}\n[bold cyan]Description:[/bold cyan] {plugin.description}", title="Plugin Spec", border_style="cyan"))
+
+
+workflow_app = typer.Typer(name="workflow", help="List and inspect built-in workflow templates.")
+
+
+@workflow_app.command(name="list", help="List available workflow templates.")
+def workflow_list(
+    as_json: bool = typer.Option(False, "--json", help="Emit machine-readable template list."),
+):
+    templates = list_workflow_templates()
+    _track_command_telemetry(command="workflow list", success=True)
+    if as_json:
+        console.print(json.dumps([tpl.to_dict() for tpl in templates], indent=2))
+        return
+    table = Table(title="K-CLI Workflow Templates", box=None)
+    table.add_column("Template", style="cyan")
+    table.add_column("Description", style="bold white")
+    table.add_column("Steps", style="magenta")
+    for tpl in templates:
+        table.add_row(tpl.name, tpl.description, str(len(tpl.steps)))
+    console.print(table)
+
+
+@workflow_app.command(name="show", help="Show detailed steps for a workflow template.")
+def workflow_show(
+    name: str = typer.Argument(..., help="Template name (ci-triage, release-prep, incident-response)."),
+    as_json: bool = typer.Option(False, "--json", help="Emit machine-readable workflow details."),
+):
+    template = get_workflow_template(name)
+    if template is None:
+        console.print(f"[bold red]Unknown workflow template:[/bold red] {name}")
+        _track_command_telemetry(command="workflow show", success=False)
+        raise typer.Exit(code=1)
+    _track_command_telemetry(command="workflow show", success=True)
+    if as_json:
+        console.print(json.dumps(template.to_dict(), indent=2))
+        return
+    lines = [f"[bold cyan]{template.name}[/bold cyan]", f"[dim]{template.description}[/dim]", ""]
+    for idx, step in enumerate(template.steps, start=1):
+        lines.append(f"{idx}. {step}")
+    console.print(Panel("\n".join(lines), title="Workflow Template", border_style="green"))
+
+
 rules_app = typer.Typer(name="rules", help="Manage custom developer instructions & workspace rules (.kclirules).")
 
 
@@ -2745,6 +3060,10 @@ app.add_typer(mcp_app, name="mcp")
 app.add_typer(dedup_app, name="dedup")
 app.add_typer(security_app, name="security")
 app.add_typer(models_app, name="models")
+app.add_typer(telemetry_app, name="telemetry")
+app.add_typer(history_app, name="history")
+app.add_typer(plugins_app, name="plugins")
+app.add_typer(workflow_app, name="workflow")
 app.add_typer(rules_app, name="rules")
 app.add_typer(gh_app, name="gh")
 app.add_typer(issue_app, name="issue")

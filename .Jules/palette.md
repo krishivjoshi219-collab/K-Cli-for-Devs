@@ -1,3 +1,0 @@
-## 2024-05-17 - Keyboard Accessibility & Screen Reader Labeling
-**Learning:** Found that custom UI components (like the custom search box and the offline mock mode checkbox in K-CLI Web UI) often lack accessible labels out of the box because of visually adjacent explanatory text that screen readers don't natively associate with inputs without `aria-label` or `for` mapping. The interface also lacked visible focus rings, making keyboard navigation nearly impossible to visually trace.
-**Action:** Always ensure `:focus-visible` styles are globally defined for interactive primitives (buttons, inputs, selects, custom nav buttons). Specifically added `aria-label`s to custom check/search boxes without standard labels.

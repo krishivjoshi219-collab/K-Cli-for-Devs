@@ -160,6 +160,15 @@ k-cli daemon             # Autonomous background healing daemon
 k-cli bedrock export     # Export Amazon Bedrock AgentCore OpenAPI Action Groups & SAM bundle
 k-cli bedrock deploy     # Deploy directly to Amazon Bedrock AgentCore
 k-cli immune src/engine.py
+
+# New Ops & Extensibility Commands
+k-cli telemetry summary  # Command reliability + latency observability
+k-cli history list       # Persistent run history
+k-cli history replay <run_id>
+k-cli plugins add mylint "python -m pytest -q" --description "Quick checks"
+k-cli workflow list      # Built-in CI/release/incident playbooks
+k-cli workflow show ci-triage
+k-cli audit-aliases      # Detect duplicate/root command dead-ends
 ```
 
 ---

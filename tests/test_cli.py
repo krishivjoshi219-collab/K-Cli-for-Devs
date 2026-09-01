@@ -383,3 +383,53 @@ def test_cli_daemon_command_points_to_background_healer():
     result = runner.invoke(app, ["daemon", "--help"])
     assert result.exit_code == 0
     assert "autonomous self-healing daemon" in result.output.lower()
+
+
+def test_cli_audit_aliases_reports_clean_registry():
+    result = runner.invoke(app, ["audit-aliases", "--json"])
+    assert result.exit_code == 0
+    assert '"clean": true' in result.output
+
+
+def test_cli_workflow_templates_list_and_show():
+    listed = runner.invoke(app, ["workflow", "list"])
+    assert listed.exit_code == 0
+    assert "ci-triage" in listed.output
+
+    shown = runner.invoke(app, ["workflow", "show", "release-prep"])
+    assert shown.exit_code == 0
+    assert "release-prep" in shown.output
+
+
+def test_cli_plugins_registry_crud(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
+    added = runner.invoke(app, ["plugins", "add", "lint-fast", "python -m pytest -q", "--description", "Run quick tests"])
+    assert added.exit_code == 0
+    assert "Plugin registered" in added.output
+
+    listed = runner.invoke(app, ["plugins", "list", "--json"])
+    assert listed.exit_code == 0
+    assert "lint-fast" in listed.output
+
+    shown = runner.invoke(app, ["plugins", "show", "lint-fast"])
+    assert shown.exit_code == 0
+    assert "python -m pytest -q" in shown.output
+
+    removed = runner.invoke(app, ["plugins", "remove", "lint-fast"])
+    assert removed.exit_code == 0
+    assert "Plugin removed" in removed.output
+
+
+def test_cli_history_and_telemetry_capture_run(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["run", "Write a tiny helper", "--mock"])
+    assert result.exit_code == 0
+
+    history = runner.invoke(app, ["history", "list", "--json"])
+    assert history.exit_code == 0
+    assert '"run_id"' in history.output
+
+    telemetry = runner.invoke(app, ["telemetry", "summary", "--json"])
+    assert telemetry.exit_code == 0
+    assert '"total_events"' in telemetry.output

@@ -3175,7 +3175,6 @@ app.add_typer(bedrock_app, name="bedrock")
 # Autonomous Background Healing Daemon (`k-cli daemon` / `k-cli watch`)
 # =============================================================================
 @app.command(name="daemon", help="Run K-CLI autonomous self-healing daemon in the background.")
-@app.command(name="watch", help="Continuously monitor repository and auto-heal broken builds in the background.")
 def daemon_cmd(
     repo: str = typer.Option(".", "--repo", "-r", help="Repository directory to monitor."),
     interval: float = typer.Option(10.0, "--interval", "-i", help="Poll interval in seconds."),

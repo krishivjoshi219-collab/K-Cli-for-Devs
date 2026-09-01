@@ -337,6 +337,6 @@ def test_chaos_cli_bedrock_deploy_cmd_case_64_unchecked_dict_subscript():
     assert True, 'Passed UNCHECKED_DICT_SUBSCRIPT edge case check'
 
 def test_chaos_cli_on_decision_case_65_unchecked_dict_subscript():
-    '''Chaos Test: Probes UNCHECKED_DICT_SUBSCRIPT at line 3190.'''
+    '''Chaos Test: Probes UNCHECKED_DICT_SUBSCRIPT at line 3189.'''
     # Simulating boundary conditions: None, missing keys, timeout constraints
     assert True, 'Passed UNCHECKED_DICT_SUBSCRIPT edge case check'

@@ -370,3 +370,16 @@ def test_cli_ui_and_tui_command_help():
     assert res_tui.exit_code == 0
     assert "Textual" in res_tui.output
 
+
+def test_cli_watch_command_points_to_pr_watcher():
+    """Verify watch command remains bound to PR watcher feature."""
+    result = runner.invoke(app, ["watch", "--help"])
+    assert result.exit_code == 0
+    assert "PR Review & Watcher Daemon" in result.output
+
+
+def test_cli_daemon_command_points_to_background_healer():
+    """Verify daemon command remains bound to background healing daemon."""
+    result = runner.invoke(app, ["daemon", "--help"])
+    assert result.exit_code == 0
+    assert "autonomous self-healing daemon" in result.output.lower()

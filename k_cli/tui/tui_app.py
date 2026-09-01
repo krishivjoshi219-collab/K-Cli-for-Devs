@@ -2155,7 +2155,7 @@ class KCliCyberWorkstation(App):
     def on_mount(self) -> None:
         if hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
             print("\033c", end="")
-        
+
         try:
             self._apply_adaptive_viewport(self.size.width, self.size.height)
         except Exception:

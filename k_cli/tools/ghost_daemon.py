@@ -94,8 +94,10 @@ class GhostTerminalDaemon:
         """
         Runs the command in a subprocess, monitors output, and prompts when an error occurs.
         """
+        import shlex
+        cmd_args = shlex.split(command_str) if isinstance(command_str, str) else command_str
         proc = subprocess.Popen(
-            shlex.split(command_str),
+            cmd_args,
             shell=False,
             cwd=str(self.repo_path),
             stdout=subprocess.PIPE,

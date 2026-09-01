@@ -374,6 +374,18 @@ class LLMDriver:
         Local (Ollama -> llama.cpp -> Native GGUF) -> Cloud (Gemini -> Anthropic -> OpenAI / DeepSeek / OpenRouter) -> Mock.
         Supports full streaming token callbacks and robust error handling.
         """
+        # Inject custom developer instructions & workspace rules if present
+        try:
+            from k_cli.tools.rules import load_project_rules
+            rules_ctx = load_project_rules(".")
+            if rules_ctx:
+                if system_prompt:
+                    system_prompt = f"{rules_ctx}\n\n{system_prompt}"
+                else:
+                    system_prompt = rules_ctx
+        except Exception:
+            pass
+
         if self.mock_mode:
             self._last_used_provider = "mock"
             return self._mock_generate(prompt, system_prompt, stream_callback=stream_callback)

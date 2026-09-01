@@ -1,28 +1,52 @@
-# ⚡ K-CLI for Devs: Autonomous Self-Healing DevOps Agent
-### Built for the AWS *Agents for Humans* Hackathon — Professional Agents Track
+# ⚡ K-CLI for Devs: Autonomous Cyber Workstation & Self-Healing Agent
+### Engineered by Krishiv Joshi ([@krishivjoshi](https://github.com/krishivjoshi219-collab)) | AWS Builder ID: `krishivjoshi219-collab`
+### Built for the [AWS *Agents for Humans* Hackathon](https://agentsforhumans.devpost.com/) - Professional Agents Track
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-brightgreen.svg)](https://python.org)
 [![AWS Strands Agents](https://img.shields.io/badge/AWS-Strands%20Agents%20SDK-orange.svg)](https://strandsagents.com)
 [![Amazon Bedrock Ready](https://img.shields.io/badge/Amazon-Bedrock-purple.svg)](https://aws.amazon.com/bedrock/)
 
-> **An autonomous, self-healing developer and SRE agent built with the AWS Strands Agents SDK. It ingests runtime crashes, broken CI/CD pipelines, and merge conflicts, diagnoses root causes with AST precision, and executes verified surgical fixes end-to-end.**
+> **The next-generation autonomous developer workstation that unites 3 unified UI tiers, zero-latency intent sensing, compiler-grounded AST verification, custom frontier models, and multi-model consensus swarms into a single sovereign CLI.**
 
 ---
 
-## 🎯 The Pitch (Agents for Humans Hackathon)
+## 🎯 What it is, Who it's for, and Why it matters
 
 ### 1. The Problem We're Solving
-Modern software engineering teams waste countless hours triaging obscure CI/CD failures, parsing multi-language crash logs, and manually fixing merge conflicts. Traditional AI assistants only "chat" about bugs or generate unverified code snippets that hallucinate imports and introduce new regressions.
+Every day, developers and SREs lose hours to repetitive, high-friction busywork:
+* Parsing cryptic multi-hundred-line stack traces across different runtimes (Python, Node, Rust, Docker, GitHub Actions).
+* Triaging failing CI/CD pipelines caused by subtle environment shifts or dependency conflicts.
+* Manually resolving 3-way Git merge conflicts where AST semantic context is lost.
+* Endlessly bouncing between the terminal, browser tabs, Jira, and GitHub.
 
-### 2. Who It's For
-* **Software Engineers & SREs**: Who want instant, automated root-cause diagnosis and verified fixes for build failures.
-* **DevOps Teams**: Automating CI/CD incident healing for GitHub Actions, Docker containers, and test suites.
-* **Open Source Maintainers**: Resolving complex 3-way Git merge conflicts and regressions autonomously.
+### 2. Who It's For (Professional Agents Track)
+* **Software Engineers, SREs, and DevOps Maintainers**: Who want an autonomous assistant that triages broken builds and repairs code with closed-loop compiler proof.
+* **Makers, Creators, and Open-Source Contributors**: Who need high-velocity engineering workflows to focus on architectural decisions rather than routine triage chores.
 
 ### 3. Why It Matters
-**K-CLI for Devs does real work end-to-end, not just conversational advice.** 
-Powered by the **AWS Strands Agents SDK**, it autonomously connects model reasoning (via Amazon Bedrock, Claude, Gemini, or local models) to heavy-duty deterministic engines. It enforces a strict **closed-loop ground-truth verification rule**: code is never committed until local compilers and test suites prove it works.
+Instead of another chat app, **K-CLI does real work end-to-end**.
+Powered by the **AWS Strands Agents SDK** and **Amazon Bedrock AgentCore**, K-CLI operates as an autonomous background engineer. It runs silently, continuously monitors repository health, synthesizes verified fixes, and **only surfaces when a critical architectural decision or developer sign-off is needed**. Deploying with Bedrock AgentCore ensures a smart architectural choice that is production-ready.
+
+---
+
+## 🌟 13 Production-Grade Killer Features
+
+K-CLI ships with an unparalleled suite of agentic capabilities:
+
+1. **`k-cli watch`**: Autonomous PR Review & Watcher Daemon that reviews, comments, and auto-merges pull requests.
+2. **`k-cli bisect`**: AI-Powered Git Bisect & Regression Hunter to find exactly which commit broke your test suite.
+3. **`k-cli route`**: Cost & Latency Smart Model Router dynamically routing tasks to the most cost-effective and capable models.
+4. **`k-cli garden`**: Nightly Autonomous Repo Maintenance & Health Sweep to clean up dead code and optimize dependencies.
+5. **`k-cli explain`**: Codebase Natural Language Search & Semantic Q&A to understand large architectures instantly.
+6. **`k-cli ghost`**: Ghost Terminal Autopilot & Error Healer wrapping any command (e.g. `pytest`) to auto-fix errors on the fly.
+7. **`k-cli swarm`**: Adversarial Red Team / Blue Team Consensus Loop to generate hyper-robust implementations.
+8. **`k-cli synapse`**: AST Neural Code Graph & Context Compressor extracting minimal subgraphs for context-aware generation.
+9. **`k-cli airgap`**: Sovereign Air-Gapped Offline Engine functioning entirely offline using local SLMs.
+10. **`k-cli scaffold`**: Natural Language Full-Stack Scaffolder building entire applications from a single prompt.
+11. **`k-cli strands`**: AWS Strands Autonomous Agent Runner executing multi-step goals with Bedrock models.
+12. **`k-cli auto-heal`**: Strands Deep Crash Triage & Closed-Loop Auto-Heal parsing stack traces across 7 environments.
+13. **`k-cli immune`**: Autonomous Chaos Immunity & Edge-Case Self-Healing probing and inoculating brittle AST patterns.
 
 ---
 
@@ -30,192 +54,132 @@ Powered by the **AWS Strands Agents SDK**, it autonomously connects model reason
 
 ```mermaid
 flowchart TD
-  subgraph Input ["📥 Incident & Task Ingestion"]
-    User["👨‍💻 Developer Goal"]
-    CI["🚨 CI/CD Failure (GitHub Actions)"]
-    Crash["💥 Runtime Crash / Docker Log"]
+  subgraph Ingestion ["📥 Incident & Multi-Interface Ingestion"]
+    UI1["🖥️ Tier 1: Flagship Cyber TUI (`k-cli ui`)"]
+    UI2["🌐 Tier 2: Cyber Station Web UI (`k-cli web ui`)"]
+    UI3["⌨️ Tier 3: Streamlined Simple REPL (`k-cli simple`)"]
+    Daemon["🔄 Background Healer Daemon (`k-cli daemon`)"]
+    CI["🚨 CI/CD Logs / GitHub Actions Failure"]
   end
 
-  subgraph Brain ["🧠 AWS Strands Agent Orchestrator"]
-    SA["StrandsDevAgent\n(from strands import Agent, tool)"]
-    Models["Model Provider Layer\n• Amazon Bedrock (Claude 3.5 / Nova)\n• Google Gemini 2.0 Flash\n• Anthropic Claude / OpenAI GPT-4o\n• Local Ollama Qwen 2.5"]
-    SA <--> Models
+  subgraph AWSBrain ["🧠 AWS Strands Agent & Amazon Bedrock Layer"]
+    Strands["StrandsDevAgent\n(`from strands import Agent, tool`)"]
+    Bedrock["Amazon Bedrock Models\n• Anthropic Claude 3.5 Sonnet v2\n• Amazon Nova Pro"]
+    AgentCore["Amazon Bedrock AgentCore\n(OpenAPI 3.0 Action Groups & SAM Bundle)"]
+    Strands <--> Bedrock
+    Strands <--> AgentCore
   end
 
-  subgraph Tools ["🛠️ Registered Deterministic Tools (@tool)"]
-    T1["🔍 triage_and_heal_incident\n(7 Language Crash Parser & AST Locator)"]
-    T2["🛡️ verify_code_file\n(AST Syntax + Compiler + Pytest)"]
-    T3["🩹 apply_surgical_patch\n(Fuzzy Search/Replace Block Patcher)"]
-    T4["🔀 resolve_git_merge_conflict\n(3-Way Semantic Conflict Resolver)"]
-    T5["🗺️ inspect_repo_structure\n(Topological AST Symbol Map)"]
-    T6["📚 search_offline_docs\n(Embedded SQLite FTS5 DevDocs)"]
-    T7["📊 generate_architecture_diagram\n(Mermaid Diagram Generator)"]
-    T8["🛡️ generate_chaos_immunity_patch\n(Edge-Case Prober & Inoculator)"]
+  subgraph Tools ["🛠️ Registered Deterministic Engines (@tool)"]
+    T1["🔍 triage_and_heal_incident"]
+    T2["🛡️ verify_code_file"]
+    T3["🩹 apply_surgical_patch"]
+    T4["⚔️ resolve_git_merge_conflict"]
+    T5["🗺️ inspect_repo_structure"]
+    T6["📚 search_offline_docs"]
+    T7["🛡️ generate_chaos_immunity_patch"]
   end
 
-  subgraph Loop ["🔁 Closed-Loop Verification & Execution"]
-    AST["AST Parse & Syntax Check"]
-    Comp["Local Compiler / Pytest Execution"]
-    Retry{"Tests Passed?"}
-    SelfHeal["Auto-Repair & Re-verify (Max 3 Retries)"]
+  subgraph Loop ["🔁 Closed-Loop Verification Guardrail"]
+    AST["AST Parse & Syntax Trees"]
+    Comp["Local Compilers (py_compile, g++, cargo check)"]
+    Test["Pytest Sandbox Execution"]
+    Pass{"Verification Passed?"}
+    Retry["Self-Heal Retry Loop (Max 3 Attempts)"]
   end
 
-  subgraph Output ["✅ Production-Ready Output"]
-    Patched["✔ Verified Surgical Patch Applied"]
-    Commit["✔ Git Staged & Conventional Commit"]
-    Report["✔ Rich TUI Triage & Health Report"]
+  subgraph Output ["✅ Production-Ready Delivery"]
+    Patch["✔ Verified Surgical Patch"]
+    Git["✔ Staged & Conventional Commit"]
+    Report["✔ Rich Triage & Health Diagnostics"]
   end
 
-  Input --> SA
-  SA --> Tools
+  Ingestion --> Strands
+  Strands --> Tools
   Tools --> Loop
-  AST --> Comp --> Retry
-  Retry -- No --> SelfHeal --> Tools
-  Retry -- Yes --> Output
+  AST --> Comp --> Test --> Pass
+  Pass -- No --> Retry --> Tools
+  Pass -- Yes --> Output
 ```
 
 ---
 
-## 🚀 Key Features
+## ⚡ Adaptive Intent Sensor & Smart Model Router
 
-### 1. Multi-Language Crash & Traceback Parser
-Parses and localizes stack traces across **7 distinct environments**:
-* **Python**: Standard tracebacks & pytest assertion failures.
-* **Node.js / TypeScript**: V8 stack traces and unhandled promises.
-* **Rust**: Panics and backtraces.
-* **Go**: Goroutine runtime panics.
-* **C++**: ASAN/UBSAN memory error reports and core dump signals.
-* **Docker**: OOMKilled (Exit Code 137) and container startup panics.
-* **GitHub Actions CI**: `##[error]` log annotations and failing pipeline steps.
+K-CLI features a **sub-millisecond (<0.1ms) heuristic intent sensor** that dynamically adapts execution strategies and routes queries to the optimal online model:
 
-### 2. Closed-Loop Ground-Truth Verification (`verifier.py`)
-Code generated or patched by the agent is strictly validated before final acceptance:
-* **Python**: Static `ast.parse()` check + isolated `py_compile` and `pytest`.
-* **Bash**: Subprocess `bash -n` syntax linting.
-* **C++ / Rust / Go**: Isolated compiler syntax validation (`g++ -fsyntax-only`, `cargo check`).
-
-### 3. Surgical Search/Replace Patching (`patcher.py`)
-Applies line-accurate `<<<<<<< SEARCH / ======= / >>>>>>> REPLACE` modifications without rewriting entire files, eliminating hallucinated deletions and reducing latency.
-
-### 4. 3-Way Git Conflict Resolver (`conflict_resolver.py`)
-Parses Git conflict markers (`<<<<<<<`, `=======`, `>>>>>>>`), evaluates `BASE`, `OURS`, and `THEIRS` in AST context, and generates syntactically valid resolutions.
-
-### 5. Autonomous Chaos Immunity & Edge-Case Self-Healing (`chaos_immunity.py`)
-Proactively probes brittle AST patterns (KeyError, None dereference, socket/HTTP timeout hangs, ReDoS), synthesizes adversarial pytest suites in `tests/chaos/`, and applies verified defensive inoculation patches with zero regressions.
-
-### 6. Pluggable Cloud & Local Models
-Configured to run natively with:
-* **Amazon Bedrock** (Anthropic Claude 3.5 Sonnet / Amazon Nova Pro)
-* **Google Gemini** (Gemini 2.5 Flash / Pro)
-* **Anthropic / OpenAI APIs**
-* **Local Ollama** (100% offline air-gapped mode with embedded FTS5 DevDocs)
+| Sensed Intent | Detected Pattern | Execution Strategy | `AUTO` Model Routing Path |
+| :--- | :--- | :--- | :--- |
+| **`CHAT`** | Greetings, simple Q&A, chit-chat | Direct fast stream (<200ms) | **Fast & Cheap**: Gemini 2.0 Flash / Claude Haiku / GPT-4o-mini / Groq / Local SLM |
+| **`PLAN`** | Architecture, design, milestones | Structured Milestone Blueprint | **Frontier Reasoning**: Claude 3.5 Sonnet / Gemini 2.5 Pro / GPT-4o / DeepSeek Reasoner |
+| **`BUILD`** | Functions, endpoints, refactors | Closed-loop AST verification | **Coding Specialist**: Bankai-14B / Bankai-7B / Claude 3.5 Sonnet / DeepSeek Coder |
+| **`TRIAGE`** | Stack traces, crashes, test failures | Strands Agent surgical auto-heal | **Incident Healer**: Premier diagnostic model with AST localizer |
+| **`IMMUNITY`** | Chaos edge-cases, brittle patterns | Adversarial pytest synthesis | **Defensive Auditor**: Chaos inoculation engine |
 
 ---
 
-## 📦 Installation & Setup
+## 📦 Setup Instructions
 
-### 1. Clone the Repository
+### 1. Requirements
+* **Python 3.11+**
+* An **AWS Account** for Amazon Bedrock and Strands Agents SDK.
+
+### 2. Clone & Install
 ```bash
 git clone https://github.com/krishivjoshi219-collab/K-Cli-for-Devs.git
 cd K-Cli-for-Devs
+pip install -e .[dev,test]
 ```
 
-### 2. Install Dependencies
+### 3. Configure API Keys (Universal 1-Step Setup)
+Paste any key into the interactive vault or set environment variables:
 ```bash
-pip install -e .
-```
+# Launch interactive Credential Vault
+k-cli codex
 
-### 3. Configure Environment Variables
-Copy `.env.example` to `.env` and set your preferred provider credentials:
-
-```bash
-# Option A: Amazon Bedrock (Recommended for Hackathon)
+# Or export environment variables directly
 export AWS_ACCESS_KEY_ID="your-access-key"
 export AWS_SECRET_ACCESS_KEY="your-secret-key"
-export AWS_DEFAULT_REGION="us-east-1"
-export BEDROCK_MODEL_ID="anthropic.claude-3-5-sonnet-20241022-v2:0"
-
-# Option B: Google Gemini
-export GEMINI_API_KEY="your-gemini-api-key"
-
-# Option C: OpenAI / Anthropic
-export OPENAI_API_KEY="your-openai-api-key"
-export ANTHROPIC_API_KEY="your-anthropic-api-key"
+export AWS_REGION="us-east-1"
 ```
 
 ---
 
-## 💻 Usage & CLI Reference
+## 💻 Quick Reference & Commands
 
-### 1. Autonomous Strands Agent Goal
-Let the Strands Agent inspect your codebase, plan, and solve a task autonomously:
 ```bash
-k-cli strands "Diagnose and fix the test failure in auth_service.py"
-```
+# Launch Interfaces
+k-cli ui                 # Launch Tier 1: Full-Screen Cyberstation TUI
+k-cli web ui             # Launch Tier 2: Cyber Station Web Dashboard
+k-cli simple ui          # Launch Tier 3: Streamlined Terminal REPL
 
-### 2. Deep Crash Triage & Closed-Loop Auto-Heal
-Feed a raw stacktrace or CI/CD log file directly to the agent:
-```bash
-# From a log file
+# Autonomous Workflows & Background Self-Healing
+k-cli strands "Fix authentication token expiry in auth_service.py"
 k-cli auto-heal crash_report.log
-
-# Or pipe live output from a broken build
-pytest | k-cli auto-heal
-```
-
-### 3. Autonomous Chaos Immunity & Zero-Day Inoculation
-Probe edge cases, synthesize adversarial tests, and inoculate your code with defensive guards:
-```bash
-# Inoculate a specific module
-k-cli immune src/handler.py
-
-# Or sweep and inoculate the entire repository
-k-cli immune
-```
-
-### 4. Standalone Ground-Truth Code Verification
-Verify any source file against local compilers and AST checks:
-```bash
-k-cli verify src/handler.py
-```
-
-### 5. Interactive Full-Screen Terminal Workstation (TUI)
-Launch the full Textual dashboard with real-time token speedometers and RAM monitors:
-```bash
-k-cli ui
+k-cli daemon             # Autonomous background healing daemon
+k-cli bedrock export     # Export Amazon Bedrock AgentCore OpenAPI Action Groups & SAM bundle
+k-cli bedrock deploy     # Deploy directly to Amazon Bedrock AgentCore
+k-cli immune src/engine.py
 ```
 
 ---
 
-## 🧪 Running the Test Suite
+## 🧪 Comprehensive Test Suite
 
-Execute the full suite of unit and integration tests:
-
+Validate all 60+ unit, integration, and chaos test suites:
 ```bash
 pytest tests/ -v
 ```
 
-All 13 Strands Agent and tool verification tests run in isolated sandboxes and validate end-to-end functionality.
+---
+
+## 🎥 Demo Video
+Check out the [5-Minute Pitch and Demo Video](https://youtube.com) (Insert Youtube Link Here) demonstrating end-to-end functionality, problem pitch, and background agent execution.
 
 ---
 
-## 🏆 Hackathon Roadmap & Devpost Rules Compliance
+## 📄 License & Author
 
-### Proposed 5 Killer Features (Professional Agents Track)
-1. **Autonomous Infrastructure-as-Code (IaC) & Cloud Drift Self-Healer (`IaCDriftAgent`)**: Ingests Terraform / AWS CloudFormation drift reports and autonomously synthesizes verified IaC patches with closed-loop validation.
-2. **Self-Healing API Contract & Breaking-Change Inoculator (`ContractInoculatorAgent`)**: Scans OpenAPI / GraphQL spec modifications, detects breaking microservice contract changes, updates client stubs, and executes closed-loop integration tests.
-3. **Autonomous DevSecOps Vulnerability Inoculator (`DevSecOpsHealerAgent`)**: Ingests CVE alerts, uses AST symbol analysis to verify if vulnerable code paths are reachable, and applies surgical verified dependency updates or guards.
-4. **Multi-Agent Collaborative Incident Response Swarm (`IncidentSwarmAgent`)**: Deploys a swarm of specialized sub-agents (Log Analyzer, AST Correlator, Patch Synthesizer, Verifier) that debate root cause theories and reach consensus on verified fixes.
-5. **Autonomous PR Review & Interactive Code Health Remediation Agent (`PRHealthAgent`)**: Continuously monitors incoming Pull Requests, evaluates code health metrics, posts inline review comments, and opens auto-fix patches directly to PR branches.
-
-### Devpost Official Rules Compliance Audit
-* **Track**: Professional Agents Track (built with AWS Strands Agents SDK & Bedrock).
-* **Closed-Loop Verification**: Code is executed and verified with AST precision and pytest before acceptance.
-* **License**: Public GitHub repository under **MIT License**.
-* **Deliverables**: Includes Architecture Diagram, Pitch text (Problem, Audience, Value), and AWS Strands Agents integration.
-
----
-
-## 📄 License & Open Source Compliance
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details. Open source, transparent, and ready for community extension.
+* **Author**: **Krishiv Joshi** ([@krishivjoshi](https://github.com/krishivjoshi219-collab))
+* **AWS Builder ID**: `krishivjoshi219-collab`
+* **License**: Open source under the [MIT License](LICENSE).

@@ -57,6 +57,7 @@ try:
         execute_subagents,
     )
     from k_cli.tui.diff_viewer import DiffVisualizer
+    from k_cli.core.credentials import CredentialsManager, DevPreferencesManager
     from k_cli.core.sdk import create_plan
     from k_cli.git.git_guard import GitGuard
     from k_cli.tools.audit import run_audit
@@ -901,6 +902,9 @@ def doctor_cmd(
         console.print(f"[yellow]Potential {finding.rule}: {finding.path}:{finding.line} (value intentionally hidden)[/yellow]")
 
 
+web_app = typer.Typer(name="web", help="Launch the world-class K-CLI Web UI dashboard server.", invoke_without_command=True)
+
+
 @app.command(name="web-ui", help="Launch the world-class K-CLI Web UI dashboard server.")
 def web_ui_cmd(
     host: str = typer.Option("127.0.0.1", "--host", "-h", help="Web server host interface."),
@@ -913,14 +917,74 @@ def web_ui_cmd(
     start_web_server(host=host, port=port, open_browser=open_browser)
 
 
-@app.command(name="web", help="Alias for launching the K-CLI Web UI dashboard server.")
-def web_cmd(
+@web_app.callback(invoke_without_command=True)
+def web_callback(
+    ctx: typer.Context,
     host: str = typer.Option("127.0.0.1", "--host", "-h", help="Web server host interface."),
     port: int = typer.Option(8000, "--port", "-p", help="Web server port number."),
     open_browser: bool = typer.Option(True, "--open/--no-open", help="Automatically open browser on server startup."),
 ):
-    """Alias for launching the Web UI dashboard."""
+    """Launch the world-class FastAPI Web UI dashboard."""
+    if ctx.invoked_subcommand is None:
+        web_ui_cmd(host=host, port=port, open_browser=open_browser)
+
+
+@web_app.command(name="ui", help="Launch the world-class K-CLI Web UI dashboard.")
+def web_sub_ui_cmd(
+    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Web server host interface."),
+    port: int = typer.Option(8000, "--port", "-p", help="Web server port number."),
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Automatically open browser on server startup."),
+):
+    """Launch the Web UI dashboard."""
     web_ui_cmd(host=host, port=port, open_browser=open_browser)
+
+
+app.add_typer(web_app, name="web")
+
+
+# =============================================================================
+# Tier 3: Streamlined Interactive Terminal REPL (`k-cli simple` / `k-cli simple ui`)
+# =============================================================================
+simple_app = typer.Typer(name="simple", help="Launch the streamlined, mouse-enabled text REPL UI.", invoke_without_command=True)
+
+
+@app.command(name="simple-ui", help="Launch the streamlined text REPL with mouse and slash command support.")
+@app.command(name="chat", help="Launch the streamlined interactive AI coding chat REPL.")
+@app.command(name="repl", help="Launch the streamlined interactive AI coding chat REPL.")
+def simple_ui_cmd(
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Active model label."),
+    persona: Optional[str] = typer.Option(None, "--persona", "-p", help="Active persona label."),
+    mock: bool = typer.Option(False, "--mock", help="Use offline mock driver."),
+    workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root directory."),
+):
+    """Launch the streamlined Tier 3 interactive terminal REPL."""
+    from k_cli.ui.simple_repl import run_simple_cli
+    run_simple_cli(workspace_dir=str(workspace), model_name=model, persona=persona, mock_mode=mock)
+
+
+@simple_app.callback(invoke_without_command=True)
+def simple_callback(
+    ctx: typer.Context,
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Active model label."),
+    persona: Optional[str] = typer.Option(None, "--persona", "-p", help="Active persona label."),
+    mock: bool = typer.Option(False, "--mock", help="Use offline mock driver."),
+    workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root directory."),
+):
+    if ctx.invoked_subcommand is None:
+        simple_ui_cmd(model=model, persona=persona, mock=mock, workspace=workspace)
+
+
+@simple_app.command(name="ui", help="Launch the streamlined text REPL with mouse support.")
+def simple_sub_ui_cmd(
+    model: Optional[str] = typer.Option(None, "--model", "-m", help="Active model label."),
+    persona: Optional[str] = typer.Option(None, "--persona", "-p", help="Active persona label."),
+    mock: bool = typer.Option(False, "--mock", help="Use offline mock driver."),
+    workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root directory."),
+):
+    simple_ui_cmd(model=model, persona=persona, mock=mock, workspace=workspace)
+
+
+app.add_typer(simple_app, name="simple")
 
 
 @app.command(name="ui", help="Launch the full-screen K-CLI Textual workstation.")
@@ -2369,6 +2433,23 @@ def models_providers(
     console.print(table)
 
 
+@models_app.command("set-default", help="Set and persist the default AI model (e.g. 'k-cli models set-default claude-3-5-sonnet' or 'auto').")
+def models_set_default(
+    model_name: str = typer.Argument(..., help="Model identifier to set as default (or 'auto' for adaptive intent routing)."),
+):
+    """Sets and saves the developer's default preferred AI model."""
+    DevPreferencesManager.set_default_model(model_name)
+    console.print(f"[bold green]✔ Default model successfully set to:[/bold green] [bold cyan]{model_name}[/bold cyan]")
+    console.print("[dim]K-CLI will automatically route to this model when in default mode.[/dim]")
+
+
+@models_app.command("get-default", help="Display the currently active default AI model.")
+def models_get_default():
+    """Prints the currently configured default AI model."""
+    current = DevPreferencesManager.get_default_model()
+    console.print(f"[bold cyan]Current Default Model:[/bold cyan] [bold green]{current}[/bold green]")
+
+
 # =============================================================================
 # GitHub Ecosystem Commands (`k-cli gh` / `k-cli issue` / `k-cli release`)
 # =============================================================================
@@ -2623,6 +2704,40 @@ def trending_cmd(
     console.print(table)
 
 
+rules_app = typer.Typer(name="rules", help="Manage custom developer instructions & workspace rules (.kclirules).")
+
+
+@rules_app.command(name="init", help="Create a .kclirules template in the current workspace.")
+def rules_init(
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing rules file."),
+):
+    """Initializes a starter .kclirules template in the workspace root."""
+    from k_cli.tools.rules import create_default_rules_file
+    path = create_default_rules_file(force=force)
+    console.print(f"[bold green]✔ Initialized custom rules template at:[/bold green] [cyan]{path}[/cyan]")
+
+
+@rules_app.command(name="get", help="Display currently active developer instructions & rules.")
+def rules_get():
+    """Displays active developer rules from workspace or global settings."""
+    from k_cli.tools.rules import load_project_rules
+    rules_text = load_project_rules(".")
+    if rules_text:
+        console.print(Panel(rules_text, title="[bold green]Active Developer Rules & Instructions[/bold green]", border_style="green"))
+    else:
+        console.print("[yellow]No custom rules found in workspace. Run 'k-cli rules init' to create a .kclirules file.[/yellow]")
+
+
+@rules_app.command(name="set", help="Set custom global developer instructions.")
+def rules_set(
+    instructions: str = typer.Argument(..., help="Custom system prompt instructions for the AI."),
+):
+    """Sets global developer instructions saved to ~/.kcli/rules.md."""
+    from k_cli.tools.rules import set_global_rules
+    path = set_global_rules(instructions)
+    console.print(f"[bold green]✔ Successfully saved global developer instructions to:[/bold green] [cyan]{path}[/cyan]")
+
+
 # Mount sub-applications onto root CLI app
 app.add_typer(conflict_app, name="conflict")
 app.add_typer(pr_app, name="pr")
@@ -2630,6 +2745,7 @@ app.add_typer(mcp_app, name="mcp")
 app.add_typer(dedup_app, name="dedup")
 app.add_typer(security_app, name="security")
 app.add_typer(models_app, name="models")
+app.add_typer(rules_app, name="rules")
 app.add_typer(gh_app, name="gh")
 app.add_typer(issue_app, name="issue")
 app.add_typer(release_app, name="release")
@@ -3007,6 +3123,90 @@ def chaos_cmd(
     repo: str = typer.Option(".", "--repo", "-r", help="Target repository root directory."),
 ):
     immune_cmd(target_file=target_file, repo=repo, apply_patches=True, json_output=False)
+
+
+# =============================================================================
+# Amazon Bedrock AgentCore Deployment & Integration (`k-cli bedrock`)
+# =============================================================================
+bedrock_app = typer.Typer(name="bedrock", help="Deploy and manage Amazon Bedrock AgentCore for K-CLI Strands Agent.")
+
+
+@bedrock_app.command(name="export", help="Export Amazon Bedrock AgentCore OpenAPI schema and CloudFormation bundle.")
+def bedrock_export_cmd(
+    output_dir: str = typer.Option(".kcli/agent_core_bundle", "--output", "-o", help="Output directory for AgentCore bundle."),
+):
+    """Exports Bedrock AgentCore OpenAPI 3.0 schemas and CloudFormation SAM templates."""
+    from k_cli.agents.agent_core import BedrockAgentCoreEngine
+    engine = BedrockAgentCoreEngine()
+    bundle_path = engine.export_deployment_bundle(output_dir=output_dir)
+    console.print(Panel(
+        f"[bold green]✔ Amazon Bedrock AgentCore Bundle Exported[/bold green]\n\n"
+        f"• [cyan]Bundle Directory:[/cyan] {bundle_path}\n"
+        f"• [yellow]OpenAPI Action Group:[/yellow] {bundle_path / 'openapi_schema.json'}\n"
+        f"• [magenta]CloudFormation SAM Template:[/magenta] {bundle_path / 'template.yaml'}\n"
+        f"• [green]Agent Configuration:[/green] {bundle_path / 'agent_config.json'}\n\n"
+        f"[dim]Ready to deploy with AWS CLI or SAM: `sam deploy --guided`[/dim]",
+        title="⚡ Amazon Bedrock AgentCore",
+        border_style="green",
+    ))
+
+
+@bedrock_app.command(name="deploy", help="Deploy K-CLI Strands Agent to Amazon Bedrock AgentCore.")
+def bedrock_deploy_cmd():
+    """Deploys K-CLI Strands Agent directly to Amazon Bedrock."""
+    from k_cli.agents.agent_core import BedrockAgentCoreEngine
+    engine = BedrockAgentCoreEngine()
+    res = engine.deploy_to_bedrock()
+    console.print(Panel(
+        f"[bold green]✔ Amazon Bedrock AgentCore Deployment Status: {res['status']}[/bold green]\n\n"
+        f"• [cyan]Agent Name:[/cyan] {res['agent_name']}\n"
+        f"• [yellow]Foundation Model:[/yellow] {res['model_id']}\n"
+        f"• [magenta]AWS Region:[/magenta] {res['region']}\n"
+        f"• [white]Summary:[/white] {res['message']}\n",
+        title="⚡ Amazon Bedrock AgentCore Deployment",
+        border_style="cyan",
+    ))
+
+
+app.add_typer(bedrock_app, name="bedrock")
+
+
+# =============================================================================
+# Autonomous Background Healing Daemon (`k-cli daemon` / `k-cli watch`)
+# =============================================================================
+@app.command(name="daemon", help="Run K-CLI autonomous self-healing daemon in the background.")
+@app.command(name="watch", help="Continuously monitor repository and auto-heal broken builds in the background.")
+def daemon_cmd(
+    repo: str = typer.Option(".", "--repo", "-r", help="Repository directory to monitor."),
+    interval: float = typer.Option(10.0, "--interval", "-i", help="Poll interval in seconds."),
+):
+    """Runs autonomous developer daemon quietly in the background; surfaces only on critical decisions."""
+    from k_cli.agents.background_daemon import BackgroundHealerDaemon
+    import asyncio
+    console.print(f"[bold cyan]⚡ K-CLI Background Healer Daemon starting on '{repo}' (interval: {interval}s)...[/bold cyan]")
+    console.print("[dim]Runs quietly in the background and surfaces only when a decision is needed. Press Ctrl+C to stop.[/dim]\n")
+    
+    def on_decision(dec):
+        console.print(f"\n[bold green]🚨 [DAEMON NOTICE][/bold green] [yellow]{dec['summary']}[/yellow]")
+    
+    daemon = BackgroundHealerDaemon(workspace_dir=repo, poll_interval_seconds=interval, decision_callback=on_decision)
+    try:
+        asyncio.run(daemon.start())
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Daemon stopped by user.[/yellow]")
+
+
+# =============================================================================
+# Cinematic 5-Minute Interactive Demo & AI Voiceover (`k-cli demo`)
+# =============================================================================
+@app.command(name="demo", help="Run the cinematic 5-minute interactive demo with AI voiceover cues.")
+def demo_cmd(
+    speed: float = typer.Option(1.0, "--speed", "-s", help="Playback speed multiplier (e.g. 1.5 for fast demo)."),
+    act: Optional[int] = typer.Option(None, "--act", "-a", help="Run a specific act (1 to 5). If omitted, runs all 5 acts."),
+):
+    """Executes the ultra-cinematic 5-minute production demo with live agent telemetry."""
+    from k_cli.demo.demo_runner import start_cinematic_demo
+    start_cinematic_demo(speed=speed, act=act)
 
 
 def interactive_mode(model: str = "qwen2.5-coder:1.5b", mock: bool = False):

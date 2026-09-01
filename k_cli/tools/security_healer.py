@@ -287,6 +287,16 @@ SECRET_REGEX_RULES = [
         "desc": "Hardcoded Slack OAuth bot / user token exposed in source code.",
         "rec": "Store Slack tokens in SLACK_BOT_TOKEN environment variable.",
     },
+    {
+        "name": "JWT Token Secret",
+        "pattern": re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b"),
+        "severity": VulnerabilitySeverity.HIGH.value,
+        "cvss": 8.1,
+        "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N",
+        "cwe": "CWE-798",
+        "desc": "Hardcoded JSON Web Token (JWT) exposed in source code.",
+        "rec": "Do not hardcode JWT tokens. Generate tokens dynamically using environment secrets.",
+    },
 ]
 
 REDOS_PATTERNS = [
@@ -601,6 +611,25 @@ class SecurityHealer:
                                 description=f"Insecure command execution using `os.{node.func.attr}()`.",
                                 recommendation="Replace os.system with `subprocess.run([...], check=True)` without shell.",
                                 cwe_id="CWE-78",
+                            )
+                        )
+
+                    if isinstance(node.func.value, ast.Name) and node.func.value.id == "hashlib" and node.func.attr in ("md5", "sha1"):
+                        v_id = f"SEC-HASH-{counter:03d}"
+                        counter += 1
+                        self.local_findings.append(
+                            VulnerabilityFinding(
+                                id=v_id,
+                                vuln_type=VulnerabilityType.INSECURE_CIPHER.value,
+                                severity=VulnerabilitySeverity.MEDIUM.value,
+                                cvss_score=5.3,
+                                cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N",
+                                file_path=rel_path,
+                                line_number=node.lineno,
+                                snippet=self._get_snippet(node),
+                                description=f"Insecure hash algorithm `{node.func.attr}()` used. Vulnerable to collision attacks.",
+                                recommendation="Upgrade to secure cryptographic hash algorithm like sha256 or sha3_256.",
+                                cwe_id="CWE-327",
                             )
                         )
 

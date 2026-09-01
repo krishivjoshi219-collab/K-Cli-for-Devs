@@ -10,6 +10,7 @@ verified surgical patches, and presents an interactive terminal fix prompt.
 from __future__ import annotations
 
 import logging
+import shlex
 import os
 import pty
 import select

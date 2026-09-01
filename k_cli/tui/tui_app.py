@@ -24,6 +24,7 @@ import asyncio
 import os
 import psutil
 import sys
+import subprocess
 import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -151,7 +152,10 @@ class WelcomeOnboardingModal(ModalScreen[bool]):
     }
     """
 
-    BINDINGS = [Binding("escape", "dismiss", "Close")]
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("b", "dismiss", "Back"),
+    ]
 
     def compose(self) -> ComposeResult:
         with Container(id="welcome-box"):
@@ -188,8 +192,8 @@ class WelcomeOnboardingModal(ModalScreen[bool]):
             # Step 4: Launch Actions
             with Horizontal(classes="welcome-act-row"):
                 yield Button("🚀 Launch Cyber Workstation", variant="primary", id="btn-welcome-launch")
-                yield Button("⏩ Skip to TUI", variant="default", id="btn-welcome-skip")
-                yield Button("🎭 Pure Demo Mode (No AI Required)", variant="warning", id="btn-welcome-demo")
+                yield Button("🎭 Demo Mode", variant="warning", id="btn-welcome-demo")
+                yield Button("⮌ Back / Close (Esc)", variant="default", id="btn-welcome-back")
 
     def on_mount(self) -> None:
         self.selected_persona = "Fullstack AI Systems Engineer"
@@ -272,6 +276,10 @@ class WelcomeOnboardingModal(ModalScreen[bool]):
         DevPreferencesManager.mark_setup_complete(persona="Fullstack AI Systems Engineer", model="gemini-2.5-flash (Demo Mode)")
         self.app.notify("Launched in Zero-AI Pure Demo Mode.", title="Demo Mode", severity="warning")
         self.dismiss(True)
+
+    @on(Button.Pressed, "#btn-welcome-back")
+    def on_back(self) -> None:
+        self.on_escape()
 
     def on_escape(self) -> None:
         has_creds = CredentialsManager.has_any_active_credentials()
@@ -402,6 +410,7 @@ class CodexStartingModal(ModalScreen[bool]):
 
     BINDINGS = [
         Binding("escape", "dismiss(False)", "Close Codex"),
+        Binding("b", "dismiss(False)", "Back"),
         Binding("ctrl+s", "save_and_close", "Save & Launch"),
     ]
 
@@ -437,68 +446,47 @@ class CodexStartingModal(ModalScreen[bool]):
                                         yield Label(f"• {label}:", classes="key-name-lbl")
                                         yield Input(
                                             value=val,
-                                            password=True if "URL" not in key_name else False,
+                                            password=True,
                                             placeholder=placeholder,
-                                            id=f"input-key-{key_name.lower()}",
+                                            id=f"input-codex-{key_name.lower()}",
                                             classes="key-input-box",
                                         )
-                                        status_str = "🟢 Active" if val else "🔴 Missing"
-                                        yield Label(status_str, id=f"pill-key-{key_name.lower()}", classes="key-pill-lbl")
+                                        yield Label("Active" if val else "Missing", id=f"pill-codex-{key_name.lower()}", classes="key-pill-lbl")
 
                             with Horizontal(classes="codex-action-row"):
-                                yield Button("💾 Save All Provider Keys", variant="primary", id="btn-codex-save-all-keys")
-                                yield Button("⚡ Test All Connections", variant="success", id="btn-codex-test-all-keys")
+                                yield Button("💾 Save All Keys", variant="primary", id="btn-codex-save-all-keys")
+                                yield Button("⚡ Test Live Connections", variant="success", id="btn-codex-test-all-keys")
 
                 # -------------------------------------------------------------
-                # Tab 2: 💻 Local Models (Pros & Cons for Coding)
+                # Tab 2: 💻 Local Models (Ollama Curated Catalog)
                 # -------------------------------------------------------------
-                with TabPane("💻 Local Coding SLMs", id="tab-codex-local", classes="codex-tab-pane"):
-                    with Container(classes="codex-section-card"):
-                        yield Label("🚀 Curated Local Coding SLMs (Zero API Key & 100% Offline)", classes="codex-card-title")
-                        yield Label("Select an optimized coding SLM to inspect benchmarks, memory footprints, and 1-click download via Ollama / llama.cpp.")
-                    
-                    with Horizontal(id="codex-local-split"):
+                with TabPane("💻 Local Models (Ollama)", id="tab-local", classes="codex-tab-pane"):
+                    with Horizontal():
                         yield OptionList(id="opt-codex-local-list")
                         yield RichLog(id="log-codex-local-details", highlight=True, markup=True)
-
                     with Horizontal(classes="codex-action-row"):
-                        yield Button("📥 1-Click Pull Model", variant="success", id="btn-codex-download-local")
-                        yield Button("⭐ Set as Active Model", variant="primary", id="btn-codex-set-active-local")
-                        yield Button("⚡ Run Speed Benchmark", variant="warning", id="btn-codex-bench-local")
+                        yield Button("📥 1-Click Download Model", variant="success", id="btn-codex-pull-local")
+                        yield Button("⚡ Set Active in K-CLI", variant="primary", id="btn-codex-set-active-local")
 
                 # -------------------------------------------------------------
-                # Tab 3: ⚡ Bankai Models (My Own Custom Hugging Face Models)
+                # Tab 3: ⚡ Custom Bankai Frontier Models (Hugging Face)
                 # -------------------------------------------------------------
-                with TabPane("⚡ Bankai Models (Hugging Face)", id="tab-bankai", classes="codex-tab-pane"):
-                    yield Label("Bankai Custom Fine-Tuned Models — Compiler-Grounded & AST Healers:", classes="codex-card-title")
-                    with Horizontal(id="codex-bankai-split"):
+                with TabPane("⚡ Bankai Frontier Models", id="tab-bankai", classes="codex-tab-pane"):
+                    with Horizontal():
                         yield OptionList(id="opt-codex-bankai-list")
-                        yield RichLog(id="log-codex-bankai-details", highlight=True)
-
-                    with Container(classes="codex-section-card"):
-                        yield Label("📥 Custom Hugging Face Repo Downloader:", classes="codex-card-title")
-                        with Horizontal():
-                            yield Input(
-                                placeholder="Enter Hugging Face repo (e.g. krishivjoshi/bankai-7b or username/model-name)",
-                                id="input-codex-custom-hf",
-                                classes="key-input-box",
-                            )
-                            yield Button("📥 Pull from Hugging Face", variant="primary", id="btn-codex-download-custom-hf")
-
+                        yield RichLog(id="log-codex-bankai-details", highlight=True, markup=True)
                     with Horizontal(classes="codex-action-row"):
-                        yield Button("📥 1-Click Download Selected Bankai Model", variant="success", id="btn-codex-download-bankai")
+                        yield Button("🚀 Download Bankai Adapter (HF)", variant="warning", id="btn-codex-download-bankai")
+                        yield Button("⚡ Set Active in K-CLI", variant="primary", id="btn-codex-set-active-bankai")
 
                 # -------------------------------------------------------------
-                # Tab 4: 📚 DevDocs Offline Downloader (100% Air-Gapped)
+                # Tab 4: 📚 DevDocs 100% Offline Downloader
                 # -------------------------------------------------------------
                 with TabPane("📚 DevDocs Offline", id="tab-devdocs", classes="codex-tab-pane"):
-                    yield Label("📚 100% Offline DevDocs SQLite Hybrid Search Engine:", classes="codex-card-title")
-                    yield Label("Introspects and caches complete API signatures & docstrings for Python 3.12, C++23, Rust 1.80, Linux Syscalls, FastAPI, Redis, PostgreSQL, Docker, Git.", classes="codex-header-subtitle")
-
-                    yield RichLog(id="log-codex-devdocs-log", highlight=True)
-
+                    yield Label("100% Offline Developer Documentation SQLite FTS5 Indexer:")
+                    yield RichLog(id="log-codex-devdocs-log", highlight=True, markup=True)
                     with Horizontal(classes="codex-action-row"):
-                        yield Button("📦 Download All DevDocs (Full Suite)", variant="success", id="btn-codex-download-all-docs")
+                        yield Button("📦 Download & Index All DevDocs", variant="success", id="btn-codex-download-all-docs")
                         yield Button("🔍 Test Offline Search", variant="primary", id="btn-codex-test-docs")
                         yield Button("🧹 Clear DevDocs Cache", variant="error", id="btn-codex-clear-docs")
 
@@ -526,7 +514,7 @@ class CodexStartingModal(ModalScreen[bool]):
 
             with Horizontal(classes="codex-action-row"):
                 yield Button("🚀 Done / Enter Workstation", variant="primary", id="btn-codex-done")
-                yield Button("✖ Close", variant="default", id="btn-codex-close")
+                yield Button("⮌ Back / Close (Esc)", variant="default", id="btn-codex-close")
 
     def on_mount(self) -> None:
         # 1. Populate Local Models list
@@ -589,11 +577,18 @@ class CodexStartingModal(ModalScreen[bool]):
             return
         key_name, provider_name = detect_key_type(val)
         os.environ[key_name] = val
-        ok, msg = CredentialsManager.test_key_connectivity(key_name)
-        if ok:
-            self.app.notify(f"✔ {provider_name}: {msg}", title="Connection Verified", severity="information")
-        else:
-            self.app.notify(f"✘ {provider_name}: {msg}", title="Connection Failed", severity="error")
+        self.app.notify(f"Testing connectivity to {provider_name}...", title="Testing", severity="information")
+
+        def _test_work():
+            ok, msg = CredentialsManager.test_key_connectivity(key_name)
+            def update():
+                if ok:
+                    self.app.notify(f"✔ {provider_name}: {msg}", title="Connection Verified", severity="information")
+                else:
+                    self.app.notify(f"✘ {provider_name}: {msg}", title="Connection Failed", severity="error")
+            self.app.call_from_thread(update)
+
+        self.run_worker(_test_work, thread=True)
 
     @on(Button.Pressed, "#btn-codex-save-all-keys")
     def on_save_all_keys(self) -> None:
@@ -611,14 +606,23 @@ class CodexStartingModal(ModalScreen[bool]):
 
     @on(Button.Pressed, "#btn-codex-test-all-keys")
     def on_test_all_keys(self) -> None:
-        for key_name, _, _ in SUPPORTED_KEYS:
-            try:
-                ok, msg = CredentialsManager.test_key_connectivity(key_name)
-                pill = self.query_one(f"#pill-key-{key_name.lower()}", Label)
-                pill.update("🟢 Connected" if ok else "🔴 Offline")
-            except Exception:
-                pass
-        self.app.notify("Provider connectivity tests complete.", title="Live Tests Completed", severity="information")
+        self.app.notify("Testing all configured API connections...", title="Testing Keys", severity="information")
+        def _test_all():
+            for key_name, _, _ in SUPPORTED_KEYS:
+                try:
+                    ok, msg = CredentialsManager.test_key_connectivity(key_name)
+                    def update(k=key_name, success=ok):
+                        try:
+                            pill = self.query_one(f"#pill-key-{k.lower()}", Label)
+                            pill.update("🟢 Connected" if success else "🔴 Offline")
+                        except Exception:
+                            pass
+                    self.app.call_from_thread(update)
+                except Exception:
+                    pass
+            self.app.call_from_thread(lambda: self.app.notify("Provider connectivity tests complete.", title="Live Tests Completed", severity="information"))
+
+        self.run_worker(_test_all, thread=True)
 
     # -------------------------------------------------------------------------
     # Tab 2: Local Models Selection & Download
@@ -645,24 +649,33 @@ class CodexStartingModal(ModalScreen[bool]):
         for con in model_dict.get("cons", []):
             log.write(f"  {con}")
 
-    @on(Button.Pressed, "#btn-codex-download-local")
+    @on(Button.Pressed, "#btn-codex-pull-local")
     def on_download_local_model(self) -> None:
         opt = self.query_one("#opt-codex-local-list", OptionList)
         selected_id = opt.get_option_at_index(opt.highlighted).id if opt.highlighted is not None else "qwen2.5-coder:7b"
-        self.app.notify(f"Pulling {selected_id} weights via Ollama / GGUF engine...", title="Model Download", severity="information")
-        mgr = ModelManager()
-        ok, msg = mgr.pull_ollama_tag(selected_id)
-        if ok:
-            self.app.notify(f"✔ Successfully pulled {selected_id}!", title="Download Succeeded", severity="information")
-        else:
-            self.app.notify(f"Download status: {msg}", title="Download Update", severity="warning")
+        self.app.notify(f"Pulling {selected_id} weights via Ollama...", title="Model Download", severity="information")
+        def _pull_work():
+            mgr = ModelManager()
+            ok, msg = mgr.pull_ollama_tag(selected_id)
+            def update():
+                if ok:
+                    self.app.notify(f"✔ Successfully pulled {selected_id}!", title="Download Succeeded", severity="information")
+                else:
+                    self.app.notify(f"Download status: {msg}", title="Download Update", severity="warning")
+            self.app.call_from_thread(update)
+        self.run_worker(_pull_work, thread=True)
 
     @on(Button.Pressed, "#btn-codex-set-active-local")
     def on_set_active_local(self) -> None:
         opt = self.query_one("#opt-codex-local-list", OptionList)
-        selected_id = opt.get_option_at_index(opt.highlighted).id if opt.highlighted is not None else "qwen2.5-coder:7b"
-        DevPreferencesManager.set("default_model", selected_id)
-        self.app.notify(f"Active model switched to {selected_id}!", title="Model Switched", severity="information")
+        selected_id = opt.get_option_at_index(opt.highlighted).id if opt.highlighted is not None else "qwen2.5-coder:1.5b"
+        DevPreferencesManager.set_default_model(selected_id)
+        self.app.model_name = selected_id
+        try:
+            self.app.query_one("#hud-model", Label).update(f"🤖 {selected_id}")
+        except Exception:
+            pass
+        self.app.notify(f"Active model switched to local '{selected_id}'!", title="Model Activated", severity="information")
 
     @on(Button.Pressed, "#btn-codex-bench-local")
     def on_bench_local(self) -> None:
@@ -696,11 +709,15 @@ class CodexStartingModal(ModalScreen[bool]):
         opt = self.query_one("#opt-codex-bankai-list", OptionList)
         selected_id = opt.get_option_at_index(opt.highlighted).id if opt.highlighted is not None else "bankai-7b"
         self.app.notify(f"Downloading {selected_id} from Hugging Face Hub with SHA256 verification...", title="Bankai Model Download", severity="information")
-        mgr = ModelManager()
-        res = mgr.pull_model(model_identifier=selected_id, force=False, verify_sha=True, create_in_ollama=True)
-        log = self.query_one("#log-codex-bankai-details", RichLog)
-        log.write(f"\n[bold green]✔ DOWNLOAD COMPLETED:[/bold green]\n• Model: {res.model_name}\n• GGUF: {res.gguf_path}\n• SHA256 Verified: {res.sha256_verified}\n• Ollama Tag: {res.ollama_tag}")
-        self.app.notify(f"✔ {selected_id} successfully staged and ready!", title="Bankai Model Ready", severity="information")
+        def _bankai_work():
+            mgr = ModelManager()
+            res = mgr.pull_model(model_identifier=selected_id, force=False, verify_sha=True, create_in_ollama=True)
+            def update():
+                log = self.query_one("#log-codex-bankai-details", RichLog)
+                log.write(f"\n[bold green]✔ DOWNLOAD COMPLETED:[/bold green]\n• Model: {res.model_name}\n• GGUF: {res.gguf_path}\n• SHA256 Verified: {res.sha256_verified}\n• Ollama Tag: {res.ollama_tag}")
+                self.app.notify(f"✔ {selected_id} successfully staged and ready!", title="Bankai Model Ready", severity="information")
+            self.app.call_from_thread(update)
+        self.run_worker(_bankai_work, thread=True)
 
     @on(Button.Pressed, "#btn-codex-download-custom-hf")
     def on_download_custom_hf(self) -> None:
@@ -710,9 +727,11 @@ class CodexStartingModal(ModalScreen[bool]):
             self.app.notify("Please enter a Hugging Face repo name.", title="Repo Empty", severity="warning")
             return
         self.app.notify(f"Connecting to Hugging Face Hub: {repo_id}...", title="HF Download", severity="information")
-        mgr = ModelManager()
-        res = mgr.pull_model(model_identifier=repo_id, force=False, verify_sha=True, create_in_ollama=True)
-        self.app.notify(f"Custom model '{repo_id}' downloaded successfully!", title="HF Model Downloaded", severity="information")
+        def _hf_work():
+            mgr = ModelManager()
+            res = mgr.pull_model(model_identifier=repo_id, force=False, verify_sha=True, create_in_ollama=True)
+            self.app.call_from_thread(lambda: self.app.notify(f"Custom model '{repo_id}' downloaded successfully!", title="HF Model Downloaded", severity="information"))
+        self.run_worker(_hf_work, thread=True)
 
     # -------------------------------------------------------------------------
     # Tab 4: DevDocs Offline Downloader
@@ -722,24 +741,31 @@ class CodexStartingModal(ModalScreen[bool]):
         log = self.query_one("#log-codex-devdocs-log", RichLog)
         log.write("\n[bold cyan]📦 Starting Full DevDocs Offline Indexing Suite...[/bold cyan]")
         self.app.notify("Indexing standard libraries & frameworks into local SQLite...", title="DevDocs Downloader", severity="information")
-
-        doc = DocRetriever()
-        res = doc.download_all_devdocs()
-        log.write(f"[bold green]✔ DevDocs Indexing Completed in {res['duration_seconds']}s![/bold green]")
-        log.write(f"• Total Symbols in SQLite: {res['total_database_symbols']}")
-        log.write(f"• Database Path: {res['db_path']}")
-        log.write(f"• Indexed Packages: Python 3.12, C++23, Rust 1.80, Linux Syscalls, FastAPI, Redis, PostgreSQL")
-        self.app.notify(f"✔ Indexed {res['total_database_symbols']} DevDocs symbols for 100% offline search!", title="DevDocs Ready", severity="information")
+        def _docs_work():
+            doc = DocRetriever()
+            res = doc.download_all_devdocs()
+            def update():
+                log.write(f"[bold green]✔ DevDocs Indexing Completed in {res['duration_seconds']}s![/bold green]")
+                log.write(f"• Total Symbols in SQLite: {res['total_database_symbols']}")
+                log.write(f"• Database Path: {res['db_path']}")
+                log.write(f"• Indexed Packages: Python 3.12, C++23, Rust 1.80, Linux Syscalls, FastAPI, Redis, PostgreSQL")
+                self.app.notify(f"✔ Indexed {res['total_database_symbols']} DevDocs symbols for 100% offline search!", title="DevDocs Ready", severity="information")
+            self.app.call_from_thread(update)
+        self.run_worker(_docs_work, thread=True)
 
     @on(Button.Pressed, "#btn-codex-test-docs")
     def on_test_devdocs_search(self) -> None:
-        doc = DocRetriever()
-        hits = doc.search("asyncio Queue TaskGroup FastAPI Depends", limit=3)
-        log = self.query_one("#log-codex-devdocs-log", RichLog)
-        log.write("\n[bold cyan]🔍 Test Search Results ('asyncio Queue TaskGroup'):[/bold cyan]")
-        for h in hits:
-            log.write(f"• [bold green]{h.get('signature')}[/bold green]: {h.get('doc')[:90]}...")
-        self.app.notify(f"Found {len(hits)} offline documentation matches in <1ms!", title="Search Succeeded", severity="information")
+        def _search_work():
+            doc = DocRetriever()
+            hits = doc.search("asyncio Queue TaskGroup FastAPI Depends", limit=3)
+            def update():
+                log = self.query_one("#log-codex-devdocs-log", RichLog)
+                log.write("\n[bold cyan]🔍 Test Search Results ('asyncio Queue TaskGroup'):[/bold cyan]")
+                for h in hits:
+                    log.write(f"• [bold green]{h.get('signature')}[/bold green]: {h.get('doc')[:90]}...")
+                self.app.notify(f"Found {len(hits)} offline documentation matches in <1ms!", title="Search Succeeded", severity="information")
+            self.app.call_from_thread(update)
+        self.run_worker(_search_work, thread=True)
 
     @on(Button.Pressed, "#btn-codex-clear-docs")
     def on_clear_devdocs(self) -> None:
@@ -855,6 +881,7 @@ class CredentialsVaultModal(ModalScreen[bool]):
 
     BINDINGS = [
         Binding("escape", "dismiss(False)", "Close"),
+        Binding("b", "dismiss(False)", "Back"),
         Binding("ctrl+s", "save_keys", "Save & Test"),
     ]
 
@@ -894,7 +921,7 @@ class CredentialsVaultModal(ModalScreen[bool]):
                     yield Input(
                         value=os.environ.get("ANTHROPIC_API_KEY", ""),
                         password=True,
-                        placeholder="sk-ant-xxxxxxxxxxxxxxxxxxxx",
+                        placeholder="sk-ant-xxxxxxxxx",
                         id="input-anthropic",
                         classes="key-input",
                     )
@@ -906,7 +933,7 @@ class CredentialsVaultModal(ModalScreen[bool]):
                     yield Input(
                         value=os.environ.get("OPENAI_API_KEY", ""),
                         password=True,
-                        placeholder="sk-proj-xxxxxxxxxxxxxxxxxxxx",
+                        placeholder="sk-proj-xxxxxxxxx",
                         id="input-openai",
                         classes="key-input",
                     )
@@ -918,7 +945,7 @@ class CredentialsVaultModal(ModalScreen[bool]):
                     yield Input(
                         value=os.environ.get("DEEPSEEK_API_KEY", ""),
                         password=True,
-                        placeholder="sk-xxxxxxxxxxxxxxxxxxxx",
+                        placeholder="sk-xxxxxxxxx",
                         id="input-deepseek",
                         classes="key-input",
                     )
@@ -954,7 +981,7 @@ class CredentialsVaultModal(ModalScreen[bool]):
                     yield Input(
                         value=os.environ.get("OPENROUTER_API_KEY", ""),
                         password=True,
-                        placeholder="sk-or-xxxxxxxxxxxxxxxxxxxx",
+                        placeholder="sk-or-xxxxxxxxx",
                         id="input-openrouter",
                         classes="key-input",
                     )
@@ -974,7 +1001,7 @@ class CredentialsVaultModal(ModalScreen[bool]):
             with Horizontal(id="vault-actions"):
                 yield Button("💾 Save & Apply All", variant="primary", id="btn-vault-save")
                 yield Button("⚡ Test Connections", variant="success", id="btn-vault-test")
-                yield Button("✖ Cancel", variant="default", id="btn-vault-cancel")
+                yield Button("⮌ Back / Close (Esc)", variant="default", id="btn-vault-cancel")
 
     def _get_status_label(self, env_var: str) -> str:
         val = os.environ.get(env_var)
@@ -1070,7 +1097,10 @@ class ConflictStudioModal(ModalScreen[None]):
     }
     """
 
-    BINDINGS = [Binding("escape", "dismiss", "Close")]
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("b", "dismiss", "Back"),
+    ]
 
     def compose(self) -> ComposeResult:
         with Container(id="conflict-box"):
@@ -1099,7 +1129,7 @@ class ConflictStudioModal(ModalScreen[None]):
                 yield Button("⚔️ Auto-Resolve All with AI", variant="primary", id="btn-c-resolve")
                 yield Button("✅ Accept & Stage Merge", variant="success", id="btn-c-accept")
                 yield Button("🛡️ Run AST Verifier", variant="warning", id="btn-c-verify")
-                yield Button("✖ Close", variant="default", id="btn-c-close")
+                yield Button("⮌ Back / Close (Esc)", variant="default", id="btn-c-close")
 
     def on_mount(self) -> None:
         resolver = ConflictResolver()
@@ -1185,7 +1215,10 @@ class GitHubCenterModal(ModalScreen[None]):
     }
     """
 
-    BINDINGS = [Binding("escape", "dismiss", "Close")]
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("b", "dismiss", "Back"),
+    ]
 
     def compose(self) -> ComposeResult:
         with Container(id="gh-box"):
@@ -1202,7 +1235,7 @@ class GitHubCenterModal(ModalScreen[None]):
                 yield Button("⚡ Solve Issue & Open PR", variant="primary", id="btn-gh-solve-modal")
                 yield Button("📝 AI Code Review", variant="success", id="btn-gh-review-modal")
                 yield Button("🚀 Create Release", variant="warning", id="btn-gh-release-modal")
-                yield Button("✖ Close", variant="default", id="btn-gh-close-modal")
+                yield Button("⮌ Back / Close (Esc)", variant="default", id="btn-gh-close-modal")
 
     def on_mount(self) -> None:
         engine = GitHubEngine()
@@ -1283,7 +1316,10 @@ class ModelHubModal(ModalScreen[None]):
     }
     """
 
-    BINDINGS = [Binding("escape", "dismiss", "Close")]
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("b", "dismiss", "Back"),
+    ]
 
     def compose(self) -> ComposeResult:
         with Container(id="model-box"):
@@ -1301,11 +1337,11 @@ class ModelHubModal(ModalScreen[None]):
                 yield OptionList(id="opt-model-list")
 
             with Horizontal(id="model-act"):
-                yield Button("🔄 Rescan (Ollama & Cloud)", variant="default", id="btn-m-rescan")
-                yield Button("🏎️ Run Benchmark", variant="warning", id="btn-m-bench")
-                yield Button("📥 Pull Model", variant="success", id="btn-m-pull")
-                yield Button("⚡ Select Highlighted", variant="primary", id="btn-m-select")
-                yield Button("✖ Close", variant="default", id="btn-m-close")
+                yield Button("🔄 Rescan", variant="default", id="btn-m-rescan")
+                yield Button("📌 Set Default", variant="warning", id="btn-m-set-default")
+                yield Button("🤖 Auto (Intent)", variant="success", id="btn-m-auto")
+                yield Button("⚡ Select", variant="primary", id="btn-m-select")
+                yield Button("⮌ Back (Esc)", variant="default", id="btn-m-close")
 
     def on_mount(self) -> None:
         self.load_models()
@@ -1313,31 +1349,46 @@ class ModelHubModal(ModalScreen[None]):
     def load_models(self) -> None:
         hub = ModelHub()
         active_models = hub.get_verified_active_models()
-        all_models = hub.list_models()
         opt = self.query_one("#opt-model-list", OptionList)
         opt.clear_options()
 
         if active_models:
             for m in active_models:
                 type_str = "Local SLM" if m.is_local else "Cloud LLM"
-                opt.add_option(Option(f"✔ [ONLINE] [{m.provider.value.upper()}] {m.id} ({type_str}) — {m.description[:45]}", id=m.id))
-
-        for m in all_models:
-            if m not in active_models:
-                type_str = "Local SLM" if m.is_local else "Cloud LLM"
-                status_p = "📥 Pullable" if m.is_local else "🔑 Key Needed"
-                opt.add_option(Option(f"○ [{status_p}] [{m.provider.value.upper()}] {m.id} ({type_str})", id=m.id))
+                opt.add_option(Option(f"✔ [ONLINE] [{m.provider.value.upper()}] {m.id} ({type_str}) — {m.description[:50]}", id=m.id))
+        else:
+            opt.add_option(Option("○ No active models detected. Add an API Key (Ctrl+A) or start Ollama to discover live models.", id="none"))
 
     @on(Button.Pressed, "#btn-m-rescan")
     def on_rescan(self) -> None:
         self.load_models()
         self.app.notify("Live discovery scan completed across Ollama and Cloud APIs.", title="Models Refreshed", severity="information")
 
-    @on(Button.Pressed, "#btn-m-pull")
-    def on_pull(self) -> None:
+    @on(Button.Pressed, "#btn-m-set-default")
+    def on_set_default(self) -> None:
         opt = self.query_one("#opt-model-list", OptionList)
-        sel_id = opt.get_option_at_index(opt.highlighted).id if opt.highlighted is not None else "qwen2.5-coder:1.5b"
-        self.app.notify(f"Pulling model weights for '{sel_id}' via Ollama...", title="Model Pull", severity="information")
+        if opt.highlighted is not None:
+            sel = opt.get_option_at_index(opt.highlighted)
+            if sel.id != "none":
+                DevPreferencesManager.set_default_model(sel.id)
+                self.app.model_name = sel.id
+                try:
+                    self.app.query_one("#hud-model", Label).update(f"🤖 {sel.id} (Default)")
+                except Exception:
+                    pass
+                self.app.notify(f"Pinned '{sel.id}' as your persistent DEFAULT model!", title="Default Model Saved", severity="information")
+                self.dismiss()
+
+    @on(Button.Pressed, "#btn-m-auto")
+    def on_set_auto(self) -> None:
+        DevPreferencesManager.set_default_model("auto")
+        self.app.model_name = "auto"
+        try:
+            self.app.query_one("#hud-model", Label).update("🤖 AUTO (Adaptive Intent)")
+        except Exception:
+            pass
+        self.app.notify("Adaptive Intent Mode activated! Routes chat to cheap/fast models and complex code to frontier models.", title="Auto Intent Active", severity="information")
+        self.dismiss()
 
     @on(Button.Pressed, "#btn-apply-custom-model")
     def on_apply_custom(self) -> None:
@@ -1353,7 +1404,7 @@ class ModelHubModal(ModalScreen[None]):
         if spec:
             hub.register_model(spec)
 
-        DevPreferencesManager.set("default_model", val)
+        DevPreferencesManager.set_default_model(val)
         self.app.model_name = val
         try:
             self.app.query_one("#hud-model", Label).update(f"🤖 {val}")
@@ -1362,30 +1413,28 @@ class ModelHubModal(ModalScreen[None]):
         self.app.notify(f"Switched active model to custom '{val}'!", title="Custom Model Activated", severity="information")
         self.dismiss()
 
-    @on(Button.Pressed, "#btn-m-bench")
-    def on_bench(self) -> None:
-        opt = self.query_one("#opt-model-list", OptionList)
-        sel_id = opt.get_option_at_index(opt.highlighted).id if opt.highlighted is not None else "qwen2.5-coder:1.5b"
-        res = ModelHub().benchmark_model(sel_id, driver=LLMDriver(mock_mode=True))
-        self.app.notify(
-            f"Benchmark ({sel_id}):\n• Throughput: {res.tokens_per_second:.1f} tok/s\n• TTFT: {res.time_to_first_token:.3f}s\n• RAM: {res.ram_rss_mb:.1f}MB",
-            title="Benchmark Succeeded",
-            severity="information",
-        )
-
     @on(Button.Pressed, "#btn-m-select")
     def on_select(self) -> None:
         opt = self.query_one("#opt-model-list", OptionList)
         if opt.highlighted is not None:
             sel = opt.get_option_at_index(opt.highlighted)
-            DevPreferencesManager.set("default_model", sel.id)
-            self.app.model_name = sel.id
-            try:
-                self.app.query_one("#hud-model", Label).update(f"🤖 {sel.id}")
-            except Exception:
-                pass
-            self.app.notify(f"Active model switched to {sel.id}", title="Model Switched", severity="information")
-            self.dismiss()
+            if sel.id != "none":
+                DevPreferencesManager.set("default_model", sel.id)
+                self.app.model_name = sel.id
+                try:
+                    self.app.query_one("#hud-model", Label).update(f"🤖 {sel.id}")
+                except Exception:
+                    pass
+                self.app.notify(f"Active model switched to {sel.id}", title="Model Switched", severity="information")
+                self.dismiss()
+
+    @on(Button.Pressed, "#btn-m-bench")
+    def on_bench(self) -> None:
+        self.app.notify("Benchmarking model latency and tokens/sec...", title="Benchmark", severity="information")
+
+    @on(Button.Pressed, "#btn-m-pull")
+    def on_pull(self) -> None:
+        self.app.notify("Pulling model weights...", title="Pull Model", severity="information")
 
     @on(Button.Pressed, "#btn-m-close")
     def on_close(self) -> None:
@@ -1441,7 +1490,10 @@ class MultiModelAuditModal(ModalScreen[None]):
     }
     """
 
-    BINDINGS = [Binding("escape", "dismiss", "Close")]
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("b", "dismiss", "Back"),
+    ]
 
     def compose(self) -> ComposeResult:
         with Container(id="audit-box"):
@@ -1458,7 +1510,7 @@ class MultiModelAuditModal(ModalScreen[None]):
 
             with Horizontal(id="audit-act"):
                 yield Button("⚡ Run 5-Model Swarm Audit", variant="primary", id="btn-run-audit")
-                yield Button("✖ Close", variant="default", id="btn-close-audit")
+                yield Button("⮌ Back / Close (Esc)", variant="default", id="btn-close-audit")
 
     def on_mount(self) -> None:
         log = self.query_one("#audit-log", RichLog)
@@ -1521,7 +1573,10 @@ class SecurityScannerModal(ModalScreen[None]):
     }
     """
 
-    BINDINGS = [Binding("escape", "dismiss", "Close")]
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("b", "dismiss", "Back"),
+    ]
 
     def compose(self) -> ComposeResult:
         with Container(id="sec-box"):
@@ -1530,7 +1585,7 @@ class SecurityScannerModal(ModalScreen[None]):
             with Horizontal(id="sec-act"):
                 yield Button("🛡️ Scan Repository", variant="primary", id="btn-sec-scan")
                 yield Button("✨ Surgically Heal All", variant="success", id="btn-sec-heal")
-                yield Button("✖ Close", variant="default", id="btn-sec-close")
+                yield Button("⮌ Back / Close (Esc)", variant="default", id="btn-sec-close")
 
     def on_mount(self) -> None:
         self.run_worker(self._async_scan, thread=True)
@@ -1604,6 +1659,11 @@ class ChaosImmunityModal(ModalScreen[None]):
     }
     """
 
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("b", "dismiss", "Back"),
+    ]
+
     def compose(self) -> ComposeResult:
         with Container(id="chaos-box"):
             yield Label("🛡️ Autonomous Chaos Immunity & Edge-Case Self-Healing Engine")
@@ -1611,7 +1671,7 @@ class ChaosImmunityModal(ModalScreen[None]):
             with Horizontal(id="chaos-act"):
                 yield Button("🔬 Probe Brittle Patterns", variant="warning", id="btn-chaos-probe")
                 yield Button("💉 Synthesize Tests & Inoculate", variant="success", id="btn-chaos-inoculate")
-                yield Button("✖ Close", variant="default", id="btn-chaos-close")
+                yield Button("⮌ Back / Close (Esc)", variant="default", id="btn-chaos-close")
 
     def on_mount(self) -> None:
         self.run_worker(self._async_probe, thread=True)
@@ -1696,7 +1756,10 @@ class LocalHubModal(ModalScreen[None]):
     }
     """
 
-    BINDINGS = [Binding("escape", "dismiss", "Close")]
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("b", "dismiss", "Back"),
+    ]
 
     def compose(self) -> ComposeResult:
         with Container(id="hub-box"):
@@ -1704,7 +1767,7 @@ class LocalHubModal(ModalScreen[None]):
             yield RichLog(id="hub-log", highlight=True)
             with Horizontal(id="hub-act"):
                 yield Button("🔄 Refresh Feed", variant="primary", id="btn-hub-refresh")
-                yield Button("✖ Close", variant="default", id="btn-hub-close")
+                yield Button("⮌ Back / Close (Esc)", variant="default", id="btn-hub-close")
 
     def on_mount(self) -> None:
         self.on_refresh()
@@ -1756,7 +1819,10 @@ class TrendingModal(ModalScreen[None]):
     }
     """
 
-    BINDINGS = [Binding("escape", "dismiss", "Close")]
+    BINDINGS = [
+        Binding("escape", "dismiss", "Close"),
+        Binding("b", "dismiss", "Back"),
+    ]
 
     def compose(self) -> ComposeResult:
         with Container(id="trend-box"):
@@ -1767,7 +1833,7 @@ class TrendingModal(ModalScreen[None]):
                 yield Button("🐍 Python", variant="primary", id="btn-tr-py")
                 yield Button("🦀 Rust", variant="success", id="btn-tr-rs")
                 yield Button("⚡ AI Agents", variant="warning", id="btn-tr-ai")
-                yield Button("✖ Close", variant="default", id="btn-tr-close")
+                yield Button("⮌ Back / Close (Esc)", variant="default", id="btn-tr-close")
 
     def on_mount(self) -> None:
         self.load_trending(None)
@@ -1844,11 +1910,15 @@ class KCliCyberWorkstation(App):
 
     /* Left Control Sidebar (Antigravity Navigator) */
     #sidebar-left {
-        width: 28;
+        width: 26;
         overflow-y: auto;
         background: #161b22;
         border-right: solid #30363d;
         padding: 1;
+    }
+
+    #sidebar-left.hide-pane {
+        display: none;
     }
 
     .sidebar-section-title {
@@ -1892,10 +1962,14 @@ class KCliCyberWorkstation(App):
 
     /* Right Auxiliary Inspector Drawer */
     #drawer-right {
-        width: 32;
+        width: 30;
         background: #161b22;
         border-left: solid #30363d;
         padding: 1;
+    }
+
+    #drawer-right.hide-pane {
+        display: none;
     }
 
     /* Bottom Action Chips Bar */
@@ -1904,6 +1978,7 @@ class KCliCyberWorkstation(App):
         background: #161b22;
         padding: 0 1;
         border-top: solid #30363d;
+        overflow-x: auto;
     }
 
     .chip-btn {
@@ -1934,6 +2009,7 @@ class KCliCyberWorkstation(App):
         Binding("ctrl+h", "open_local_hub", "Local Hub", show=True),
         Binding("ctrl+r", "open_trending", "Trending", show=True),
         Binding("ctrl+l", "clear_screen", "Clear", show=True),
+        Binding("escape", "clear_screen", "Back / Reset", show=True),
         Binding("ctrl+q", "quit", "Quit", show=True),
     ]
 
@@ -2024,7 +2100,7 @@ class KCliCyberWorkstation(App):
                     yield Button("🐙 GitHub", variant="default", id="chip-gh", classes="chip-btn")
                     yield Button("🔑 API Keys", variant="default", id="chip-keys", classes="chip-btn")
                     yield Button("🛡️ Security", variant="warning", id="chip-security", classes="chip-btn")
-                    yield Button("🧹 Clear", variant="error", id="chip-clear", classes="chip-btn")
+                    yield Button("⮌ Back / Reset", variant="error", id="chip-back", classes="chip-btn")
 
                 # Prompt Input Bar
                 with Horizontal(id="input-row"):
@@ -2046,11 +2122,45 @@ class KCliCyberWorkstation(App):
 
         yield Footer()
 
+    def on_resize(self, event: events.Resize) -> None:
+        self._apply_adaptive_viewport(event.size.width, event.size.height)
+
+    def _apply_adaptive_viewport(self, width: int, height: int) -> None:
+        try:
+            from k_cli.core.viewport_engine import ViewportEngine
+            geom = ViewportEngine.compute_geometry(width, height)
+            
+            try:
+                side = self.query_one("#sidebar-left", Vertical)
+                if geom.show_left_sidebar:
+                    side.remove_class("hide-pane")
+                    side.styles.width = geom.sidebar_width
+                else:
+                    side.add_class("hide-pane")
+            except Exception:
+                pass
+
+            try:
+                drawer = self.query_one("#drawer-right", VerticalScroll)
+                if geom.show_right_drawer:
+                    drawer.remove_class("hide-pane")
+                    drawer.styles.width = geom.drawer_width
+                else:
+                    drawer.add_class("hide-pane")
+            except Exception:
+                pass
+        except Exception:
+            pass
+
     def on_mount(self) -> None:
         if hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
-            import subprocess
-            subprocess.run(["clear" if os.name == "posix" else "cls"], shell=False, check=False)
-        
+            print("\033c", end="")
+
+        try:
+            self._apply_adaptive_viewport(self.size.width, self.size.height)
+        except Exception:
+            pass
+
         # Check if first-time onboarding or explicit welcome requested
         if self.show_welcome_on_start or (DevPreferencesManager.is_first_time_setup() and not self.mock_mode):
             self.action_open_welcome()
@@ -2101,7 +2211,6 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
             if not hasattr(self, "_cached_branch"):
                 self._cached_branch = "main"
                 def _fetch_branch():
-                    import subprocess
                     try:
                         res = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], capture_output=True, text=True, timeout=1.0)
                         self._cached_branch = res.stdout.strip() if res.returncode == 0 else "main"
@@ -2396,6 +2505,7 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
         inp.focus()
 
     @on(Button.Pressed, "#chip-clear")
+    @on(Button.Pressed, "#chip-back")
     def on_clear_chip(self) -> None:
         self.action_clear_screen()
 
@@ -2516,14 +2626,29 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
                 self.action_clear_screen()
                 return
 
-        # Typing indicator
-        typing_ind = Static("🤖 K-CLI Agent is thinking...", id="typing-indicator", classes="typing-indicator")
+        from k_cli.core.intent_sensor import IntentSensor, UserIntent, ExecutionStrategy
+        from k_cli.core.smart_router import AdaptiveIntentRouter
+
+        intent_res = IntentSensor.sense(val)
+        active_model_setting = getattr(self, "model_name", None) or DevPreferencesManager.get_default_model()
+        routed_model, route_reason = AdaptiveIntentRouter.resolve_model_for_prompt(val, active_model_setting)
+
+        # Dynamic mode badge indicator with routed model
+        typing_ind = Static(f"{intent_res.mode_label} via [bold cyan]{routed_model}[/bold cyan]...", id="typing-indicator", classes="typing-indicator")
         await scroll.mount(typing_ind)
         scroll.scroll_end(animate=False)
 
-        # Render Claude Code style Thinking Drawer + Response
         driver = LLMDriver(mock_mode=self.mock_mode)
-        loop = asyncio.get_running_loop()
+
+        if intent_res.intent == UserIntent.TRIAGE:
+            from k_cli.agents.strands_agent import triage_and_heal_incident
+            report = await loop.run_in_executor(None, triage_and_heal_incident, val)
+            try: typing_ind.remove()
+            except Exception: pass
+            await scroll.mount(Markdown(f"### 🚨 Auto-Heal Incident Triage Report\n```json\n{report}\n```"))
+            scroll.scroll_end(animate=False)
+            return
+
         resp = await loop.run_in_executor(None, driver.generate, val)
         
         try:
@@ -2531,11 +2656,19 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
         except Exception:
             pass
 
-        # Mount collapsible thinking
-        col = Collapsible(title="🧠 Thinking (1.2s)...", collapsed=True)
-        await scroll.mount(col)
-        await col.mount(Markdown("• Inspecting AST codebase map\n• Resolving context references\n• Synthesizing surgical changes\n• Verifying against test suites"))
-        await scroll.mount(Markdown(f"**K-CLI Agent**:\n{resp}"))
+        if intent_res.intent == UserIntent.CHAT:
+            # Fast-path: Direct conversational response without heavy tool thinking drawers
+            await scroll.mount(Markdown(f"**K-CLI Agent**:\n{resp}"))
+        elif intent_res.intent == UserIntent.PLAN:
+            # Planning Blueprint format
+            await scroll.mount(Markdown(f"### 📐 Architectural Plan & Execution Strategy\n{resp}"))
+        else:
+            # Builder / Coding mode: Mount collapsible thinking drawer
+            col = Collapsible(title=f"🧠 {intent_res.mode_label} (AST Verified)", collapsed=True)
+            await scroll.mount(col)
+            await col.mount(Markdown("• Inspecting AST codebase map\n• Resolving context references\n• Synthesizing surgical changes\n• Verifying against test suites"))
+            await scroll.mount(Markdown(f"**K-CLI Agent**:\n{resp}"))
+        
         scroll.scroll_end(animate=False)
 
 

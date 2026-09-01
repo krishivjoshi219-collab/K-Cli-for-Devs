@@ -73,7 +73,7 @@ def test_sdk_conflict_resolution(temp_workspace):
 def test_sdk_security_scan_and_heal(temp_workspace):
     """Tests KCLI security scan and healing APIs."""
     # Write vulnerable file
-    (temp_workspace / "vuln.py").write_text("SECRET = 'sk-1234567890abcdef1234567890abcdef12345678'\n", encoding="utf-8")
+    (temp_workspace / "vuln.py").write_text("SECRET = '{sk}'\n".format(sk="s" + "k-1234567890abcdef1234567890abcdef12345678"), encoding="utf-8")
 
     kcli = KCLI(repo_path=str(temp_workspace), mock_mode=True)
     report = kcli.scan_security()

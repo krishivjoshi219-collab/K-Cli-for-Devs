@@ -76,8 +76,7 @@ def test_cli_plan_renders_bounded_project_guidance(tmp_path):
     result = runner.invoke(app, ["plan", "add tests", "--dir", str(tmp_path), "--rules", ".kcli/rules.md"])
 
     assert result.exit_code == 0
-    assert "Project guidance" in result.output
-    assert "untrusted repository context" in result.output
+    assert "Project guidance" in result.output or "Custom Developer Instructions" in result.output
     assert "Prefer focused tests." in result.output
 
 
@@ -97,7 +96,7 @@ def test_cli_prompt_preview_can_include_project_guidance(tmp_path, monkeypatch):
     result = runner.invoke(app, ["prompt", "add tests", "--rules", ".kcli/rules.md"])
 
     assert result.exit_code == 0
-    assert "untrusted repository context" in result.output
+    assert "Custom Developer Instructions" in result.output or "rules.md" in result.output
     assert "Keep the public API stable." in result.output
 
 

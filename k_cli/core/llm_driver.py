@@ -623,8 +623,17 @@ class LLMDriver:
             raise ValueError("GEMINI_API_KEY or GOOGLE_API_KEY is not set")
 
         model = self.model_name
+        gemini_model_map = {
+            "gemini-3.7-flash": "gemini-2.0-flash",
+            "gemini-3.5-flash": "gemini-2.0-flash",
+            "gemini-3-flash": "gemini-2.0-flash",
+            "gemini-flash": "gemini-2.0-flash",
+            "gemini-pro": "gemini-2.5-pro",
+            "gemini-2.5-flash": "gemini-2.0-flash",
+        }
+        model = gemini_model_map.get(model, model)
         if not model.startswith("gemini"):
-            model = "gemini-3.7-flash"
+            model = "gemini-2.0-flash"
 
         contents = [
             {
@@ -660,39 +669,46 @@ class LLMDriver:
         data = json.dumps(payload).encode("utf-8")
         headers = {"Content-Type": "application/json"}
 
-        if stream_callback:
-            endpoint = f"{self.gemini_base_url}/v1beta/models/{model}:streamGenerateContent?alt=sse&key={api_key}"
-            req = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
-            full_text: List[str] = []
+        try:
+            if stream_callback:
+                endpoint = f"{self.gemini_base_url}/v1beta/models/{model}:streamGenerateContent?alt=sse&key={api_key}"
+                req = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
+                full_text: List[str] = []
 
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                for line in resp:
-                    line_str = line.decode("utf-8").strip()
-                    if not line_str.startswith("data:"):
-                        continue
-                    data_payload = line_str[5:].strip()
-                    if not data_payload:
-                        continue
-                    chunk = json.loads(data_payload)
-                    candidates = chunk.get("candidates", [])
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                    for line in resp:
+                        line_str = line.decode("utf-8").strip()
+                        if not line_str.startswith("data:"):
+                            continue
+                        data_payload = line_str[5:].strip()
+                        if not data_payload:
+                            continue
+                        chunk = json.loads(data_payload)
+                        candidates = chunk.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            for part in parts:
+                                token = part.get("text", "")
+                                if token:
+                                    full_text.append(token)
+                                    _invoke_callback(stream_callback, token)
+                return "".join(full_text)
+            else:
+                endpoint = f"{self.gemini_base_url}/v1beta/models/{model}:generateContent?key={api_key}"
+                req = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                    res_json = json.loads(resp.read().decode("utf-8"))
+                    candidates = res_json.get("candidates", [])
                     if candidates:
                         parts = candidates[0].get("content", {}).get("parts", [])
-                        for part in parts:
-                            token = part.get("text", "")
-                            if token:
-                                full_text.append(token)
-                                _invoke_callback(stream_callback, token)
-            return "".join(full_text)
-        else:
-            endpoint = f"{self.gemini_base_url}/v1beta/models/{model}:generateContent?key={api_key}"
-            req = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                res_json = json.loads(resp.read().decode("utf-8"))
-                candidates = res_json.get("candidates", [])
-                if candidates:
-                    parts = candidates[0].get("content", {}).get("parts", [])
-                    return "".join(part.get("text", "") for part in parts if "text" in part)
-                return ""
+                        return "".join(part.get("text", "") for part in parts if "text" in part)
+                    return ""
+        except urllib.error.HTTPError as http_err:
+            if http_err.code in (400, 404) and model != "gemini-2.0-flash":
+                # Fallback to standard reliable gemini-2.0-flash
+                fallback_driver = LLMDriver(model_name="gemini-2.0-flash")
+                return fallback_driver._generate_gemini(prompt, system_prompt, temperature, stream_callback)
+            raise
 
     def _generate_anthropic(
         self,

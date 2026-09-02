@@ -1974,7 +1974,9 @@ class KCliCyberWorkstation(App):
 
     /* Bottom Action Chips Bar */
     #chips-bar {
-        height: 3;
+        height: auto;
+        min-height: 2;
+        max-height: 3;
         background: #161b22;
         padding: 0 1;
         border-top: solid #30363d;
@@ -1982,13 +1984,27 @@ class KCliCyberWorkstation(App):
     }
 
     .chip-btn {
+        height: 1;
+        min-width: 10;
         margin-right: 1;
+        margin-top: 0;
+        margin-bottom: 0;
+        padding: 0 1;
+        border: none;
+        background: #21262d;
+        color: #58a6ff;
+    }
+
+    .chip-btn:hover {
+        background: #30363d;
+        color: #00f0ff;
     }
 
     #input-row {
         height: 3;
         background: #161b22;
         padding: 0 1;
+        border-top: solid #30363d;
     }
 
     #main-prompt-input {
@@ -2638,7 +2654,7 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
         await scroll.mount(typing_ind)
         scroll.scroll_end(animate=False)
 
-        driver = LLMDriver(mock_mode=self.mock_mode)
+        driver = LLMDriver(model_name=routed_model, mock_mode=self.mock_mode)
 
         if intent_res.intent == UserIntent.TRIAGE:
             from k_cli.agents.strands_agent import triage_and_heal_incident
@@ -2649,25 +2665,58 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
             scroll.scroll_end(animate=False)
             return
 
-        resp = await loop.run_in_executor(None, driver.generate, val)
-        
-        try:
-            typing_ind.remove()
-        except Exception:
-            pass
-
         if intent_res.intent == UserIntent.CHAT:
-            # Fast-path: Direct conversational response without heavy tool thinking drawers
-            await scroll.mount(Markdown(f"**K-CLI Agent**:\n{resp}"))
+            # Fast conversational query
+            resp = await loop.run_in_executor(None, driver.generate, val)
+            try: typing_ind.remove()
+            except Exception: pass
+            await scroll.mount(Markdown(f"**K-CLI Agent** ({routed_model}):\n{resp}"))
         elif intent_res.intent == UserIntent.PLAN:
             # Planning Blueprint format
-            await scroll.mount(Markdown(f"### 📐 Architectural Plan & Execution Strategy\n{resp}"))
+            resp = await loop.run_in_executor(None, driver.generate, f"Create a detailed engineering execution plan for: {val}")
+            try: typing_ind.remove()
+            except Exception: pass
+            await scroll.mount(Markdown(f"### 📐 Architectural Plan & Execution Strategy ({routed_model})\n{resp}"))
         else:
-            # Builder / Coding mode: Mount collapsible thinking drawer
-            col = Collapsible(title=f"🧠 {intent_res.mode_label} (AST Verified)", collapsed=True)
+            # Builder / Coding mode: Run full Orchestrator pipeline with AST verification and native file operations
+            verifier = Verifier()
+            orchestrator = Orchestrator(driver=driver, verifier=verifier)
+
+            def _run_orch():
+                return orchestrator.execute_pipeline(user_prompt=val, language="python")
+
+            orch_res = await loop.run_in_executor(None, _run_orch)
+            try: typing_ind.remove()
+            except Exception: pass
+
+            # Check if user prompt specifies writing to a file
+            target_match = re.search(r"(?:save|write|create|output)(?:\s+to|\s+in)?\s+([a-zA-Z0-9_\-/\\]+\.[a-zA-Z0-9]+)", val, re.IGNORECASE)
+            written_msg = ""
+            if target_match and orch_res.final_code:
+                out_path = Path(target_match.group(1)).resolve()
+                try:
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    out_path.write_text(orch_res.final_code, encoding="utf-8")
+                    written_msg = f"\n\n> 💾 **Native File Written**: `{out_path}` ({len(orch_res.final_code.encode('utf-8'))} bytes)"
+                    self.notify(f"Written to {out_path.name}", title="File Created", severity="information")
+                except Exception as write_err:
+                    written_msg = f"\n\n> ⚠️ File write error: {write_err}"
+
+            col = Collapsible(title=f"🧠 Builder Pipeline: {routed_model} · {orch_res.attempts} attempt(s) · AST {'✔ PASS' if orch_res.success else '✘ FAIL'}", collapsed=False)
             await scroll.mount(col)
-            await col.mount(Markdown("• Inspecting AST codebase map\n• Resolving context references\n• Synthesizing surgical changes\n• Verifying against test suites"))
-            await scroll.mount(Markdown(f"**K-CLI Agent**:\n{resp}"))
+            
+            summary_lines = [
+                f"• **Routed Model**: `{routed_model}` ({route_reason})",
+                f"• **AST Verification**: `{'PASSED (Zero Syntax Errors)' if orch_res.success else 'FAILED'}`",
+                f"• **RAM Usage**: `{round(orch_res.ram_usage_mb, 2)} MB`",
+            ]
+            if orch_res.architecture_plan:
+                summary_lines.append(f"• **Architecture Plan**: {orch_res.architecture_plan[:160]}...")
+            
+            await col.mount(Markdown("\n".join(summary_lines)))
+
+            output_md = f"**Generated Implementation**:\n```python\n{orch_res.final_code}\n```{written_msg}" if orch_res.final_code else f"**Response**:\n{orch_res.critic_output}"
+            await scroll.mount(Markdown(output_md))
         
         scroll.scroll_end(animate=False)
 

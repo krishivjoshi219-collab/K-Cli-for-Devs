@@ -476,8 +476,104 @@ def generate_chaos_immunity_patch(file_path: str, repo_path: str = ".") -> str:
         return json.dumps({"error": str(e), "target_file": file_path, "verification_passed": False})
 
 
+@tool
+def write_workspace_file(file_path: str, content: str) -> str:
+    """Creates or overwrites a file in the workspace with directory creation and AST syntax checks.
+
+    Args:
+        file_path: Relative path of the file to write (e.g. 'src/utils.py').
+        content: The text content of the file.
+
+    Returns:
+        JSON status with path, bytes written, and verification status.
+    """
+    try:
+        p = Path(file_path).resolve()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(content, encoding="utf-8")
+        
+        # Auto verify if python file
+        verif_msg = "written"
+        if p.suffix.lower() == ".py":
+            import py_compile
+            try:
+                py_compile.compile(str(p), doraise=True)
+                verif_msg = "written and py_compile passed"
+            except py_compile.PyCompileError as pe:
+                verif_msg = f"written but py_compile failed: {pe}"
+
+        return json.dumps({
+            "status": "SUCCESS",
+            "file_path": str(file_path),
+            "bytes_written": len(content.encode("utf-8")),
+            "verification": verif_msg,
+        }, indent=2)
+    except Exception as e:
+        return json.dumps({"status": "ERROR", "file_path": file_path, "error": str(e)})
+
+
+@tool
+def read_workspace_file(file_path: str, start_line: int = 1, max_lines: int = 200) -> str:
+    """Reads content from a workspace file with line numbers.
+
+    Args:
+        file_path: Path to the file to read.
+        start_line: 1-based start line.
+        max_lines: Maximum number of lines to return.
+
+    Returns:
+        Text content of the file slice.
+    """
+    try:
+        p = Path(file_path).resolve()
+        if not p.exists():
+            return f"Error: File not found: {file_path}"
+        lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
+        selected = lines[max(0, start_line - 1):start_line - 1 + max_lines]
+        formatted = [f"{i + start_line:4d} | {line}" for i, line in enumerate(selected)]
+        return "\n".join(formatted)
+    except Exception as e:
+        return f"Error reading file {file_path}: {e}"
+
+
+@tool
+def run_terminal_command(command: str, timeout_seconds: int = 30) -> str:
+    """Executes a non-interactive shell command (such as pytest, cargo check, git status) in the workspace.
+
+    Args:
+        command: The shell command to run.
+        timeout_seconds: Maximum execution time in seconds.
+
+    Returns:
+        Command exit code, stdout, and stderr.
+    """
+    import subprocess
+    try:
+        proc = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            cwd=".",
+        )
+        return json.dumps({
+            "command": command,
+            "exit_code": proc.returncode,
+            "stdout": proc.stdout[:2000],
+            "stderr": proc.stderr[:2000],
+        }, indent=2)
+    except subprocess.TimeoutExpired:
+        return json.dumps({"command": command, "error": f"Command timed out after {timeout_seconds}s"})
+    except Exception as e:
+        return json.dumps({"command": command, "error": str(e)})
+
+
 # List of all tools registered for the Strands Agent
 STRANDS_DEV_TOOLS = [
+    write_workspace_file,
+    read_workspace_file,
+    run_terminal_command,
     triage_and_heal_incident,
     verify_code_file,
     apply_surgical_patch,

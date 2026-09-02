@@ -153,7 +153,22 @@ def create_app() -> FastAPI:
     if STATIC_DIR.exists():
         app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-    # REST Endpoints
+    @app.get("/favicon.ico")
+    async def get_favicon():
+        from fastapi import Response
+        return Response(status_code=204)
+
+    @app.get("/v1/models")
+    async def get_v1_models():
+        hub = ModelHub()
+        models = hub.list_models()
+        return {
+            "object": "list",
+            "data": [
+                {"id": m.id, "object": "model", "created": int(time.time()), "owned_by": m.provider.value if hasattr(m.provider, "value") else str(m.provider)}
+                for m in models
+            ]
+        }
 
     @app.get("/", response_class=HTMLResponse)
     async def get_index():
@@ -406,8 +421,15 @@ def create_app() -> FastAPI:
                 ),
             )
 
+            if result.final_code:
+                await websocket.send_json({
+                    "type": "token",
+                    "persona": persona or "CODER",
+                    "token": f"\n\n```\n{result.final_code}\n```\n" if "\n" in result.final_code and "```" not in result.final_code else "",
+                })
+
             comp_payload = {
-                "type": "complete",
+                "type": "done",
                 "success": result.success,
                 "final_code": result.final_code,
                 "attempts": result.attempts,

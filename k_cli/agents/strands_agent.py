@@ -637,9 +637,13 @@ class StrandsModelFactory:
 
         provider = provider.lower()
 
+        # 0. Deterministic Mock / Offline Mode
+        if provider in ("mock", "offline", "deterministic", "local_deterministic"):
+            return None
+
         # 1. Explicit Amazon Bedrock
         if provider in ("bedrock", "aws") or (
-            provider == "auto" and (os.getenv("AWS_ACCESS_KEY_ID") or os.getenv("AWS_DEFAULT_REGION") or os.getenv("AWS_REGION"))
+            provider == "auto" and (os.getenv("AWS_ACCESS_KEY_ID") or os.getenv("AWS_PROFILE") or os.getenv("AWS_DEFAULT_REGION") or os.getenv("AWS_REGION"))
         ):
             if BedrockModel is not None:
                 model_id = model_name or os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20241022-v2:0")
@@ -692,8 +696,8 @@ class StrandsModelFactory:
                 except Exception as e:
                     logger.warning(f"Failed to initialize OllamaModel: {e}")
 
-        # Fallback to Bedrock with default settings if available
-        if BedrockModel is not None:
+        # Fallback to Bedrock only if explicit AWS credentials/config are present
+        if BedrockModel is not None and (os.getenv("AWS_ACCESS_KEY_ID") or os.getenv("AWS_PROFILE")):
             try:
                 return BedrockModel(model_id="anthropic.claude-3-5-sonnet-20241022-v2:0")
             except Exception:
@@ -725,6 +729,10 @@ class StrandsDevAgent:
             logger.warning("Strands SDK not available. Running in headless compatibility mode.")
             return
 
+        if self.provider in ("mock", "offline", "deterministic", "local_deterministic"):
+            self._agent_instance = None
+            return
+
         model = StrandsModelFactory.create_model(
             provider=self.provider,
             model_name=self.model_name,
@@ -738,12 +746,10 @@ class StrandsDevAgent:
                     system_prompt=STRANDS_SYSTEM_PROMPT,
                     tools=self.tools,
                 )
+                logger.info("StrandsDevAgent successfully initialized with live model and tools.")
             else:
-                self._agent_instance = Agent(
-                    system_prompt=STRANDS_SYSTEM_PROMPT,
-                    tools=self.tools,
-                )
-            logger.info("StrandsDevAgent successfully initialized with tools.")
+                self._agent_instance = None
+                logger.info("StrandsDevAgent running in local deterministic mode.")
         except Exception as e:
             logger.exception(f"Error creating Strands Agent instance: {e}")
             self._agent_instance = None

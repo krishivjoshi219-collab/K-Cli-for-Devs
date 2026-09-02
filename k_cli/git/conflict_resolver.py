@@ -980,6 +980,9 @@ class ConflictResolver:
         llm_driver: Any = None,
         verifier: Optional[Any] = None,
         auto_stage: bool = True,
+        model_name: Optional[str] = None,
+        mock: bool = False,
+        **kwargs: Any,
     ) -> ConflictSummary:
         """
         Discovers all conflicted files in repository, resolves each file,

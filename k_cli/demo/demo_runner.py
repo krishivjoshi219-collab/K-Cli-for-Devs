@@ -547,6 +547,23 @@ class CinematicDemoRunner:
         self.console.print("\n[bold green]✔ 5-Minute Championship Live Demo Completed Successfully![/bold green]\n")
 
 
+def start_cinematic_demo(speed: float = 1.0, act: Optional[int] = None, play_audio: bool = False) -> None:
+    """Executes the cinematic 5-minute production demo."""
+    runner = CinematicDemoRunner(speed_multiplier=speed, play_audio=play_audio)
+    if act == 1:
+        runner.run_act_1_the_hook()
+    elif act == 2:
+        runner.run_act_2_strands_agent_and_compilers()
+    elif act == 3:
+        runner.run_act_3_bedrock_and_daemon()
+    elif act == 4:
+        runner.run_act_4_conflicts_and_chaos()
+    elif act == 5:
+        runner.run_act_5_bankai_models_and_finale()
+    else:
+        runner.run_all()
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="K-CLI 5-Minute Live Interactive Championship Demo Runner")
@@ -555,19 +572,7 @@ def main():
     parser.add_argument("--no-audio", action="store_true", help="Disable audio playback")
     args = parser.parse_args()
 
-    runner = CinematicDemoRunner(speed_multiplier=args.speed, play_audio=not args.no_audio)
-    if args.act == 1:
-        runner.run_act_1_the_hook()
-    elif args.act == 2:
-        runner.run_act_2_strands_agent_and_compilers()
-    elif args.act == 3:
-        runner.run_act_3_bedrock_and_daemon()
-    elif args.act == 4:
-        runner.run_act_4_conflicts_and_chaos()
-    elif args.act == 5:
-        runner.run_act_5_bankai_models_and_finale()
-    else:
-        runner.run_all()
+    start_cinematic_demo(speed=args.speed, act=args.act if args.act > 0 else None, play_audio=not args.no_audio)
 
 
 if __name__ == "__main__":

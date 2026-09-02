@@ -78,12 +78,12 @@ class IntentSensor:
     )
 
     EXPLAIN_PATTERNS = re.compile(
-        r"\b(explain|walkthrough|how does (this|the) (code|function|class|repo|file) work|how to use|documentation for)\b",
+        r"\b(explain|walkthrough|how does|does (the|this|my)|is (the|this|my)|look solid|review|audit|check (my|the|this)|how to use|documentation for)\b",
         re.IGNORECASE,
     )
 
     BUILD_PATTERNS = re.compile(
-        r"\b(build|create|implement|write|generate|add|refactor|fix|update|modify|code|scaffold|endpoint|api|database|model)\b",
+        r"\b(build|create|implement|write|generate|add|refactor|fix|update|modify|scaffold|endpoint|api|database|write code|code up)\b",
         re.IGNORECASE,
     )
 

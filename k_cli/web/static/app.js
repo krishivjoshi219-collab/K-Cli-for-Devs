@@ -112,6 +112,10 @@ function initAgentRunner() {
             return;
         }
 
+        btnRun.disabled = true;
+        const originalBtnHtml = btnRun.innerHTML;
+        btnRun.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Executing...';
+
         outputCard.classList.remove('hidden');
         terminal.textContent = '⚡ Initiating agent execution stream...\n';
         badgeVerif.className = 'badge badge-warning';
@@ -137,6 +141,11 @@ function initAgentRunner() {
         const wsUrl = `${wsProtocol}//${window.location.host}/ws/agent`;
         const ws = new WebSocket(wsUrl);
 
+        const restoreBtn = () => {
+            btnRun.disabled = false;
+            btnRun.innerHTML = originalBtnHtml;
+        };
+
         ws.onopen = () => {
             ws.send(JSON.stringify({
                 prompt: prompt,
@@ -161,21 +170,28 @@ function initAgentRunner() {
                 terminal.textContent += msg.token;
                 terminal.scrollTop = terminal.scrollHeight;
             } else if (msg.type === 'done') {
+                restoreBtn();
                 badgeVerif.className = 'badge badge-success';
                 badgeVerif.textContent = 'AST VERIFIED';
                 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
                 const tokSec = (tokenCount / Math.max(0.1, (Date.now() - startTime)/1000)).toFixed(1);
                 streamStats.textContent = `${tokenCount} tokens • ${elapsed}s (${tokSec} tok/s)`;
             } else if (msg.type === 'error') {
+                restoreBtn();
                 badgeVerif.className = 'badge badge-warning';
                 badgeVerif.textContent = 'ERROR';
-                terminal.textContent += `\n[Error] ${msg.error}\n`;
+                terminal.textContent += `\n[Error] ${msg.message || msg.error}\n`;
             }
         };
 
         ws.onerror = (err) => {
+            restoreBtn();
             console.error('WebSocket error:', err);
             terminal.textContent += '\n[System] WebSocket connection error.\n';
+        };
+
+        ws.onclose = () => {
+            restoreBtn();
         };
     });
 }
@@ -194,19 +210,26 @@ function initCrashTriage() {
             return;
         }
 
+        btnTriage.disabled = true;
+        const origTriageHtml = btnTriage.innerHTML;
+        btnTriage.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Triaging...';
+
         resultCard.classList.remove('hidden');
-        output.textContent = '🔍 Triaging incident and synthesizing AST surgical patch...';
+        output.textContent = '🔍 Triaging incident across 7 environments and synthesizing AST surgical patch...';
 
         try {
             const res = await fetch('/api/triage', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ log: log })
+                body: JSON.stringify({ log_text: log, log: log })
             });
             const data = await res.json();
-            output.textContent = JSON.stringify(data, null, 2);
+            output.textContent = JSON.stringify(data.report || data, null, 2);
         } catch (e) {
             output.textContent = 'Error executing triage request: ' + e.message;
+        } finally {
+            btnTriage.disabled = false;
+            btnTriage.innerHTML = origTriageHtml;
         }
     });
 }

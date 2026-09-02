@@ -82,6 +82,7 @@ try:
     from k_cli.tools.incident_triage import IncidentTriageEngine, IncidentReport
     from k_cli.tools.diagram_generator import DiagramGenerator
     from k_cli.git.verifier import Verifier
+    from k_cli.agents.orchestrator import Orchestrator, Persona
     from k_cli.git.patcher import Patcher
     from k_cli.core.session import SessionManager
     from k_cli.github.local_hub import LocalGitHubHub, LocalHubSummary
@@ -2701,8 +2702,8 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
             scroll.scroll_end(animate=False)
             return
 
-        if intent_res.intent == UserIntent.CHAT:
-            # Fast conversational query
+        if intent_res.intent in (UserIntent.CHAT, UserIntent.EXPLAIN):
+            # Fast conversational query & codebase analysis
             resp = await loop.run_in_executor(None, driver.generate, val)
             try: typing_ind.remove()
             except Exception: pass

@@ -51,15 +51,77 @@ class AdaptiveIntentRouter:
     """
 
     @classmethod
+    def is_model_live(cls, model_name: str) -> bool:
+        """Checks if a model is actually available (cloud key present or local model installed)."""
+        if not model_name:
+            return False
+        m_lower = model_name.lower().strip()
+        if m_lower in ("mock", "offline", "deterministic", "local_deterministic"):
+            return True
+        # Cloud check
+        if "gemini" in m_lower and (os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")):
+            return True
+        if "claude" in m_lower and os.environ.get("ANTHROPIC_API_KEY"):
+            return True
+        if ("gpt" in m_lower or "o1" in m_lower or "o3" in m_lower) and os.environ.get("OPENAI_API_KEY"):
+            return True
+        if "deepseek" in m_lower and os.environ.get("DEEPSEEK_API_KEY"):
+            return True
+        if "groq" in m_lower and os.environ.get("GROQ_API_KEY"):
+            return True
+        if ("bedrock" in m_lower or "anthropic.claude" in m_lower) and (os.environ.get("AWS_ACCESS_KEY_ID") or os.environ.get("AWS_PROFILE")):
+            return True
+        
+        # Local Ollama / GGUF check
+        driver = LLMDriver(model_name=model_name)
+        if driver.is_ollama_available():
+            mm = driver.get_model_manager()
+            if mm and mm.has_ollama_model(model_name):
+                return True
+        mm = driver.get_model_manager()
+        if mm:
+            gguf_path = mm.find_local_gguf(model_name)
+            if gguf_path and Path(gguf_path).exists():
+                return True
+        return False
+
+    @classmethod
+    def get_fallback_live_model(cls) -> Tuple[str, str]:
+        """Finds the best active live model or falls back to sovereign verified model."""
+        CredentialsManager.load_all_credentials()
+        if os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"):
+            return "gemini-2.0-flash", "Active Google Gemini API key"
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            return "claude-3-5-sonnet-20241022", "Active Anthropic Claude API key"
+        if os.environ.get("OPENAI_API_KEY"):
+            return "gpt-4o-mini", "Active OpenAI API key"
+        if os.environ.get("DEEPSEEK_API_KEY"):
+            return "deepseek-chat", "Active DeepSeek API key"
+        if os.environ.get("GROQ_API_KEY"):
+            return "groq/llama-3.1-8b-instant", "Active Groq API key"
+        
+        driver = LLMDriver()
+        if driver.is_ollama_available():
+            mm = driver.get_model_manager()
+            if mm:
+                models = mm.list_installed_models()
+                if models:
+                    return models[0], f"Installed local model '{models[0]}'"
+            return "qwen2.5-coder:1.5b", "Local Ollama server"
+        
+        return "qwen2.5-coder:1.5b", "Sovereign local engine"
+
+    @classmethod
     def resolve_model_for_prompt(cls, prompt: str, requested_model: Optional[str] = None) -> Tuple[str, str]:
         """
         Determines the optimal model for a given prompt:
-        - If requested_model is specific (e.g. 'bankai-14b', 'claude-3-5-sonnet'), returns it directly.
-        - If requested_model is 'default', returns the user's pinned default model.
-        - If requested_model is None or 'auto', dynamically senses intent and chooses the optimal online model.
+        - If requested_model is specific, verifies availability. If inactive/missing, auto-falls back.
+        - If requested_model is 'default' or 'auto', dynamically senses intent and chooses active model.
         """
+        CredentialsManager.load_all_credentials()
+
         if requested_model and requested_model.lower() not in ("auto", "dynamic", "none", "default"):
-            return requested_model, f"User-selected model: {requested_model}"
+            return requested_model.strip(), f"User-selected model: {requested_model.strip()}"
 
         if requested_model and requested_model.lower() == "default":
             def_m = DevPreferencesManager.get_default_model()
@@ -70,19 +132,22 @@ class AdaptiveIntentRouter:
         
         if intent_res.intent == UserIntent.CHAT:
             model = DevPreferencesManager.get_fast_chat_model()
-            return model, f"⚡ Fast Chat Path ({intent_res.mode_label}): Routed to low-latency model '{model}'"
+            if cls.is_model_live(model):
+                return model, f"⚡ Fast Chat Path ({intent_res.mode_label}): Routed to low-latency model '{model}'"
 
         elif intent_res.intent == UserIntent.PLAN:
             model = DevPreferencesManager.get_frontier_reasoning_model()
-            return model, f"📐 Architectural Planner ({intent_res.mode_label}): Routed to frontier reasoning model '{model}'"
+            if cls.is_model_live(model):
+                return model, f"📐 Architectural Planner ({intent_res.mode_label}): Routed to frontier reasoning model '{model}'"
 
         elif intent_res.intent in (UserIntent.BUILD, UserIntent.TRIAGE, UserIntent.IMMUNITY):
             model = DevPreferencesManager.get_coding_specialist_model()
-            return model, f"🔨 Autonomous Coding ({intent_res.mode_label}): Routed to compiler-grounded specialist '{model}'"
+            if cls.is_model_live(model):
+                return model, f"🔨 Autonomous Coding ({intent_res.mode_label}): Routed to compiler-grounded specialist '{model}'"
 
-        # Fallback to default
-        fallback = DevPreferencesManager.get_default_model()
-        return fallback, f"Standard route to '{fallback}'"
+        # Fallback to verified live model
+        live_m, live_reason = cls.get_fallback_live_model()
+        return live_m, f"Standard route to {live_reason} ('{live_m}')"
 
 
 class SmartModelRouter:

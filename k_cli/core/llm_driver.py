@@ -624,15 +624,19 @@ class LLMDriver:
 
         model = self.model_name
         gemini_model_map = {
+            "gemini-3.8-flash": "gemini-2.0-flash",
             "gemini-3.7-flash": "gemini-2.0-flash",
             "gemini-3.5-flash": "gemini-2.0-flash",
             "gemini-3-flash": "gemini-2.0-flash",
             "gemini-flash": "gemini-2.0-flash",
             "gemini-pro": "gemini-2.5-pro",
             "gemini-2.5-flash": "gemini-2.0-flash",
+            "gemini-2.0-flash": "gemini-2.0-flash",
+            "gemini-1.5-flash": "gemini-1.5-flash",
+            "gemini-1.5-pro": "gemini-1.5-pro",
         }
         model = gemini_model_map.get(model, model)
-        if not model.startswith("gemini"):
+        if not (model.startswith("gemini-1.5") or model.startswith("gemini-2.0") or model.startswith("gemini-2.5")):
             model = "gemini-2.0-flash"
 
         contents = [

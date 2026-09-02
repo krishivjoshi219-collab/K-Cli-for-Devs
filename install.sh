@@ -4,7 +4,7 @@
 
 set -e
 
-REPO="https://github.com/krishivjoshi219-collab/K-Cli.git"
+REPO="https://github.com/krishivjoshi219-collab/K-Cli-for-Devs.git"
 INSTALL_DIR="$HOME/.k-cli"
 BIN_DIR="$HOME/.local/bin"
 PYTHON_MIN="3.11"
@@ -114,5 +114,5 @@ echo -e "  ${CYAN}k-cli codex${RESET}    → interactive setup (APIs, local mode
 echo -e "  ${CYAN}k-cli ui${RESET}       → TUI workstation"
 echo -e "  ${CYAN}k \"fix my code\"${RESET} → inline agentic task"
 echo ""
-echo -e "  ${CYAN}Docs${RESET}: https://github.com/krishivjoshi219-collab/K-Cli"
+echo -e "  ${CYAN}Docs${RESET}: https://github.com/krishivjoshi219-collab/K-Cli-for-Devs"
 echo ""

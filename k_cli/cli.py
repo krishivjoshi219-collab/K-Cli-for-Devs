@@ -1170,9 +1170,9 @@ def test_cmd(
     session = SessionManager()
     passed, summary = session.run_test(target)
     if passed:
-        console.print(f"[bold green]{summary}[/bold green]")
+        console.print(f"[bold green]✔[/bold green] {summary}")
     else:
-        console.print(f"[bold red]{summary}[/bold red]")
+        console.print(f"[bold red]✗[/bold red] {summary}")
         raise typer.Exit(code=1)
 
 

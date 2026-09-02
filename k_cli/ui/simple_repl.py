@@ -296,7 +296,7 @@ class SimpleCyberCLI:
                 console.print("\n[dim cyan]Session ended.[/dim cyan]")
                 break
             except Exception as e:
-                console.print(f"[bold red]Error: {e}[/bold red]")
+                console.print(f"[bold red]Error:[/bold red] {e}")
 
 
 def run_simple_cli(

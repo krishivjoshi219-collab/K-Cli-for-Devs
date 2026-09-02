@@ -218,8 +218,9 @@ class ASTChaosProber(ast.NodeVisitor):
 class ChaosImmunityEngine:
     """End-to-End Orchestrator for Chaos Probing, Test Suite Synthesis, and Closed-Loop Auto-Inoculation."""
 
-    def __init__(self, repo_path: str = "."):
-        self.repo_path = Path(repo_path).resolve()
+    def __init__(self, repo_path: str = ".", repo_dir: Optional[str] = None):
+        target = repo_dir if repo_dir is not None else repo_path
+        self.repo_path = Path(target).resolve()
         self.verifier = Verifier() if Verifier is not None else None
 
     def probe_file(self, file_path: str | Path) -> List[BrittlePattern]:

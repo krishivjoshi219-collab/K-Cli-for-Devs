@@ -1,5 +1,5 @@
 """
-server.py - FastAPI Web UI Server & Async REST / WebSocket API for K-CLI Engine
+server.py - FastAPI Web UI Server & Async (((REST / WebSocket if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) API for K-CLI Engine
 """
 
 from __future__ import annotations

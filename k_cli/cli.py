@@ -1039,11 +1039,6 @@ def tui_cmd(
         welcome=welcome,
         workspace=workspace,
     )
-    welcome: bool = typer.Option(False, "--welcome", help="Force open the first-time welcome onboarding modal."),
-    workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root."),
-):
-    """Launch the polished Textual UI workstation."""
-    ui_cmd(model=model, persona=persona, mock=mock, demo=demo, codex=codex, welcome=welcome, workspace=workspace)
 
 
 @app.command(name="demo-ui", help="Launch the TUI in Pure Zero-AI Demo Mode (no API key or model needed).")

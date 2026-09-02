@@ -2038,10 +2038,12 @@ class KCliCyberWorkstation(App):
         mock_mode: bool = False,
         show_codex_on_start: bool = False,
         show_welcome_on_start: bool = False,
+        continue_session: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.workspace_dir = workspace_dir
+        self.continue_session = continue_session
         CredentialsManager.load_all_credentials()
         self.model_name = model_name or DevPreferencesManager.get("default_model") or DevPreferencesManager.get_best_available_model()
         self.persona_label = persona or DevPreferencesManager.get("default_persona", "Fullstack AI Systems Engineer")
@@ -2180,7 +2182,24 @@ class KCliCyberWorkstation(App):
             pass
 
         # Check if first-time onboarding or explicit welcome requested
-        if self.show_welcome_on_start or (DevPreferencesManager.is_first_time_setup() and not self.mock_mode):
+        if self.continue_session:
+            from k_cli.core.storage_manager import LocalStorageManager
+            checkpoint = LocalStorageManager.load_latest_session()
+            if checkpoint and checkpoint.history:
+                async def restore_history():
+                    await asyncio.sleep(0.1)
+                    scroll = self.query_one("#chat-scroll", VerticalScroll)
+                    await scroll.mount(Markdown(f"### 🔄 Resumed Session (`{checkpoint.session_id}`)\n*Restored {len(checkpoint.history)} previous turn(s) from local storage ({checkpoint.active_model}).*"))
+                    for turn in checkpoint.history:
+                        p = turn.get("prompt", "")
+                        r = turn.get("response", "") or turn.get("code", "")
+                        if p:
+                            await scroll.mount(Markdown(f"**User**: {p}"))
+                        if r:
+                            await scroll.mount(Markdown(f"**K-CLI Agent**:\n{r}"))
+                    scroll.scroll_end(animate=False)
+                asyncio.create_task(restore_history())
+        elif self.show_welcome_on_start or (DevPreferencesManager.is_first_time_setup() and not self.mock_mode):
             self.action_open_welcome()
         elif self.show_codex_on_start:
             self.action_open_codex()
@@ -2735,6 +2754,25 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
             output_md = f"**Generated Implementation**:\n```python\n{orch_res.final_code}\n```{written_msg}" if orch_res.final_code else f"**Response**:\n{orch_res.critic_output}"
             await scroll.mount(Markdown(output_md))
         
+        # Persist conversation turn to ~/.kcli/sessions/
+        try:
+            from k_cli.core.storage_manager import LocalStorageManager
+            if not hasattr(self, "_tui_session_id"):
+                self._tui_session_id = f"session_{int(time.time())}"
+            if not hasattr(self, "_tui_history"):
+                self._tui_history = []
+            self._tui_history.append({"prompt": val, "response": resp if 'resp' in locals() else (orch_res.final_code if 'orch_res' in locals() else ""), "timestamp": time.time()})
+            LocalStorageManager.save_session(
+                session_id=self._tui_session_id,
+                workspace_dir=self.workspace_dir,
+                active_model=routed_model if 'routed_model' in locals() else self.model_name,
+                active_persona=getattr(self, "persona_label", "Fullstack AI Systems Engineer"),
+                context_files=[],
+                history=self._tui_history,
+            )
+        except Exception:
+            pass
+
         scroll.scroll_end(animate=False)
 
 

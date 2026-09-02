@@ -759,6 +759,23 @@ class SessionManager:
         })
         self._prune_history_if_needed()
 
+        # Auto-persist session state to ~/.kcli/sessions/
+        try:
+            from k_cli.core.storage_manager import LocalStorageManager
+            if not hasattr(self, "_session_id") or not self._session_id:
+                self._session_id = f"session_{int(time.time())}"
+            LocalStorageManager.save_session(
+                session_id=self._session_id,
+                workspace_dir=str(self.workspace_dir),
+                active_model=self.model_name,
+                active_persona=self.active_persona,
+                context_files=self.context_files,
+                history=self.history,
+                git_branch=self.git_guard.get_current_branch() if hasattr(self.git_guard, "get_current_branch") else "main",
+            )
+        except Exception:
+            pass
+
         res_dict = {
             "success": success,
             "output": final_code,
@@ -771,6 +788,28 @@ class SessionManager:
         }
         self.last_result = res_dict
         return res_dict
+
+    @classmethod
+    def load_latest(cls, workspace_dir: str = ".", mock_mode: bool = False) -> Optional[SessionManager]:
+        """Restores the latest saved session from ~/.kcli/sessions/latest_session.json."""
+        try:
+            from k_cli.core.storage_manager import LocalStorageManager
+            checkpoint = LocalStorageManager.load_latest_session()
+            if not checkpoint:
+                return None
+            session = cls(
+                workspace_dir=checkpoint.workspace_dir or workspace_dir,
+                model_name=checkpoint.active_model,
+                mock_mode=mock_mode,
+            )
+            session._session_id = checkpoint.session_id
+            session.context_files = list(checkpoint.context_files)
+            session.history = list(checkpoint.history)
+            if checkpoint.active_persona:
+                session.set_persona(checkpoint.active_persona)
+            return session
+        except Exception:
+            return None
 
     def execute_turn(
         self,

@@ -993,7 +993,8 @@ def ui_cmd(
     persona: str = typer.Option("Fullstack AI Systems Engineer", "--persona", "-p", help="Active persona label."),
     mock: bool = typer.Option(False, "--mock", help="Use the offline mock driver."),
     demo: bool = typer.Option(False, "--demo", "-d", help="Launch in pure zero-AI demo exploration mode."),
-    codex: bool = typer.Option(False, "--codex", "-c", help="Open the Codex onboarding hub on launch."),
+    continue_session: bool = typer.Option(False, "--continue", "-c", help="Continue previous multi-turn session from local storage."),
+    codex: bool = typer.Option(False, "--codex", help="Open the Codex onboarding hub on launch."),
     welcome: bool = typer.Option(False, "--welcome", help="Force open the first-time welcome onboarding modal."),
     workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root."),
 ):
@@ -1013,6 +1014,7 @@ def ui_cmd(
         mock_mode=is_mock,
         show_codex_on_start=codex,
         show_welcome_on_start=welcome,
+        continue_session=continue_session,
     ).run()
 
 
@@ -1022,7 +1024,21 @@ def tui_cmd(
     persona: str = typer.Option("Fullstack AI Systems Engineer", "--persona", "-p", help="Active persona label."),
     mock: bool = typer.Option(False, "--mock", help="Use the offline mock driver."),
     demo: bool = typer.Option(False, "--demo", "-d", help="Launch in pure zero-AI demo exploration mode."),
-    codex: bool = typer.Option(False, "--codex", "-c", help="Open the Codex onboarding hub on launch."),
+    continue_session: bool = typer.Option(False, "--continue", "-c", help="Continue previous multi-turn session from local storage."),
+    codex: bool = typer.Option(False, "--codex", help="Open the Codex onboarding hub on launch."),
+    welcome: bool = typer.Option(False, "--welcome", help="Force open the first-time welcome onboarding modal."),
+    workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root."),
+):
+    ui_cmd(
+        model=model,
+        persona=persona,
+        mock=mock,
+        demo=demo,
+        continue_session=continue_session,
+        codex=codex,
+        welcome=welcome,
+        workspace=workspace,
+    )
     welcome: bool = typer.Option(False, "--welcome", help="Force open the first-time welcome onboarding modal."),
     workspace: Path = typer.Option(Path("."), "--workspace", "-w", help="Workspace root."),
 ):
@@ -3209,13 +3225,21 @@ def demo_cmd(
     start_cinematic_demo(speed=speed, act=act)
 
 
-def interactive_mode(model: str = "qwen2.5-coder:1.5b", mock: bool = False):
+def interactive_mode(model: str = "qwen2.5-coder:1.5b", mock: bool = False, continue_session: bool = False):
     """Interactive multi-turn prompt shell when typing 'k' without arguments."""
     if hasattr(console, "is_terminal") and console.is_terminal:
         console.clear()
-    session = SessionManager(workspace_dir=".", model_name=model, mock_mode=mock)
+    
+    if continue_session:
+        session = SessionManager.load_latest(workspace_dir=".", mock_mode=mock) or SessionManager(workspace_dir=".", model_name=model, mock_mode=mock)
+    else:
+        session = SessionManager(workspace_dir=".", model_name=model, mock_mode=mock)
+
     print_banner()
-    console.print("[bold cyan]K-CLI Interactive Shell ready. Type /help for slash commands or /exit to quit.[/bold cyan]\n")
+    if continue_session and session.history:
+        console.print(f"[bold green]✔ Resumed previous session ({len(session.history)} turn(s), model: {session.model_name}) from ~/.kcli/sessions/[/bold green]\n")
+    else:
+        console.print("[bold cyan]K-CLI Interactive Shell ready. Type /help for slash commands or /exit to quit.[/bold cyan]\n")
 
     shell = InteractiveShell(session=session, console=console)
     shell.run()
@@ -3235,11 +3259,12 @@ def main(
     ctx: typer.Context,
     version: Optional[bool] = typer.Option(None, "--version", "-v", help="Show K-CLI version and exit.", callback=version_callback, is_eager=True),
     prompt: Optional[str] = typer.Option(None, "--prompt", "-p", help="Prompt text if running main entrypoint directly."),
+    continue_session: bool = typer.Option(False, "--continue", "-c", help="Continue previous multi-turn session from local storage."),
     demo_ui: bool = typer.Option(False, "--demo-ui", help="Launch the TUI in pure Zero-AI demo mode without needing any API key."),
 ):
     if ctx.invoked_subcommand is None:
         if demo_ui:
-            ui_cmd(mock=True, demo=True)
+            ui_cmd(mock=True, demo=True, continue_session=continue_session)
             raise typer.Exit()
         elif prompt:
             execute_run(prompt=prompt, show_banner=True)
@@ -3249,7 +3274,7 @@ def main(
             execute_run(prompt=prompt_arg, show_banner=True)
             raise typer.Exit()
         else:
-            interactive_mode()
+            interactive_mode(continue_session=continue_session)
 
 
 if __name__ == "__main__":

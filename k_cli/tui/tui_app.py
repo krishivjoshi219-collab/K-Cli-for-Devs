@@ -2024,6 +2024,7 @@ class KCliCyberWorkstation(App):
         Binding("ctrl+s", "open_security", "Security", show=True),
         Binding("ctrl+h", "open_local_hub", "Local Hub", show=True),
         Binding("ctrl+r", "open_trending", "Trending", show=True),
+        Binding("ctrl+f", "autofit_screen", "Auto-Fit / Resize", show=True),
         Binding("ctrl+l", "clear_screen", "Clear", show=True),
         Binding("escape", "clear_screen", "Back / Reset", show=True),
         Binding("ctrl+q", "quit", "Quit", show=True),
@@ -2058,6 +2059,7 @@ class KCliCyberWorkstation(App):
             yield Label("🏎️ 185 tok/s", classes="hud-badge", id="hud-speed")
             yield Label("💰 $0.002", classes="hud-badge", id="hud-cost")
             yield Label("🛡️ AST OK", classes="hud-badge", id="hud-verifier")
+            yield Button("📐 Auto-Fit", variant="primary", id="btn-top-autofit", classes="hud-badge")
 
         # 2. 3-Column Workstation Body
         with Horizontal(id="workstation-body"):
@@ -2312,7 +2314,22 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
         gc.collect()
         scroll.mount(Markdown("# 🧹 Workspace Cleared\nReady for new tasks."))
 
+    def action_autofit_screen(self) -> None:
+        """Auto-adjusts screen layout geometry and optimizes for current terminal size."""
+        try:
+            w, h = self.size.width, self.size.height
+            self._apply_adaptive_viewport(w, h)
+            self.notify(f"Auto-fitted UI to {w}x{h} (Zero Overlaps)", title="Screen Fit", severity="information")
+        except Exception:
+            pass
+
     # Button click routing
+    @on(Button.Pressed, "#btn-top-autofit")
+    @on(Button.Pressed, "#chip-autofit")
+    @on(Button.Pressed, "#btn-side-autofit")
+    def on_autofit_click(self) -> None:
+        self.action_autofit_screen()
+
     @on(Button.Pressed, "#btn-side-chaos")
     @on(Button.Pressed, "#chip-chaos")
     def on_chaos_click(self) -> None:

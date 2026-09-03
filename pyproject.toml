@@ -48,6 +48,10 @@ Issues = "https://github.com/krishivjoshi219-collab/K-Cli-for-Devs/issues"
 where = ["."]
 include = ["k_cli*"]
 
+[tool.setuptools.package-data]
+"k_cli.web" = ["static/*", "static/**/*"]
+"*" = ["*.html", "*.css", "*.js", "*.png", "*.svg", "*.ico"]
+
 [tool.setuptools.exclude-package-data]
 "*" = ["__pycache__/*", "*.pyc"]
 

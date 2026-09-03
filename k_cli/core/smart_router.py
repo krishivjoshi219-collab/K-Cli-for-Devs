@@ -90,7 +90,7 @@ class AdaptiveIntentRouter:
         """Finds the best active live model or falls back to sovereign verified model."""
         CredentialsManager.load_all_credentials()
         if os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"):
-            return "gemini-2.0-flash", "Active Google Gemini API key"
+            return "gemini-2.5-flash", "Active Google Gemini API key ('gemini-2.5-flash')"
         if os.environ.get("ANTHROPIC_API_KEY"):
             return "claude-3-5-sonnet-20241022", "Active Anthropic Claude API key"
         if os.environ.get("OPENAI_API_KEY"):

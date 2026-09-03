@@ -140,6 +140,18 @@ class IncidentReport:
     raw_log: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def root_cause(self) -> str:
+        return self.root_cause_analysis
+
+    @property
+    def error_type(self) -> str:
+        return self.exception_type
+
+    @property
+    def status(self) -> str:
+        return "ANALYZED"
+
     def to_dict(self) -> Dict[str, Any]:
         """Serializes IncidentReport to dictionary."""
         return {
@@ -1132,7 +1144,7 @@ class IncidentTriageEngine:
                     f"2. Reproduction Steps\n"
                     f"3. Concrete Suggested Fix"
                 )
-                response = llm_driver.generate(prompt=prompt, model=model) if not model else llm_driver.generate(prompt=prompt, model=model)
+                response = llm_driver.generate(prompt=prompt)
                 if response and len(response.strip()) > 20:
                     suggested_fix = response.strip()
             except Exception as exc:

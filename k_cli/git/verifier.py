@@ -243,9 +243,16 @@ class Verifier:
 
             if test_code:
                 test_file = tmppath / "test_solution.py"
-                test_file.write_text(test_code, encoding="utf-8")
-                cmd = [self.python_executable, "-m", "pytest", "-v", str(test_file)]
-                vtype = "pytest"
+                auto_import = ""
+                if "from solution import" not in test_code and "import solution" not in test_code:
+                    auto_import = "import sys\nfrom pathlib import Path\nsys.path.insert(0, str(Path(__file__).parent))\nfrom solution import *\n\n"
+                test_file.write_text(auto_import + test_code, encoding="utf-8")
+                if "def test_" in test_code:
+                    cmd = [self.python_executable, "-m", "pytest", "-v", str(test_file)]
+                    vtype = "pytest"
+                else:
+                    cmd = [self.python_executable, str(test_file)]
+                    vtype = "execution"
             else:
                 cmd = [self.python_executable, "-m", "py_compile", str(source_file)]
                 vtype = "compilation"

@@ -130,6 +130,10 @@ class SecurityScanReport:
         return self.scanned_files_count
 
     @property
+    def files_scanned(self) -> List[str]:
+        return list({f.file_path for f in self.findings})
+
+    @property
     def critical_count(self) -> int:
         return sum(1 for f in self.findings if f.severity == VulnerabilitySeverity.CRITICAL.value)
 

@@ -108,6 +108,12 @@ class LLMDriver:
         thinking_budget: Optional[int] = None,
         **kwargs: Any,
     ):
+        try:
+            from k_cli.core.credentials import CredentialsManager
+            CredentialsManager.load_all_credentials()
+        except Exception:
+            pass
+
         # Model Name: check env override
         self.model_name = os.getenv("KCLI_MODEL", os.getenv("LLM_MODEL", model_name))
 
@@ -345,11 +351,7 @@ class LLMDriver:
                     model_path = str(local_path)
 
             if not model_path:
-                from huggingface_hub import hf_hub_download
-                model_path = hf_hub_download(
-                    repo_id="Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF",
-                    filename="qwen2.5-coder-1.5b-instruct-q4_k_m.gguf",
-                )
+                return None
 
             self._native_llm = Llama(
                 model_path=str(model_path),
@@ -367,6 +369,7 @@ class LLMDriver:
         system_prompt: Optional[str] = None,
         temperature: float = 0.2,
         stream_callback: Optional[Callable[[str], None]] = None,
+        **kwargs: Any,
     ) -> str:
         """
         Universal generation entry point.
@@ -418,18 +421,24 @@ class LLMDriver:
             else:
                 return lambda: self._mock_generate(prompt, system_prompt, stream_callback=stream_callback)
 
-        candidates: List[Tuple[str, Callable[[], str]]] = []
-        candidates.append((primary, make_runner(primary)))
+        # Try primary provider directly first to avoid probing overhead
+        primary_runner = make_runner(primary)
+        try:
+            self._last_used_provider = primary
+            res = primary_runner()
+            if res is not None:
+                return res
+        except _CallbackException as cb_exc:
+            raise cb_exc.original_exception
+        except Exception:
+            pass
 
-        # Build fallback list
-        fallback_order = ["ollama", "llamacpp", "native", "gemini", "anthropic", "openai", "deepseek", "openrouter"]
+        # Primary failed: build fallback candidate list
+        candidates: List[Tuple[str, Callable[[], str]]] = []
+        fallback_order = ["gemini", "anthropic", "openai", "deepseek", "openrouter", "ollama", "llamacpp", "native"]
         for fb in fallback_order:
             if fb != primary:
-                if fb == "ollama" and self.is_ollama_available():
-                    candidates.append((fb, make_runner(fb)))
-                elif fb == "llamacpp" and self.is_llamacpp_available():
-                    candidates.append((fb, make_runner(fb)))
-                elif fb == "gemini" and self.is_gemini_available():
+                if fb == "gemini" and self.is_gemini_available():
                     candidates.append((fb, make_runner(fb)))
                 elif fb == "anthropic" and self.is_anthropic_available():
                     candidates.append((fb, make_runner(fb)))
@@ -439,11 +448,12 @@ class LLMDriver:
                     candidates.append((fb, make_runner(fb)))
                 elif fb == "openrouter" and self.is_openrouter_available():
                     candidates.append((fb, make_runner(fb)))
-
-        # In-process native fallback if loaded/loadable
-        if "native" not in [c[0] for c in candidates]:
-            if self.get_native_llama() is not None:
-                candidates.append(("native", make_runner("native")))
+                elif fb == "ollama" and self.is_ollama_available():
+                    candidates.append((fb, make_runner(fb)))
+                elif fb == "llamacpp" and self.is_llamacpp_available():
+                    candidates.append((fb, make_runner(fb)))
+                elif fb == "native" and self.get_native_llama() is not None:
+                    candidates.append((fb, make_runner(fb)))
 
         # Always add deterministic mock fallback
         candidates.append(("mock", lambda: self._mock_generate(prompt, system_prompt, stream_callback=stream_callback)))
@@ -624,20 +634,21 @@ class LLMDriver:
 
         model = self.model_name
         gemini_model_map = {
-            "gemini-3.8-flash": "gemini-2.0-flash",
-            "gemini-3.7-flash": "gemini-2.0-flash",
-            "gemini-3.5-flash": "gemini-2.0-flash",
-            "gemini-3-flash": "gemini-2.0-flash",
-            "gemini-flash": "gemini-2.0-flash",
+            "gemini-3.8-flash": "gemini-2.5-flash",
+            "gemini-3.7-flash": "gemini-2.5-flash",
+            "gemini-3.5-flash": "gemini-2.5-flash",
+            "gemini-3-flash": "gemini-2.5-flash",
+            "gemini-flash": "gemini-2.5-flash",
             "gemini-pro": "gemini-2.5-pro",
-            "gemini-2.5-flash": "gemini-2.0-flash",
-            "gemini-2.0-flash": "gemini-2.0-flash",
-            "gemini-1.5-flash": "gemini-1.5-flash",
-            "gemini-1.5-pro": "gemini-1.5-pro",
+            "gemini-2.5-flash": "gemini-2.5-flash",
+            "gemini-2.5-pro": "gemini-2.5-pro",
+            "gemini-2.0-flash": "gemini-2.5-flash",
+            "gemini-1.5-flash": "gemini-2.5-flash",
+            "gemini-1.5-pro": "gemini-2.5-pro",
         }
         model = gemini_model_map.get(model, model)
         if not (model.startswith("gemini-1.5") or model.startswith("gemini-2.0") or model.startswith("gemini-2.5")):
-            model = "gemini-2.0-flash"
+            model = "gemini-2.5-flash"
 
         contents = [
             {
@@ -650,15 +661,16 @@ class LLMDriver:
             "temperature": temperature,
         }
 
-        # Thinking Budget config
+        # Thinking Budget config: default to 0 for instant responses and credit savings
         thinking_budget = self.thinking_budget
         if thinking_budget is None and "thinking" in model.lower():
             thinking_budget = 2048
+        elif thinking_budget is None:
+            thinking_budget = 0
 
-        if thinking_budget is not None:
-            generation_config["thinkingConfig"] = {
-                "thinkingBudget": thinking_budget,
-            }
+        generation_config["thinkingConfig"] = {
+            "thinkingBudget": thinking_budget,
+        }
 
         payload: Dict[str, Any] = {
             "contents": contents,
@@ -674,43 +686,41 @@ class LLMDriver:
         headers = {"Content-Type": "application/json"}
 
         try:
-            if stream_callback:
-                endpoint = f"{self.gemini_base_url}/v1beta/models/{model}:streamGenerateContent?alt=sse&key={api_key}"
-                req = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
-                full_text: List[str] = []
+            endpoint = f"{self.gemini_base_url}/v1beta/models/{model}:streamGenerateContent?alt=sse&key={api_key}"
+            req = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
+            full_text: List[str] = []
 
-                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                    for line in resp:
-                        line_str = line.decode("utf-8").strip()
-                        if not line_str.startswith("data:"):
-                            continue
-                        data_payload = line_str[5:].strip()
-                        if not data_payload:
-                            continue
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                for line in resp:
+                    line_str = line.decode("utf-8").strip()
+                    if line_str in ("data: [DONE]", "[DONE]"):
+                        break
+                    if not line_str.startswith("data:"):
+                        continue
+                    data_payload = line_str[5:].strip()
+                    if not data_payload:
+                        continue
+                    try:
                         chunk = json.loads(data_payload)
                         candidates = chunk.get("candidates", [])
                         if candidates:
-                            parts = candidates[0].get("content", {}).get("parts", [])
+                            cand = candidates[0]
+                            parts = cand.get("content", {}).get("parts", [])
                             for part in parts:
                                 token = part.get("text", "")
                                 if token:
                                     full_text.append(token)
-                                    _invoke_callback(stream_callback, token)
-                return "".join(full_text)
-            else:
-                endpoint = f"{self.gemini_base_url}/v1beta/models/{model}:generateContent?key={api_key}"
-                req = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
-                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-                    res_json = json.loads(resp.read().decode("utf-8"))
-                    candidates = res_json.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        return "".join(part.get("text", "") for part in parts if "text" in part)
-                    return ""
+                                    if stream_callback:
+                                        _invoke_callback(stream_callback, token)
+                            if cand.get("finishReason"):
+                                break
+                    except Exception:
+                        pass
+            return "".join(full_text)
         except urllib.error.HTTPError as http_err:
-            if http_err.code in (400, 404) and model != "gemini-2.0-flash":
-                # Fallback to standard reliable gemini-2.0-flash
-                fallback_driver = LLMDriver(model_name="gemini-2.0-flash")
+            if http_err.code in (400, 404) and model != "gemini-2.5-flash":
+                # Fallback to standard reliable gemini-2.5-flash
+                fallback_driver = LLMDriver(model_name="gemini-2.5-flash")
                 return fallback_driver._generate_gemini(prompt, system_prompt, temperature, stream_callback)
             raise
 

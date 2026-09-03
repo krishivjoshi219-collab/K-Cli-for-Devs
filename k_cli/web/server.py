@@ -1,5 +1,5 @@
 """
-server.py - FastAPI Web UI Server & Async (((REST / WebSocket if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) API for K-CLI Engine
+server.py - FastAPI Web UI Server & Async ((((((REST / WebSocket if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) API for K-CLI Engine
 """
 
 from __future__ import annotations
@@ -248,7 +248,8 @@ def create_app() -> FastAPI:
     async def triage_crash_log(req: CrashTriageRequest):
         from k_cli.agents.strands_agent import triage_and_heal_incident
         raw_log = req.log_text or getattr(req, "log", "") or ""
-        report_str = triage_and_heal_incident(raw_log, repo_path=req.repo_path)
+        loop = asyncio.get_running_loop()
+        report_str = await loop.run_in_executor(None, triage_and_heal_incident, raw_log, req.repo_path)
         try:
             report = json.loads(report_str)
         except Exception:
@@ -445,110 +446,139 @@ def create_app() -> FastAPI:
 
             loop = asyncio.get_running_loop()
             tokens_streamed = []
+            msg_queue: asyncio.Queue = asyncio.Queue()
 
             def sync_stream_callback(current_persona, token: str):
                 p_str = current_persona.value if hasattr(current_persona, "value") else str(current_persona)
                 tokens_streamed.append(token)
                 msg = {"type": "token", "persona": p_str, "token": token, "timestamp": time.time()}
-                asyncio.run_coroutine_threadsafe(websocket.send_json(msg), loop)
-                asyncio.run_coroutine_threadsafe(monitor_manager.broadcast(msg), loop)
+                loop.call_soon_threadsafe(msg_queue.put_nowait, msg)
 
-            driver = LLMDriver(model_name=model, mock_mode=mock)
+            async def queue_sender():
+                try:
+                    while True:
+                        item = await msg_queue.get()
+                        if item is None:
+                            break
+                        try:
+                            await websocket.send_json(item)
+                            await monitor_manager.broadcast(item)
+                        except Exception:
+                            pass
+                        msg_queue.task_done()
+                except asyncio.CancelledError:
+                    pass
 
-            from k_cli.core.intent_sensor import IntentSensor, UserIntent
-            intent_res = IntentSensor.sense(prompt)
+            sender_task = asyncio.create_task(queue_sender())
 
-            if intent_res.intent in (UserIntent.CHAT, UserIntent.EXPLAIN):
-                # Conversational or analytical query: stream direct response without syntax compilation errors
-                res_text = await loop.run_in_executor(
+            try:
+                driver = LLMDriver(model_name=model, mock_mode=mock)
+
+                from k_cli.core.intent_sensor import IntentSensor, UserIntent
+                intent_res = IntentSensor.sense(prompt)
+
+                if intent_res.intent in (UserIntent.CHAT, UserIntent.EXPLAIN):
+                    # Conversational or analytical query: stream direct response without syntax compilation errors
+                    res_text = await loop.run_in_executor(
+                        None,
+                        lambda: driver.generate(
+                            prompt=prompt,
+                            stream_callback=lambda tok: sync_stream_callback("AI ASSISTANT", tok),
+                        ),
+                    )
+                    if not tokens_streamed:
+                        final_chat = res_text or "I'm K-CLI, your autonomous software engineering and DevOps AI agent."
+                        sync_stream_callback("AI ASSISTANT", final_chat)
+
+                    comp_payload = {
+                        "type": "done",
+                        "success": True,
+                        "final_code": "",
+                        "attempts": 1,
+                        "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
+                        "timestamp": time.time(),
+                    }
+                    await msg_queue.put(None)
+                    await sender_task
+                    await websocket.send_json(comp_payload)
+                    await monitor_manager.broadcast(comp_payload)
+                    return
+
+                if intent_res.intent == UserIntent.PLAN:
+                    # Architectural planning
+                    res_text = await loop.run_in_executor(
+                        None,
+                        lambda: driver.generate(
+                            prompt=f"Create a detailed engineering execution plan and architecture for: {prompt}",
+                            stream_callback=lambda tok: sync_stream_callback("ARCHITECT", tok),
+                        ),
+                    )
+                    if not tokens_streamed:
+                        sync_stream_callback("ARCHITECT", res_text or "Engineering execution plan formulated.")
+                    comp_payload = {
+                        "type": "done",
+                        "success": True,
+                        "final_code": "",
+                        "attempts": 1,
+                        "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
+                        "timestamp": time.time(),
+                    }
+                    await msg_queue.put(None)
+                    await sender_task
+                    await websocket.send_json(comp_payload)
+                    await monitor_manager.broadcast(comp_payload)
+                    return
+
+                if intent_res.intent == UserIntent.TRIAGE:
+                    from k_cli.agents.strands_agent import triage_and_heal_incident
+                    report = await loop.run_in_executor(None, triage_and_heal_incident, prompt)
+                    sync_stream_callback("TRIAGE", f"\n```json\n{report}\n```\n")
+                    comp_payload = {
+                        "type": "done",
+                        "success": True,
+                        "final_code": "",
+                        "attempts": 1,
+                        "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
+                        "timestamp": time.time(),
+                    }
+                    await msg_queue.put(None)
+                    await sender_task
+                    await websocket.send_json(comp_payload)
+                    await monitor_manager.broadcast(comp_payload)
+                    return
+
+                # Builder Mode: Multi-Persona State Machine with AST Ground-Truth Verification
+                verifier = Verifier()
+                orchestrator = Orchestrator(driver=driver, verifier=verifier, persona=persona)
+
+                result = await loop.run_in_executor(
                     None,
-                    lambda: driver.generate(
-                        prompt=prompt,
-                        stream_callback=lambda tok: sync_stream_callback("AI ASSISTANT", tok),
+                    lambda: orchestrator.execute_pipeline(
+                        user_prompt=prompt,
+                        language=language,
+                        token_stream_callback=sync_stream_callback,
+                        persona=persona,
                     ),
                 )
-                if not tokens_streamed:
-                    final_chat = res_text or "I'm K-CLI, your autonomous software engineering and DevOps AI agent."
-                    sync_stream_callback("AI ASSISTANT", final_chat)
+
+                if not tokens_streamed and result.final_code:
+                    sync_stream_callback("CODER", f"\n```\n{result.final_code}\n```\n")
 
                 comp_payload = {
                     "type": "done",
-                    "success": True,
-                    "final_code": "",
-                    "attempts": 1,
-                    "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
+                    "success": result.success,
+                    "final_code": result.final_code,
+                    "attempts": result.attempts,
+                    "ram_usage_mb": round(result.ram_usage_mb, 2),
                     "timestamp": time.time(),
                 }
+                await msg_queue.put(None)
+                await sender_task
                 await websocket.send_json(comp_payload)
                 await monitor_manager.broadcast(comp_payload)
-                return
-
-            if intent_res.intent == UserIntent.PLAN:
-                # Architectural planning
-                res_text = await loop.run_in_executor(
-                    None,
-                    lambda: driver.generate(
-                        prompt=f"Create a detailed engineering execution plan and architecture for: {prompt}",
-                        stream_callback=lambda tok: sync_stream_callback("ARCHITECT", tok),
-                    ),
-                )
-                if not tokens_streamed:
-                    sync_stream_callback("ARCHITECT", res_text or "Engineering execution plan formulated.")
-                comp_payload = {
-                    "type": "done",
-                    "success": True,
-                    "final_code": "",
-                    "attempts": 1,
-                    "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
-                    "timestamp": time.time(),
-                }
-                await websocket.send_json(comp_payload)
-                await monitor_manager.broadcast(comp_payload)
-                return
-
-            if intent_res.intent == UserIntent.TRIAGE:
-                from k_cli.agents.strands_agent import triage_and_heal_incident
-                report = await loop.run_in_executor(None, triage_and_heal_incident, prompt)
-                sync_stream_callback("TRIAGE", f"\n```json\n{report}\n```\n")
-                comp_payload = {
-                    "type": "done",
-                    "success": True,
-                    "final_code": "",
-                    "attempts": 1,
-                    "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
-                    "timestamp": time.time(),
-                }
-                await websocket.send_json(comp_payload)
-                await monitor_manager.broadcast(comp_payload)
-                return
-
-            # Builder Mode: Multi-Persona State Machine with AST Ground-Truth Verification
-            verifier = Verifier()
-            orchestrator = Orchestrator(driver=driver, verifier=verifier, persona=persona)
-
-            result = await loop.run_in_executor(
-                None,
-                lambda: orchestrator.execute_pipeline(
-                    user_prompt=prompt,
-                    language=language,
-                    token_stream_callback=sync_stream_callback,
-                    persona=persona,
-                ),
-            )
-
-            if not tokens_streamed and result.final_code:
-                sync_stream_callback("CODER", f"\n```\n{result.final_code}\n```\n")
-
-            comp_payload = {
-                "type": "done",
-                "success": result.success,
-                "final_code": result.final_code,
-                "attempts": result.attempts,
-                "ram_usage_mb": round(result.ram_usage_mb, 2),
-                "timestamp": time.time(),
-            }
-            await websocket.send_json(comp_payload)
-            await monitor_manager.broadcast(comp_payload)
+            finally:
+                if not sender_task.done():
+                    sender_task.cancel()
         except WebSocketDisconnect:
             pass
         except Exception as e:

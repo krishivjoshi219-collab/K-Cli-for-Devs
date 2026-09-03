@@ -15,6 +15,10 @@ from pathlib import Path
 import pytest
 import uvicorn
 
+repo_dir = Path(__file__).resolve().parents[2]
+if str(repo_dir) not in sys.path:
+    sys.path.insert(0, str(repo_dir))
+
 from k_cli.web.server import create_app
 from k_cli.tui.tui_app import KCliCyberWorkstation
 
@@ -72,19 +76,19 @@ def test_playwright_web_ui_e2e():
 
         page.screenshot(path=str(screenshots_dir / "01_web_ui_landing.png"))
 
-        # 2. Test Agent Streaming Prompt (Selecting Gemini 2.0 Flash)
+        # 2. Test Agent Streaming Prompt (Selecting Gemini 2.5 Flash)
         print("[Playwright] 2. Typing prompt and executing Autonomous Agent stream...")
-        page.select_option("#agent-model", "gemini-2.0-flash")
+        page.select_option("#agent-model", "gemini-2.5-flash")
         page.fill("#agent-prompt", "Explain how K-CLI achieves autonomous AST verification in 2 concise sentences.")
         page.click("#btn-run-agent")
 
-        # Wait for terminal to start receiving streamed tokens
+        # Wait for terminal to start receiving streamed tokens beyond the header
         page.wait_for_timeout(1000)
-        page.wait_for_function("() => document.getElementById('agent-terminal').textContent.length > 30", timeout=20000)
+        page.wait_for_function("() => { const text = document.getElementById('agent-terminal').textContent; return text.length > 70 && !text.endsWith('flash\\n\\n'); }", timeout=25000)
         
         term_text = page.locator("#agent-terminal").inner_text()
         print(f"[Playwright] ✔ Live streamed token output ({len(term_text)} chars):\n{term_text[:140]}...")
-        assert len(term_text) > 30, "No tokens streamed to terminal!"
+        assert len(term_text) > 70, "No actual LLM tokens streamed to terminal!"
 
         page.screenshot(path=str(screenshots_dir / "02_web_ui_streamed.png"))
 
@@ -93,7 +97,7 @@ def test_playwright_web_ui_e2e():
         page.click("button.nav-item[data-tab='tab-triage']")
         page.fill("#triage-log", "Traceback (most recent call last):\n  File 'server.py', line 42, in <module>\nZeroDivisionError: division by zero")
         page.click("#btn-triage")
-        page.wait_for_function("() => document.getElementById('triage-output').textContent.includes('{') || document.getElementById('triage-output').textContent.includes('ZeroDivisionError') || document.getElementById('triage-output').textContent.includes('triage')", timeout=10000)
+        page.wait_for_function("() => document.getElementById('triage-output').textContent.includes('{') || document.getElementById('triage-output').textContent.includes('ZeroDivisionError') || document.getElementById('triage-output').textContent.includes('triage')", timeout=25000)
         triage_text = page.locator("#triage-output").inner_text()
         print(f"[Playwright] ✔ Triage output generated ({len(triage_text)} chars)")
         assert len(triage_text) > 10

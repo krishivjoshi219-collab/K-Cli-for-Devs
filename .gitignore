@@ -54,6 +54,7 @@ AGENTS.md
 
 # Video / Audio / Demo Artifacts (keep assets/ clean)
 demo_artifacts/
+demo_production/
 *.mp3
 *.wav
 k_cli_demo_5min.mp4

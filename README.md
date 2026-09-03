@@ -5,6 +5,8 @@
 
 ---
 
+[![PyPI Version](https://img.shields.io/pypi/v/k-cli-for-devs?color=blue&style=flat-square)](https://pypi.org/project/k-cli-for-devs/)
+[![PyPI Install](https://img.shields.io/badge/pip-install%20k--cli--for--devs-blue?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/k-cli-for-devs/)
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%20%7C%203.12-brightgreen.svg?style=flat-square)](https://python.org)
 [![AWS Strands Agents](https://img.shields.io/badge/AWS-Strands%20Agents%20SDK-orange.svg?style=flat-square)](https://strandsagents.com)
@@ -12,6 +14,10 @@
 [![Tests Passing](https://img.shields.io/badge/Tests-100%25%20Passing-success.svg?style=flat-square)](tests/)
 [![Architecture](https://img.shields.io/badge/Architecture-Verification--First%20AST-blueviolet.svg?style=flat-square)](#-zero-trust-ast-compiler-verification-guardrails)
 [![Offline Ready](https://img.shields.io/badge/Air--Gapped-100%25%20Offline%20Ready-teal.svg?style=flat-square)](#-sovereign-air-gapped-offline-engine)
+
+```bash
+pip install k-cli-for-devs
+```
 
 > **K-CLI is the next-generation autonomous developer workstation that unites 3 unified UI tiers, zero-latency intent sensing, compiler-grounded AST verification, Google Antigravity-grade local shell execution, and AWS Bedrock AgentCore into a sovereign, production-grade CLI.**
 

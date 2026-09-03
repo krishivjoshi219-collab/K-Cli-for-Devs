@@ -261,12 +261,16 @@ flowchart TD
 
 ## 📦 Installation & Quickstart
 
-### 1. Prerequisites
+### 1. Fast Install via PyPI (Recommended)
+```bash
+pip install k-cli-for-devs
+```
+
+### 2. Prerequisites & Build from Source
 * **Python 3.11** or **Python 3.12**
 * **Git** installed on host machine
 * (Optional) **AWS Credentials** configured for Amazon Bedrock / Strands Agents
 
-### 2. Clone and Install
 ```bash
 # Clone repository
 git clone https://github.com/krishivjoshi219-collab/K-Cli-for-Devs.git

@@ -330,8 +330,10 @@ pytest tests/ -v
 
 The official submission video for the AWS "Agents for Humans" Hackathon is rendered in **Full HD 1080p @ 30fps** with an exact duration of **`00:05:00.00`** (300.0s), strictly adhering to the 5-minute rule:
 
+- **▶️ Watch Live on YouTube**: [**https://youtu.be/iA42MnXQafc**](https://youtu.be/iA42MnXQafc)
 - **Master Video File**: [`demo_production/output/k_cli_5min_championship_demo.mp4`](demo_production/output/k_cli_5min_championship_demo.mp4)
-- **Audio**: High-fidelity neural voiceover narration (`48 kHz Stereo`)
+- **Audio & Captions**: High-fidelity neural voiceover narration (`48 kHz Stereo`) with embedded soft English Subtitles / Closed Captions (CC)
+- **Subtitles File**: [`demo_production/output/k_cli_5min_championship_demo.srt`](demo_production/output/k_cli_5min_championship_demo.srt)
 
 ### Storyboard Breakdown:
 * **Act 1 (0:00 - 0:58, 58s)**: *The DevOps Crisis & K-CLI Intro* — Live terminal diagnostics, memory HUD, and value pitch.

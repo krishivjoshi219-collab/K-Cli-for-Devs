@@ -276,8 +276,9 @@ cd K-Cli-for-Devs
 python3 -m venv k_cli_env
 source k_cli_env/bin/activate
 
-# Install K-CLI in editable mode with development dependencies
-pip install -e .[dev,test]
+# Install K-CLI dependencies and package
+pip install -r requirements.txt
+pip install -e .
 ```
 
 ### 3. Universal 1-Click Credential Vault Setup

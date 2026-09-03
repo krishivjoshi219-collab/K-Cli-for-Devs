@@ -1,3 +1,0 @@
-## 2025-02-28 - TUI Token Streaming Performance Bottlenecks
-**Learning:** Functions related to styling and color mapping like `get_persona_style` and `get_persona_color` run repeatedly, up to 15 times per second, during live token streaming and UI updates. Doing string-based `in` dictionary lookups iterating over dictionaries sequentially on every UI tick represents a meaningful performance bottleneck causing slower TUI updates.
-**Action:** Always memoize (using `@functools.lru_cache`) high-frequency style calculation functions in terminal-based UI rendering code (like Rich/Textual apps) if the inputs space is small and discrete (e.g. persona names).

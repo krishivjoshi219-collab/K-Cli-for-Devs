@@ -47,6 +47,8 @@ kaggle_deployment/
 
 # Internal AI agent workspace files
 .agents/
+.jules/
+.Jules/
 ORIGINAL_REQUEST.md
 AGENTS.md
 

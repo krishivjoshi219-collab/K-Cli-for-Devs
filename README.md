@@ -19,7 +19,8 @@
 
 ## 📑 Table of Contents
 
-- [🎯 The Hackathon Pitch: Problem, Audience, and Impact](#-the-hackathon-pitch-problem-audience-and-impact)
+- [🎯 What K-CLI Is, Who It's For, and Why It Matters](#-what-k-cli-is-who-its-for-and-why-it-matters)
+- [⚔️ Production-Grade Comparison: K-CLI vs. Aider vs. Claude Code vs. OpenCode](#️-production-grade-comparison-k-cli-vs-aider-vs-claude-code-vs-opencode)
 - [⚡ Key Architectural Innovations](#-key-architectural-innovations)
   - [1. Google Antigravity-Grade Local Shell Execution Engine](#1-google-antigravity-grade-local-shell-execution-engine)
   - [2. AWS Strands Agents SDK & Amazon Bedrock AgentCore](#2-aws-strands-agents-sdk--amazon-bedrock-agentcore)
@@ -39,22 +40,68 @@
 
 ---
 
-## 🎯 The Hackathon Pitch: Problem, Audience, and Impact
+## 🎯 What K-CLI Is, Who It's For, and Why It Matters
 
-### 1. The Problem We're Solving
-Modern software engineering and SRE workflows are overwhelmed by high-friction cognitive fatigue:
-* **Cryptic Multi-Language Crashes**: Developers waste hours deciphering 200-line stack traces spanning Python, TypeScript, Rust, Go, Docker containers, and CI/CD pipelines.
-* **Git Merge Hell**: 3-way merge conflicts strip AST syntactic context, leading to broken syntax, deleted critical routines, and broken builds.
-* **Unverified AI Code Generation**: Standard LLM tools hallucinate non-existent imports, violate type constraints, and dump unverified code directly into codebases without testing.
-* **Context Fragmentation**: Constant context-switching between terminal emulators, browser debuggers, API documentation, and Git clients.
+### 1. What K-CLI Is
+K-CLI is **not** another conversational wrapper or prompt forwarding tool. It is a **production-grade, sovereign autonomous AI developer workstation** engineered from first principles for professional software engineers, DevOps teams, and site reliability engineers. 
 
-### 2. Who It's For (*Professional Agents Track*)
-* **Full-Stack & Systems Engineers**: Who require an autonomous agent capable of executing local host commands, testing code iteratively, and generating surgical patches with compiler proof.
-* **DevOps Engineers & SREs**: Who need autonomous background daemons that monitor repositories, triage runtime failures, and inoculate edge cases before production outages.
-* **High-Velocity Makers & Open-Source Maintainers**: Who want instant scaffolding, automated PR reviews, and intelligent offline documentation without vendor lock-in.
+While conventional coding assistants require developers to constantly copy-paste snippets, manually execute tests, and repair hallucinated syntax, K-CLI acts as an **autonomous background engineer**. It natively unites:
+* **A 5-Persona Agentic State Machine**: Dispatches coordinated sub-agents (Researcher, Architect, Coder, Critic, Verifier) to analyze, implement, and audit tasks.
+* **Closed-Loop AST Compiler Verification**: Every code synthesis undergoes Abstract Syntax Tree parsing (`ast.parse`), compiler execution (`py_compile`, `g++`, `cargo check`), and isolated sandbox `pytest` runs before any diff is ever staged.
+* **Google Antigravity-Grade Local Shell Runner**: Natively executes shell and terminal commands on the host machine with automated virtualenv binary resolution and timeout enforcement.
+* **AWS Strands SDK and Amazon Bedrock AgentCore Integration**: Powered by multi-step agent loops with frontier cloud LLMs (Claude 3.5 Sonnet, Amazon Nova Pro) and 1-click cloud deployment.
+* **3 Unified Ergonomic Tiers**: Full-screen 60fps Textual TUI (`k-cli ui`), reactive 1080p Web Station (`k-cli web-ui`), and ultra-fast terminal REPL (`k-cli chat`).
 
-### 3. Why It Matters
-Instead of building another reactive chat assistant, **K-CLI operates as an autonomous background engineer**. Powered by the **AWS Strands Agents SDK** and **Amazon Bedrock AgentCore**, K-CLI operates under a **Verification-First philosophy**: code is never presented to the developer until it has passed AST compilation, syntax tree verification, and isolated sandbox unit testing.
+---
+
+### 2. Who It's For (Target Personas and Real-World Use Cases)
+
+K-CLI is purpose-built for the **Professional Agents Track** of the AWS Hackathon, serving technical professionals who cannot afford hallucinations or broken builds:
+
+| Developer Persona | Core Daily Friction | How K-CLI Solves It End-to-End |
+|:---|:---|:---|
+| **Backend and Systems Engineers** | Cryptic asynchronous deadlocks, type regressions, and breaking changes during large refactors. | K-CLI's Synapse AST code graph compresses repository context into minimal subgraphs, while its closed-loop compiler verifier guarantees that generated refactors pass type checks and unit tests before committing. |
+| **DevOps and Site Reliability Engineers (SREs)** | 300-line multi-runtime stack traces, broken CI/CD pipelines, and midnight production crash triage. | `k-cli auto-heal` ingests raw logs across 7 runtimes (Python, Node, Rust, Go, C++, Docker, GitHub Actions), pinpoints culprit line and AST parent node, and synthesizes a verified surgical patch. |
+| **Open-Source Maintainers and Tech Leads** | PR review backlog, regression hunting across dozens of commits, and git merge hell. | `k-cli watch` runs as an autonomous background daemon that reviews PRs and auto-merges clean diffs, `k-cli bisect` automates binary regression hunting, and `k-cli conflict` semantically resolves 3-way git conflicts. |
+| **Security Engineers and Code Auditors** | Leaked cloud keys, SQL injections, ReDoS regexes, and vulnerable subprocess calls. | `k-cli security scan` audits the entire repository in under 3 seconds using AST pattern matching, and applies 1-click surgical auto-healing using environment variables and parameterized statements. |
+| **Air-Gapped and Enterprise Developers** | Strict data governance policies prohibiting code transmission to third-party cloud LLMs. | `k-cli airgap` operates with zero external network connectivity, running local Bankai SLMs (7B/14B) and an embedded offline DevDocs SQLite database with zero telemetry and zero data leakage. |
+
+---
+
+### 3. Why It Matters: The Verification-First Paradigm Shift
+Current industry coding assistants follow a **Generation-First, Human-Debugs** paradigm:
+1. User prompts the model.
+2. Model generates code based on probabilistic token prediction.
+3. Developer is forced to manually test, run compilers, catch hallucinations, and fix syntax errors.
+
+K-CLI reverses this with the **Verification-First** paradigm:
+1. User provides a goal or an incident stack trace occurs.
+2. The agent synthesizes an implementation candidate.
+3. The candidate is compiled in an isolated sandbox (`py_compile`, `g++`, `cargo`).
+4. Automated unit tests (`pytest`) verify behavioral correctness.
+5. If errors occur, the compiler diagnostics are fed back into the agent for automated self-healing (up to 3 iterations).
+6. **Only 100% verified, compilable, and tested code is presented to the developer.**
+
+---
+
+## ⚔️ Production-Grade Comparison: K-CLI vs. Aider vs. Claude Code vs. OpenCode
+
+How does K-CLI compare against leading CLI developer assistants like **Aider**, **Claude Code**, and **OpenCode / Copilot Workspace**?
+
+| Capability / Architecture | K-CLI for Devs (Ours) | Aider | Claude Code | OpenCode / Copilot |
+|:---|:---:|:---:|:---:|:---:|
+| **Local Host Shell Execution** | ✅ **Full Engine** (`k-cli exec`, Strands tool, Web UI) | ⚠️ Partial (`/run` only) | ✅ Yes (Built-in bash) | ❌ No (Cloud-only sandbox) |
+| **Closed-Loop Compiler AST Verification** | ✅ **Built-in Ground Truth** (`py_compile`, `ast`) | ❌ No (Relies on git undo) | ❌ No (Human must verify) | ❌ No (Human must verify) |
+| **Autonomous 3-Way Git Conflict Resolver** | ✅ **AST Semantic Resolver** | ❌ No (Manual text edits) | ❌ No (Standard LLM diff) | ❌ No (Manual web UI) |
+| **Multi-Language Crash Triage and Auto-Heal** | ✅ **Built-in (7 Runtimes)** | ❌ No (Chat prompt only) | ⚠️ Partial (Single prompt) | ❌ No (Static suggestions) |
+| **Autonomous Chaos Immunity Engine** | ✅ **AST Inoculation and Edge-Case Probing** | ❌ None | ❌ None | ❌ None |
+| **AWS Strands Agents SDK Integration** | ✅ **Native Multi-Step Agent Core** | ❌ None | ❌ No (Proprietary Anthropic) | ❌ No (Proprietary Azure) |
+| **Amazon Bedrock AgentCore OpenAPI 3.0 Export**| ✅ **1-Click SAM Template Export** | ❌ None | ❌ None | ❌ None |
+| **Sub-Millisecond Intent Sensing** | ✅ **Heuristic Sensor (under 0.1ms)** | ❌ None | ❌ None | ❌ None |
+| **3 Unified Interfaces (TUI, Web UI, REPL)**| ✅ **Textual TUI + 1080p Web + Terminal** | ⚠️ No (Terminal CLI only) | ⚠️ No (Terminal CLI only) | ⚠️ No (Web / IDE only) |
+| **100% Air-Gapped Sovereign Offline Mode** | ✅ **Local SLMs (Bankai) + Offline DevDocs** | ⚠️ Partial (Ollama, no offline docs) | ❌ No (Cloud only) | ❌ No (Cloud only) |
+| **Multi-Model Adversarial Consensus** | ✅ **Red Team / Blue Team Swarms** | ❌ No (Single model) | ❌ No (Single model) | ❌ No (Single model) |
+| **Background Auto-Healing Daemon** | ✅ **Autonomous Watcher (`k-cli daemon`)** | ❌ No (Interactive only) | ❌ No (Interactive only) | ❌ No (Cloud webhooks only) |
 
 ---
 
@@ -79,11 +126,11 @@ K-CLI enforces a closed-loop verification pipeline before any file modification 
 4. **Self-Healing Retry Loop**: If compilation or tests fail, the compiler error is fed back into the agent to synthesize an updated patch (up to 3 automated iterations).
 
 ### 4. Sub-Millisecond Adaptive Intent Sensor & Smart Router
-K-CLI includes a heuristic **intent sensor (<0.1ms execution latency)** that evaluates user prompts and dynamically selects the optimal execution path and model:
+K-CLI includes a heuristic **intent sensor (under 0.1ms execution latency)** that evaluates user prompts and dynamically selects the optimal execution path and model:
 
 | Sensed Intent | Trigger Patterns | Autonomous Strategy | Recommended Model Routing |
 |:---|:---|:---|:---|
-| **`CHAT`** | Greetings, questions, concept explanation | Direct fast stream (<200ms) | Gemini 2.0 Flash / Claude 3.5 Haiku / Groq Llama 3.3 |
+| **`CHAT`** | Greetings, questions, concept explanation | Direct fast stream (under 200ms) | Gemini 2.0 Flash / Claude 3.5 Haiku / Groq Llama 3.3 |
 | **`PLAN`** | "Design", "architecture", "milestones" | Structured Milestone Blueprint | Claude 3.5 Sonnet / Gemini 2.5 Pro / Amazon Nova Pro |
 | **`BUILD`** | "Create function", "refactor", "implement" | Closed-loop AST verification | Bankai-14B / Claude 3.5 Sonnet / Bedrock Titan |
 | **`TRIAGE`** | Stack traces, `ZeroDivisionError`, CI crash | Strands Agent surgical auto-heal | Premier diagnostic model with AST localizer |

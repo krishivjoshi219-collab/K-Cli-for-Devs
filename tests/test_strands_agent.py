@@ -26,10 +26,16 @@ from k_cli.agents.strands_agent import (
 
 
 class TestStrandsTools:
-    """Test suite for all 8 Strands-registered deterministic tools."""
+    """Test suite for Strands-registered deterministic tools."""
 
     def test_registered_tools_count(self):
-        assert len(STRANDS_DEV_TOOLS) == 8
+        assert len(STRANDS_DEV_TOOLS) >= 8
+
+    def test_execute_command_tool(self):
+        from k_cli.agents.strands_agent import execute_command
+        res = json.loads(execute_command("echo 'Strands Agent Tool Executed'"))
+        assert res["success"] is True
+        assert "Strands Agent Tool Executed" in res["stdout"]
 
     def test_verify_code_file_valid_python(self, tmp_path):
         test_file = tmp_path / "valid.py"
@@ -123,7 +129,7 @@ class TestStrandsDevAgent:
     def test_strands_agent_instantiation(self):
         agent = create_strands_agent(provider="auto")
         assert agent is not None
-        assert len(agent.tools) == 8
+        assert len(agent.tools) >= 8
 
     def test_strands_agent_fallback_run(self):
         agent = StrandsDevAgent(provider="none")

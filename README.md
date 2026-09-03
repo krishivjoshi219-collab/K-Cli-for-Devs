@@ -212,6 +212,13 @@ K-CLI provides 3 purpose-built interfaces tailored to developer workflows:
 
 ## 🏛️ System Architecture Diagram
 
+![K-CLI System Architecture Diagram](docs/assets/architecture_diagram.png)
+
+> 📄 **Official PDF Specification**: Download the vector [`docs/assets/architecture_diagram.pdf`](docs/assets/architecture_diagram.pdf) submitted to the AWS Hackathon.
+
+<details>
+<summary><b>Click to expand raw Mermaid flowchart specification</b></summary>
+
 ```mermaid
 flowchart TD
     subgraph Ingestion ["📥 Incident & Multi-Interface Ingestion Layer"]
@@ -262,6 +269,8 @@ flowchart TD
     Gate -- "Failed" --> Retry --> Tools
     Gate -- "Passed" --> Delivery
 ```
+
+</details>
 
 ---
 

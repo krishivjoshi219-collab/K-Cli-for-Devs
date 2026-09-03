@@ -218,7 +218,7 @@ flowchart TD
 
     subgraph AWSStrands ["🧠 AWS Strands Agent & Amazon Bedrock"]
         Agent["StrandsDevAgent\n(`from strands import Agent, tool`)"]
-        Bedrock["Amazon Bedrock Frontier Models\n• Anthropic Claude 3.5 Sonnet\n• Amazon Nova Pro"]
+        Bedrock["Amazon Bedrock & Frontier Models\n• Amazon Nova Pro\n• Google Gemini 2.5 Flash\n• Sovereign Bankai SLMs"]
         AgentCore["Amazon Bedrock AgentCore\n(OpenAPI 3.0 Action Groups & SAM)"]
         Agent <--> Bedrock
         Agent <--> AgentCore

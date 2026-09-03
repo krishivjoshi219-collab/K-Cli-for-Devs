@@ -58,7 +58,7 @@ def test_playwright_web_ui_e2e():
     server = run_server_in_thread(port=port)
     assert wait_for_server(port=port), "FastAPI Web Server failed to start!"
 
-    screenshots_dir = Path("demo_assets/screenshots")
+    screenshots_dir = Path("/tmp/k_cli_e2e_screenshots")
     screenshots_dir.mkdir(parents=True, exist_ok=True)
 
     with sync_playwright() as p:

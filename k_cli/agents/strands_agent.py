@@ -537,42 +537,44 @@ def read_workspace_file(file_path: str, start_line: int = 1, max_lines: int = 20
 
 
 @tool
-def run_terminal_command(command: str, timeout_seconds: int = 30) -> str:
-    """Executes a non-interactive shell command (such as pytest, cargo check, git status) in the workspace.
+def execute_command(command: str, cwd: str = ".", timeout_seconds: int = 60) -> str:
+    """Executes any shell or terminal command directly on the developer's local machine (Google Antigravity engine).
+    Runs unit tests, compilation, package installations, git operations, system checks, or build processes.
 
     Args:
-        command: The shell command to run.
-        timeout_seconds: Maximum execution time in seconds.
+        command: The shell command line string to execute.
+        cwd: Working directory to run the command in (default: current directory).
+        timeout_seconds: Maximum execution time in seconds (default: 60).
 
     Returns:
-        Command exit code, stdout, and stderr.
+        JSON string with 'command', 'success', 'exit_code', 'stdout', 'stderr', 'duration_sec', and 'cwd'.
     """
-    import subprocess
+    from k_cli.tools.command_runner import global_command_executor
     try:
-        proc = subprocess.run(
-            command,
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            cwd=".",
-        )
-        return json.dumps({
-            "command": command,
-            "exit_code": proc.returncode,
-            "stdout": proc.stdout[:2000],
-            "stderr": proc.stderr[:2000],
-        }, indent=2)
-    except subprocess.TimeoutExpired:
-        return json.dumps({"command": command, "error": f"Command timed out after {timeout_seconds}s"})
+        res = global_command_executor.execute(command, cwd=cwd, timeout=timeout_seconds)
+        return json.dumps(res.to_dict(), indent=2)
     except Exception as e:
-        return json.dumps({"command": command, "error": str(e)})
+        return json.dumps({"command": command, "success": False, "error": str(e), "exit_code": 1})
+
+
+@tool
+def run_command(command: str, cwd: str = ".", timeout_seconds: int = 60) -> str:
+    """Alias for execute_command. Runs shell/bash commands directly on the local machine."""
+    return execute_command(command=command, cwd=cwd, timeout_seconds=timeout_seconds)
+
+
+@tool
+def run_terminal_command(command: str, timeout_seconds: int = 30) -> str:
+    """Legacy alias for executing shell commands in the workspace."""
+    return execute_command(command=command, cwd=".", timeout_seconds=timeout_seconds)
 
 
 # List of all tools registered for the Strands Agent
 STRANDS_DEV_TOOLS = [
     write_workspace_file,
     read_workspace_file,
+    execute_command,
+    run_command,
     run_terminal_command,
     triage_and_heal_incident,
     verify_code_file,

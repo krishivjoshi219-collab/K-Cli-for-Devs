@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDevDocs();
     initCredentialsVault();
     initModelHub();
+    initLocalCommandRunner();
 });
 
 // 1. Navigation Tab Switching
@@ -736,3 +737,94 @@ function initModelHub() {
     if (btnRefresh) btnRefresh.addEventListener('click', loadModels);
     loadModels();
 }
+
+// 12. Local Machine Command Runner (Google Antigravity Engine)
+function initLocalCommandRunner() {
+    const inputCmd = document.getElementById('input-local-cmd');
+    const btnRunCmd = document.getElementById('btn-run-local-cmd');
+    const pills = document.querySelectorAll('.local-cmd-pill');
+    const outputCard = document.getElementById('agent-output-card');
+    const terminal = document.getElementById('agent-terminal');
+    const badgePersona = document.getElementById('badge-persona');
+    const badgeVerif = document.getElementById('badge-verif');
+    const streamStats = document.getElementById('stream-stats');
+
+    if (!inputCmd || !btnRunCmd) return;
+
+    pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            const cmd = pill.getAttribute('data-cmd');
+            if (cmd) {
+                inputCmd.value = cmd;
+                runCommand(cmd);
+            }
+        });
+    });
+
+    btnRunCmd.addEventListener('click', () => {
+        const cmd = inputCmd.value.trim();
+        if (cmd) {
+            runCommand(cmd);
+        }
+    });
+
+    inputCmd.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const cmd = inputCmd.value.trim();
+            if (cmd) {
+                runCommand(cmd);
+            }
+        }
+    });
+
+    async function runCommand(cmd) {
+        outputCard.classList.remove('hidden');
+        outputCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        btnRunCmd.disabled = true;
+        btnRunCmd.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Executing...';
+
+        if (badgePersona) badgePersona.textContent = 'HOST TERMINAL';
+        if (badgeVerif) badgeVerif.textContent = 'LOCAL EXEC';
+        if (streamStats) streamStats.textContent = 'Running on host...';
+
+        terminal.textContent = `$ ${cmd}\n\n[Executing on local machine via Google Antigravity-grade engine...]\n`;
+
+        const start = performance.now();
+        try {
+            const res = await fetch('/api/command/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: cmd, cwd: '.' })
+            });
+            const data = await res.json();
+            const elapsed = ((performance.now() - start) / 1000).toFixed(2);
+
+            let outText = `$ ${data.command}\n\n`;
+            if (data.stdout) {
+                outText += data.stdout;
+            }
+            if (data.stderr) {
+                outText += `\n[STDERR]\n${data.stderr}`;
+            }
+            outText += `\n------------------------------------------------------------\n`;
+            outText += `✔ Exit Code: ${data.exit_code} | Duration: ${data.duration_sec}s | Host Shell: /bin/bash\n`;
+            terminal.textContent = outText;
+
+            if (streamStats) streamStats.textContent = `Exit ${data.exit_code} • ${data.duration_sec}s`;
+            if (badgeVerif) {
+                badgeVerif.textContent = data.exit_code === 0 ? 'STATUS: SUCCESS (0)' : `STATUS: FAILED (${data.exit_code})`;
+                badgeVerif.className = data.exit_code === 0 ? 'badge badge-success' : 'badge badge-danger';
+            }
+        } catch (e) {
+            terminal.textContent += `\n[Error running command]: ${e.message}\n`;
+            if (badgeVerif) {
+                badgeVerif.textContent = 'ERROR';
+                badgeVerif.className = 'badge badge-danger';
+            }
+        } finally {
+            btnRunCmd.disabled = false;
+            btnRunCmd.innerHTML = '<i class="fa-solid fa-play"></i> Run Command';
+        }
+    }
+}
+

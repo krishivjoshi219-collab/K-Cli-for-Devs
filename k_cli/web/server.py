@@ -1,5 +1,5 @@
 """
-server.py - FastAPI Web UI Server & Async ((((((REST / WebSocket if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) API for K-CLI Engine
+server.py - FastAPI Web UI Server & Async (((((((REST / WebSocket if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) API for K-CLI Engine
 """
 
 from __future__ import annotations
@@ -99,6 +99,12 @@ class CustomModelRequest(BaseModel):
     provider: Optional[str] = "custom"
     description: Optional[str] = "Custom developer model"
     base_url: Optional[str] = None
+
+
+class CommandRunRequest(BaseModel):
+    command: str
+    cwd: Optional[str] = "."
+    timeout: int = 60
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -424,6 +430,16 @@ def create_app() -> FastAPI:
     async def set_default_model(req: ModelTestRequest):
         DevPreferencesManager.set_default_model(req.model_name)
         return {"success": True, "default_model": req.model_name}
+
+    @app.post("/api/command/run")
+    async def run_local_command(req: CommandRunRequest):
+        from k_cli.tools.command_runner import global_command_executor
+        res = await global_command_executor.execute_async(
+            command=req.command,
+            cwd=req.cwd or ".",
+            timeout=req.timeout,
+        )
+        return res.to_dict()
 
     # WebSocket for real-time agent token streaming
     @app.websocket("/ws/agent")

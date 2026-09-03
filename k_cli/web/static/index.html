@@ -188,6 +188,29 @@
                                     </button>
                                 </div>
                             </div>
+
+                            <!-- Local Machine Command Runner (Google Antigravity Engine) -->
+                            <div class="local-terminal-box margin-top-md">
+                                <div class="terminal-bar-header flex-between">
+                                    <span class="text-sm font-semibold text-cyan"><i class="fa-solid fa-terminal"></i> Local Machine Command Runner (Google Antigravity Engine)</span>
+                                    <span class="badge badge-info"><i class="fa-solid fa-bolt"></i> Local Host Shell</span>
+                                </div>
+                                <div class="terminal-input-row">
+                                    <span class="prompt-prefix">k-cli $</span>
+                                    <input type="text" id="input-local-cmd" placeholder="Execute any terminal command on local machine (e.g. pytest -v, git status, uname -a, ls -la)...">
+                                    <button id="btn-run-local-cmd" class="btn btn-secondary btn-sm">
+                                        <i class="fa-solid fa-play"></i> Run Command
+                                    </button>
+                                </div>
+                                <div class="quick-cmd-chips">
+                                    <span class="text-dim text-xs">Quick Runs:</span>
+                                    <button class="chip-sm local-cmd-pill" data-cmd="pytest -v">⚡ pytest -v</button>
+                                    <button class="chip-sm local-cmd-pill" data-cmd="git status --short">🌿 git status</button>
+                                    <button class="chip-sm local-cmd-pill" data-cmd="python3 -m k_cli.cli status">📊 k-cli status</button>
+                                    <button class="chip-sm local-cmd-pill" data-cmd="ls -la">📁 ls -la</button>
+                                    <button class="chip-sm local-cmd-pill" data-cmd="python3 -c 'import sys; print(sys.version)'">🐍 python version</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

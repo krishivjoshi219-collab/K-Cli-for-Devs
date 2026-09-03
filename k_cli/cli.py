@@ -473,6 +473,27 @@ def execute_run(
         raise typer.Exit(code=1)
 
 
+@app.command(name="exec", help="Execute any shell/terminal command locally on this machine (Google Antigravity style).")
+@app.command(name="cmd", help="Alias for k-cli exec: run any shell/terminal command locally.")
+def execute_local_command_cli(
+    command: str = typer.Argument(..., help="Shell command line to execute on local system."),
+    cwd: str = typer.Option(".", "--cwd", "-C", help="Working directory to run command in."),
+    timeout: int = typer.Option(60, "--timeout", "-t", help="Maximum execution timeout in seconds."),
+):
+    from k_cli.tools.command_runner import global_command_executor
+    console.print(f"[bold cyan]⚡ K-CLI Local Command Runner (Antigravity Engine):[/bold cyan] [white]{command}[/white]")
+    res = global_command_executor.execute(command=command, cwd=cwd, timeout=timeout)
+    if res.stdout.strip():
+        console.print(res.stdout.rstrip())
+    if res.stderr.strip():
+        console.print(f"[bold red]{res.stderr.rstrip()}[/bold red]")
+    if res.exit_code != 0:
+        console.print(f"[bold red]✖ Command failed with exit code {res.exit_code} ({res.duration_sec:.2f}s)[/bold red]")
+        raise typer.Exit(code=res.exit_code)
+    else:
+        console.print(f"[bold green]✔ Command completed in {res.duration_sec:.2f}s[/bold green]")
+
+
 @app.command(name="run", help="Generate and verify code for a given prompt.")
 def run(
     prompt: str = typer.Argument(..., help="Natural language prompt / coding task description."),

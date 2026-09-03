@@ -38,6 +38,7 @@ class BedrockAgentCoreConfig:
         "InspectRepoStructure",
         "SearchOfflineDocs",
         "GenerateChaosImmunityPatch",
+        "ExecuteCommand",
     ])
 
     def to_dict(self) -> Dict[str, Any]:
@@ -147,6 +148,34 @@ class BedrockAgentCoreEngine:
                         "responses": {
                             "200": {
                                 "description": "Resolved conflict status",
+                                "content": {"application/json": {"schema": {"type": "object"}}},
+                            }
+                        },
+                    }
+                },
+                "/execute-command": {
+                    "post": {
+                        "summary": "Local command execution engine (Google Antigravity style)",
+                        "operationId": "executeCommand",
+                        "requestBody": {
+                            "required": True,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "command": {"type": "string", "description": "Shell/bash command line to execute on host"},
+                                            "cwd": {"type": "string", "description": "Working directory", "default": "."},
+                                            "timeout_seconds": {"type": "integer", "description": "Command timeout in seconds", "default": 60},
+                                        },
+                                        "required": ["command"],
+                                    }
+                                }
+                            },
+                        },
+                        "responses": {
+                            "200": {
+                                "description": "Command execution output",
                                 "content": {"application/json": {"schema": {"type": "object"}}},
                             }
                         },

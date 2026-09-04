@@ -274,22 +274,19 @@ class SimpleCyberCLI:
 
                 console.print(f"[dim]• Sensed Intent: [bold]{intent_res.mode_label}[/bold] ➔ Routed to [bold cyan]{routed_model}[/bold cyan][/dim]")
 
-                # Execute with LLMDriver & Developer Instructions
-                rules_ctx = load_project_rules(self.workspace_dir)
+                # Execute with AutonomousAgent (Aider & Google Antigravity style)
+                from k_cli.agents.autonomous_agent import AutonomousAgent
                 driver = LLMDriver(model_name=routed_model, mock_mode=self.mock_mode)
+                agent = AutonomousAgent(driver=driver, model_name=routed_model, cwd=str(self.workspace_dir))
 
-                full_prompt = f"{rules_ctx}\n\nUser Request: {user_input}" if rules_ctx else user_input
-                
+                def repl_callback(persona: str, token: str):
+                    if persona in ("TOOL EXEC", "TOOL RESULT", "RECON"):
+                        console.print(token, end="")
+
                 with console.status(f"[bold cyan]{intent_res.mode_label}...[/bold cyan]", spinner="dots"):
-                    response = driver.generate(full_prompt)
+                    agent_res = agent.run(user_input, token_callback=repl_callback)
 
-                if intent_res.intent == UserIntent.CHAT:
-                    console.print(Markdown(response))
-                elif intent_res.intent == UserIntent.PLAN:
-                    console.print(Panel(Markdown(response), title="[bold green]Architectural Blueprint[/bold green]", border_style="green"))
-                else:
-                    console.print(Panel(Markdown(response), title="[bold cyan]K-CLI Agent Response[/bold cyan]", border_style="cyan"))
-                
+                console.print(Panel(Markdown(agent_res.final_response), title="[bold cyan]K-CLI Agent Response[/bold cyan]", border_style="cyan"))
                 console.print()
 
             except (KeyboardInterrupt, EOFError):

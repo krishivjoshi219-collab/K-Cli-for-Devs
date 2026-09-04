@@ -219,27 +219,21 @@ def create_app() -> FastAPI:
     @app.post("/api/run")
     async def run_agent_task(req: AgentRunRequest):
         model, route_reason = AdaptiveIntentRouter.resolve_model_for_prompt(req.prompt, req.model)
-
         driver = LLMDriver(model_name=model, mock_mode=req.mock)
-        verifier = Verifier()
-        orchestrator = Orchestrator(driver=driver, verifier=verifier, max_retries=req.max_retries, persona=req.persona)
 
-        result = orchestrator.execute_pipeline(
-            user_prompt=req.prompt,
-            language=req.language,
-            persona=req.persona,
-        )
-
-        errors = [result.verification.error_trace] if (result.verification and result.verification.error_trace) else []
+        from k_cli.agents.autonomous_agent import AutonomousAgent
+        agent = AutonomousAgent(driver=driver, model_name=model)
+        result = agent.run(req.prompt)
 
         return {
             "success": result.success,
-            "final_code": result.final_code,
-            "attempts": result.attempts,
-            "ram_usage_mb": round(result.ram_usage_mb, 2),
+            "final_code": result.final_response,
+            "attempts": len(result.steps),
+            "tools_executed": result.tools_executed,
+            "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
             "route_reason": route_reason,
             "model_used": model,
-            "errors": errors,
+            "errors": [],
         }
 
     class SecurityScanRequest(BaseModel):
@@ -493,59 +487,7 @@ def create_app() -> FastAPI:
                 from k_cli.core.intent_sensor import IntentSensor, UserIntent
                 intent_res = IntentSensor.sense(prompt)
 
-                if intent_res.intent in (UserIntent.CHAT, UserIntent.EXPLAIN):
-                    # Conversational or analytical query: stream direct response without syntax compilation errors
-                    res_text = await loop.run_in_executor(
-                        None,
-                        lambda: driver.generate(
-                            prompt=prompt,
-                            stream_callback=lambda tok: sync_stream_callback("AI ASSISTANT", tok),
-                        ),
-                    )
-                    if not tokens_streamed:
-                        final_chat = res_text or "I'm K-CLI, your autonomous software engineering and DevOps AI agent."
-                        sync_stream_callback("AI ASSISTANT", final_chat)
-
-                    comp_payload = {
-                        "type": "done",
-                        "success": True,
-                        "final_code": "",
-                        "attempts": 1,
-                        "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
-                        "timestamp": time.time(),
-                    }
-                    await msg_queue.put(None)
-                    await sender_task
-                    await websocket.send_json(comp_payload)
-                    await monitor_manager.broadcast(comp_payload)
-                    return
-
-                if intent_res.intent == UserIntent.PLAN:
-                    # Architectural planning
-                    res_text = await loop.run_in_executor(
-                        None,
-                        lambda: driver.generate(
-                            prompt=f"Create a detailed engineering execution plan and architecture for: {prompt}",
-                            stream_callback=lambda tok: sync_stream_callback("ARCHITECT", tok),
-                        ),
-                    )
-                    if not tokens_streamed:
-                        sync_stream_callback("ARCHITECT", res_text or "Engineering execution plan formulated.")
-                    comp_payload = {
-                        "type": "done",
-                        "success": True,
-                        "final_code": "",
-                        "attempts": 1,
-                        "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
-                        "timestamp": time.time(),
-                    }
-                    await msg_queue.put(None)
-                    await sender_task
-                    await websocket.send_json(comp_payload)
-                    await monitor_manager.broadcast(comp_payload)
-                    return
-
-                if intent_res.intent == UserIntent.TRIAGE:
+                if intent_res.intent == UserIntent.TRIAGE and any(kw in prompt for kw in ("Traceback", "Error", "panic:", "exception", "failed")):
                     from k_cli.agents.strands_agent import triage_and_heal_incident
                     report = await loop.run_in_executor(None, triage_and_heal_incident, prompt)
                     sync_stream_callback("TRIAGE", f"\n```json\n{report}\n```\n")
@@ -563,29 +505,28 @@ def create_app() -> FastAPI:
                     await monitor_manager.broadcast(comp_payload)
                     return
 
-                # Builder Mode: Multi-Persona State Machine with AST Ground-Truth Verification
-                verifier = Verifier()
-                orchestrator = Orchestrator(driver=driver, verifier=verifier, persona=persona)
+                # Full Autonomous Agentic Execution Loop (Google Antigravity & Aider style)
+                from k_cli.agents.autonomous_agent import AutonomousAgent
+                agent = AutonomousAgent(driver=driver, model_name=model)
 
-                result = await loop.run_in_executor(
+                agent_result = await loop.run_in_executor(
                     None,
-                    lambda: orchestrator.execute_pipeline(
-                        user_prompt=prompt,
-                        language=language,
-                        token_stream_callback=sync_stream_callback,
-                        persona=persona,
+                    lambda: agent.run(
+                        prompt=prompt,
+                        token_callback=sync_stream_callback,
                     ),
                 )
 
-                if not tokens_streamed and result.final_code:
-                    sync_stream_callback("CODER", f"\n```\n{result.final_code}\n```\n")
+                if not tokens_streamed and agent_result.final_response:
+                    sync_stream_callback("AI ASSISTANT", agent_result.final_response)
 
                 comp_payload = {
                     "type": "done",
-                    "success": result.success,
-                    "final_code": result.final_code,
-                    "attempts": result.attempts,
-                    "ram_usage_mb": round(result.ram_usage_mb, 2),
+                    "success": agent_result.success,
+                    "final_code": agent_result.final_response,
+                    "attempts": len(agent_result.steps),
+                    "tools_executed": agent_result.tools_executed,
+                    "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
                     "timestamp": time.time(),
                 }
                 await msg_queue.put(None)

@@ -115,16 +115,12 @@ flowchart TD
 
 ---
 
-## 📝 5. `builder.aws.com` Publication Draft
+## 📝 5. `builder.aws.com` Publication & Bonus Points (+0.6 Bonus)
 
-**Title**: *Agents for Humans: How We Built K-CLI with the AWS Strands Agents SDK & Amazon Bedrock*
-
-**Article Outline**:
-1. **Introduction**: The vision for autonomous developer agents that run in the background.
-2. **Why the AWS Strands Agents SDK**: How Strands makes building multi-tool, deterministic agents straightforward with `@tool` and `Agent`.
-3. **Connecting Amazon Bedrock**: Leveraging Claude 3.5 Sonnet and Amazon Nova via Bedrock AgentCore for surgical code generation.
-4. **The Closed-Loop Verification Pattern**: Why compilers and test suites are essential guardrails for autonomous agents.
-5. **Open Source & Next Steps**: Available on GitHub under the MIT License.
+* **Live Article URL**: [https://builder.aws.com/content/3IpGbos0ZAiI1HfHzFkiVOnLQ0q/k-cli-for-devs](https://builder.aws.com/content/3IpGbos0ZAiI1HfHzFkiVOnLQ0q/k-cli-for-devs)
+* **Title**: *Agents for Humans: Building an Autonomous Self-Healing DevOps Agent with AWS Strands SDK & Amazon Bedrock*
+* **Author Profile**: Krishiv Joshi (`@krishivjoshi219-collab`) | AWS Builder ID: `krishivjoshi219@gmail.com`
+* **Bonus Point Qualification**: Includes *"Agents for Humans"* in title, provides an architectural deep-dive of the AWS Strands Agents SDK & Amazon Bedrock AgentCore implementation, and links directly to the open source repository.
 
 ---
 

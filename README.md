@@ -12,6 +12,7 @@
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%20%7C%203.12-brightgreen.svg?style=flat-square)](https://python.org)
 [![AWS Strands Agents](https://img.shields.io/badge/AWS-Strands%20Agents%20SDK-orange.svg?style=flat-square)](https://strandsagents.com)
 [![Amazon Bedrock Ready](https://img.shields.io/badge/Amazon-Bedrock%20AgentCore-purple.svg?style=flat-square)](https://aws.amazon.com/bedrock/)
+[![AWS Builder Article](https://img.shields.io/badge/AWS%20Builder-Article%20Live%20(+0.6%20Bonus)-orange.svg?style=flat-square&logo=amazon-aws)](https://builder.aws.com/content/3IpGbos0ZAiI1HfHzFkiVOnLQ0q/k-cli-for-devs)
 [![Live Verification](https://img.shields.io/badge/Live%20App%20Verification-16%2F16%20Pass%20(100%25)-success.svg?style=flat-square)](docs/LIVE_APP_VERIFICATION_REPORT.md)
 [![Tests Passing](https://img.shields.io/badge/Tests-100%25%20Passing-success.svg?style=flat-square)](tests/)
 [![Architecture](https://img.shields.io/badge/Architecture-Verification--First%20AST-blueviolet.svg?style=flat-square)](#-zero-trust-ast-compiler-verification-guardrails)

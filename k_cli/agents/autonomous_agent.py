@@ -273,6 +273,19 @@ def tool_spawn_subagent(role: str, task: str) -> str:
         return f"Error executing subagent '{role}': {e}"
 
 
+def tool_heal_cicd_pipeline(file_path: str = ".github/workflows/ci.yml") -> str:
+    """Audits and auto-repairs GitHub Actions workflow or Dockerfile."""
+    try:
+        from k_cli.tools.cicd_healer import global_cicd_healer
+        if "docker" in file_path.lower():
+            res = global_cicd_healer.audit_and_heal_dockerfile(file_path)
+        else:
+            res = global_cicd_healer.audit_and_heal_workflow(file_path)
+        return f"CI/CD Healer for '{file_path}': Success={res.success}, Issues={res.issues_found}, Fixes={res.fixes_applied}"
+    except Exception as e:
+        return f"Error healing CI/CD pipeline: {e}"
+
+
 # Tool registry map
 AVAILABLE_TOOLS: Dict[str, Callable[..., str]] = {
     "list_dir": tool_list_dir,
@@ -285,6 +298,7 @@ AVAILABLE_TOOLS: Dict[str, Callable[..., str]] = {
     "search_codebase": tool_search_codebase,
     "triage_and_heal_incident": tool_triage_and_heal_incident,
     "spawn_subagent": tool_spawn_subagent,
+    "heal_cicd_pipeline": tool_heal_cicd_pipeline,
 }
 
 
@@ -306,12 +320,17 @@ def build_agentic_system_prompt(cwd: Optional[str] = None) -> str:
     
     top_manifest = ", ".join(top_items[:20]) or "standard project tree"
     
+    # Load persistent project memory if available
+    from k_cli.core.memory import global_memory_manager
+    memory_context = global_memory_manager.load_memory(max_chars=3000)
+    memory_section = f"\n\nPERSISTENT PROJECT MEMORY & ARCHITECTURAL CONVENTIONS:\n{memory_context}" if memory_context else ""
+
     return f"""You are K-CLI, a fully autonomous AI DevOps and software engineering workstation running directly on the developer's Linux machine (comparable to Google Antigravity, Aider, and Claude Code).
 
 LOCAL MACHINE ENVIRONMENT:
 - Working Directory: {cwd_path}
 - Workspace Root Items: {top_manifest}
-- Execution Privilege: Full local machine terminal execution & file system read/write via tools.
+- Execution Privilege: Full local machine terminal execution & file system read/write via tools.{memory_section}
 
 CRITICAL OPERATIONAL RULES:
 1. YOU ARE NOT A CHATBOT. You are an autonomous software engineering agent with REAL tools on this local machine.
@@ -342,17 +361,18 @@ Available Tools:
 - `search_codebase(query="...", directory=".")`: Search for symbols or text across files.
 - `triage_and_heal_incident(error_traceback="...")`: Automated crash traceback triage and repair.
 - `spawn_subagent(role="researcher|coder|tester|security_auditor|refactorer|explorer", task="...")`: Delegates subtasks to specialized background subagents (Google Antigravity & Claude Code architecture).
+- `heal_cicd_pipeline(file_path=".github/workflows/ci.yml")`: Audits and repairs broken GitHub Actions workflows and Dockerfiles.
 
 COMMUNICATION & NATURAL LANGUAGE STYLE (MANDATORY):
 - Talk like an elite senior staff engineer (similar to Claude Code, Aider, and Google Antigravity). Direct, natural, authoritative, concise.
 - ZERO ROBOTIC PREAMBLES OR CONVERSATIONAL FILLER:
-  - NEVER output robotic phrases like "Okay, I now have a clear picture of...", "Based on the file structure...", "Based on my analysis...", "Here's why I find it impressive:", "Sure, I'd be happy to help!", "Certainly!", or "In summary...".
-  - Get straight to the technical substance without stating what you are about to do or narrating your cognitive state.
+   - NEVER output robotic phrases like "Okay, I now have a clear picture of...", "Based on the file structure...", "Based on my analysis...", "Here's why I find it impressive:", "Sure, I'd be happy to help!", "Certainly!", or "In summary...".
+   - Get straight to the technical substance without stating what you are about to do or narrating your cognitive state.
 - When reviewing a project or directory:
-  - Deliver a crisp, natural, high-signal technical evaluation.
-  - Highlight key architectural layers, modules, testing infrastructure, and technical design decisions using clean bullet points and precise paths.
+   - Deliver a crisp, natural, high-signal technical evaluation.
+   - Highlight key architectural layers, modules, testing infrastructure, and technical design decisions using clean bullet points and precise paths.
 - When writing or modifying code:
-  - Perform the filesystem and compiler operations silently using tools, then state what was accomplished and verified.
+   - Perform the filesystem and compiler operations silently using tools, then state what was accomplished and verified.
 
 Always take real action. Inspect real files, write real code to disk, and verify before giving your final answer."""
 
@@ -519,6 +539,17 @@ class AutonomousAgent:
         system_prompt = build_agentic_system_prompt(self.cwd)
         steps: List[AgentStep] = []
         tools_executed: List[str] = []
+
+        # Automatic Non-Destructive Time-Travel Checkpoint before autonomous operations
+        from k_cli.git.checkpoint import global_checkpoint_manager
+        try:
+            ckpt_id = global_checkpoint_manager.create_checkpoint(
+                description=f"Autonomous run: {prompt[:80]}"
+            )
+            if token_callback:
+                token_callback("CHECKPOINT", f"🛡️ [Created Time-Travel Checkpoint '{ckpt_id}']\n")
+        except Exception as e:
+            logger.warning(f"Failed to create pre-run checkpoint: {e}")
         
         # 1. Proactive Reconnaissance:
         lower_prompt = prompt.lower()
@@ -633,6 +664,18 @@ class AutonomousAgent:
             prompt_tokens=total_prompt_tokens,
             completion_tokens=total_completion_tokens,
         )
+
+        if tools_executed:
+            try:
+                from k_cli.core.memory import global_memory_manager
+                tools_str = ", ".join(sorted(set(tools_executed)))
+                clean_task = prompt.strip()[:80]
+                global_memory_manager.record_learning(
+                    lesson=f"Executed task: '{clean_task}' (tools used: {tools_str})",
+                    category="AutonomousTask",
+                )
+            except Exception:
+                pass
 
         return AutonomousAgentResult(
             success=True,

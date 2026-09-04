@@ -17,6 +17,7 @@ import json
 import os
 import shlex
 import sys
+import time
 from pathlib import Path
 
 # Ensure project root is in sys.path for direct CLI script execution
@@ -3239,6 +3240,247 @@ def demo_cmd(
     """Executes the ultra-cinematic 5-minute production demo with live agent telemetry."""
     from k_cli.demo.demo_runner import start_cinematic_demo
     start_cinematic_demo(speed=speed, act=act)
+
+
+# =============================================================================
+# Feature 1: Autonomous Time-Travel Checkpoints & Instant Rollback (`k-cli undo`)
+# =============================================================================
+@app.command(name="undo", help="Instantly roll back the workspace to the latest safe checkpoint.")
+@app.command(name="rollback", help="Alias for undo: revert to previous checkpoint.")
+def undo_cmd(
+    repo: str = typer.Option(".", "--repo", "-r", help="Repository directory to restore."),
+):
+    """Reverts workspace state to the most recent pre-execution checkpoint."""
+    from k_cli.git.checkpoint import CheckpointManager
+    mgr = CheckpointManager(workspace_dir=repo)
+    success, msg = mgr.rollback_last_checkpoint()
+    if success:
+        console.print(Panel(
+            f"[bold green]✔ Time-Travel Rollback Succeeded[/bold green]\n\n{msg}",
+            title="🛡️ K-CLI Checkpoint Rollback",
+            border_style="green",
+        ))
+    else:
+        console.print(Panel(
+            f"[bold red]✘ Rollback Failed[/bold red]\n\n{msg}",
+            title="🛡️ K-CLI Checkpoint Rollback",
+            border_style="red",
+        ))
+
+
+@app.command(name="checkpoints", help="List all autonomous time-travel snapshots in workspace.")
+def checkpoints_cmd(
+    repo: str = typer.Option(".", "--repo", "-r", help="Repository directory."),
+):
+    """Displays saved workspace checkpoints."""
+    from k_cli.git.checkpoint import CheckpointManager
+    mgr = CheckpointManager(workspace_dir=repo)
+    ckpts = mgr.list_checkpoints()
+    if not ckpts:
+        console.print("[yellow]No checkpoints saved yet in .kcli/checkpoints/[/yellow]")
+        return
+    table = Table(title="🛡️ K-CLI Time-Travel Checkpoints", border_style="cyan")
+    table.add_column("Checkpoint ID", style="cyan bold")
+    table.add_column("Timestamp", style="white")
+    table.add_column("Files Tracked", style="green")
+    table.add_column("Description", style="dim")
+    for c in reversed(ckpts):
+        ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(c["timestamp"]))
+        table.add_row(c["checkpoint_id"], ts, str(len(c.get("files_tracked", []))), c.get("description", ""))
+    console.print(table)
+
+
+@app.command(name="diff-last", help="Show unified diff between current workspace and latest checkpoint.")
+def diff_last_cmd(
+    repo: str = typer.Option(".", "--repo", "-r", help="Repository directory."),
+):
+    """Displays diff since last checkpoint."""
+    from k_cli.git.checkpoint import CheckpointManager
+    mgr = CheckpointManager(workspace_dir=repo)
+    diff_text = mgr.compute_diff()
+    if "Zero modifications detected" in diff_text:
+        console.print(f"[bold green]✔ {diff_text}[/bold green]")
+    else:
+        syntax = Syntax(diff_text, "diff", theme="monokai", line_numbers=True)
+        console.print(syntax)
+
+
+# =============================================================================
+# Feature 2: Self-Learning Project Memory (`k-cli memory`)
+# =============================================================================
+@app.command(name="memory", help="View or update self-learning project memory (KCLI.md / .kcli/MEMORY.md).")
+def memory_cmd(
+    action: str = typer.Argument("show", help="Action: 'show', 'init', or 'learn'."),
+    note: Optional[str] = typer.Option(None, "--note", "-n", help="Lesson or directive to record."),
+    repo: str = typer.Option(".", "--repo", "-r", help="Target repository directory."),
+):
+    """Inspects and manages persistent project memory."""
+    from k_cli.core.memory import ProjectMemoryManager
+    mgr = ProjectMemoryManager(workspace_dir=repo)
+    if action == "init":
+        mgr.initialize_if_missing()
+        console.print("[bold green]✔ Initialized persistent KCLI.md project memory.[/bold green]")
+    elif action == "learn" and note:
+        mgr.record_learning(note, category="DeveloperNote")
+        console.print(f"[bold green]✔ Recorded learning:[/bold green] {note}")
+    else:
+        content = mgr.load_memory(max_chars=8000)
+        if not content:
+            mgr.initialize_if_missing()
+            content = mgr.load_memory(max_chars=8000)
+        console.print(Panel(
+            Markdown(content),
+            title="🧠 K-CLI Self-Learning Project Memory (KCLI.md)",
+            border_style="magenta",
+        ))
+
+
+# =============================================================================
+# Feature 3: Standardized Evaluation & Benchmark Scorecard (`k-cli eval` / `benchmark`)
+# =============================================================================
+@app.command(name="eval", help="Run 5-battery standardized benchmark evaluation and export official scorecard.")
+@app.command(name="benchmark", help="Alias for k-cli eval: Run standardized autonomous developer benchmark.")
+def eval_cmd(
+    repo: str = typer.Option(".", "--repo", "-r", help="Repository directory to evaluate."),
+    json_out: bool = typer.Option(False, "--json", help="Output raw JSON benchmark data."),
+):
+    """Executes the quantitative 5-battery benchmark measuring AST pass rate and financial savings."""
+    from k_cli.tools.benchmark_harness import EvaluationHarness
+    harness = EvaluationHarness(workspace_dir=repo)
+    console.print("[bold cyan]⚡ Running K-CLI Autonomous Engineering Benchmark Battery...[/bold cyan]")
+    report = harness.run_full_evaluation()
+
+    if json_out:
+        import dataclasses
+        console.print(json.dumps(dataclasses.asdict(report), indent=2))
+        return
+
+    table = Table(title="🏆 K-CLI Standardized Benchmark Scorecard", border_style="green")
+    table.add_column("Task ID", style="bold cyan")
+    table.add_column("Benchmark Task", style="white")
+    table.add_column("Category", style="yellow")
+    table.add_column("Status", style="bold green")
+    table.add_column("AST Ground-Truth", style="bold green")
+    table.add_column("Time", style="cyan")
+    table.add_column("Cost Spent", style="magenta")
+    table.add_column("Cost Saved", style="green")
+
+    for r in report.results:
+        st = "[bold green]✔ PASS[/bold green]" if r.passed else "[bold red]✘ FAIL[/bold red]"
+        ast_st = "[bold green]✔ VALID[/bold green]" if r.ast_verified else "[bold red]✘ FAIL[/bold red]"
+        table.add_row(
+            r.task_id,
+            r.name,
+            r.category,
+            st,
+            ast_st,
+            f"{r.duration_sec}s",
+            f"${r.actual_cost_usd:.4f}",
+            f"${r.saved_usd:.4f}",
+        )
+    console.print(table)
+
+    summary_panel = Panel(
+        f"[bold bright_white]Overall Pass Rate:[/bold bright_white] [bold green]{report.passed_tasks}/{report.total_tasks} ({report.ast_pass_rate_pct}% AST Verified)[/bold green]\n"
+        f"[bold bright_white]Total Test Duration:[/bold bright_white] [cyan]{report.total_duration_sec}s[/cyan]\n"
+        f"[bold bright_white]Actual Cloud/Model Spend:[/bold bright_white] [magenta]${report.total_spent_usd:.4f}[/magenta]\n"
+        f"[bold bright_white]CreditSaver Optimization:[/bold bright_white] [bold green]${report.total_saved_usd:.4f} saved ({report.savings_pct}% cheaper than $10 unoptimized baseline)[/bold green]\n\n"
+        f"[dim]Scorecard exported to: {repo}/.kcli/BENCHMARK_SCORECARD.md[/dim]",
+        title="📊 Executive Evaluation Metrics",
+        border_style="cyan",
+    )
+    console.print(summary_panel)
+
+
+# =============================================================================
+# Feature 4: Autonomous Docker & CI/CD Pipeline Healer (`k-cli cicd`)
+# =============================================================================
+@app.command(name="cicd", help="Audit and auto-repair broken GitHub Actions workflows and Dockerfiles.")
+def cicd_cmd(
+    target: str = typer.Argument("all", help="Target: 'all', 'workflow', 'dockerfile', or specific path."),
+    repo: str = typer.Option(".", "--repo", "-r", help="Repository directory."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Audit only without writing changes."),
+):
+    """Diagnoses and heals broken CI/CD pipelines and Dockerfiles."""
+    from k_cli.tools.cicd_healer import CICDHealer
+    healer = CICDHealer(workspace_dir=repo)
+    auto_apply = not dry_run
+
+    console.print(f"[bold cyan]⚡ Running K-CLI CI/CD & Docker Pipeline Healer on '{repo}'...[/bold cyan]\n")
+    results = []
+
+    # Workflow healing
+    wf_path = Path(repo) / ".github" / "workflows"
+    if wf_path.exists():
+        for wf_file in wf_path.glob("*.yml"):
+            results.append(healer.audit_and_heal_workflow(str(wf_file), auto_apply=auto_apply))
+        for wf_file in wf_path.glob("*.yaml"):
+            results.append(healer.audit_and_heal_workflow(str(wf_file), auto_apply=auto_apply))
+
+    # Dockerfile healing
+    df_path = Path(repo) / "Dockerfile"
+    if df_path.exists():
+        results.append(healer.audit_and_heal_dockerfile(str(df_path), auto_apply=auto_apply))
+
+    if not results:
+        console.print("[yellow]No GitHub Actions workflows or Dockerfiles detected in repository.[/yellow]")
+        return
+
+    for res in results:
+        p_name = Path(res.file_path).name
+        if res.issues_found > 0:
+            console.print(Panel(
+                f"[bold green]✔ Healed {res.issues_found} issue(s) in {p_name}:[/bold green]\n" +
+                "\n".join(f"  • {f}" for f in res.fixes_applied),
+                title=f"🔧 CI/CD Healer: {p_name}",
+                border_style="green",
+            ))
+        else:
+            console.print(f"[green]✔[/green] {p_name}: [dim]All action versions, cache directives, and build layers verified optimal.[/dim]")
+
+
+# =============================================================================
+# Feature 5: Global Ambient Error Interceptor Sentinel (`k-cli wrap <cmd>`)
+# =============================================================================
+@app.command(name="wrap", help="Run ANY shell/pip/git command under ambient Sentinel supervision; auto-fixes errors in <1s.")
+@app.command(name="sentinel", help="Alias for k-cli wrap: Ambient zero-latency error interceptor.")
+def wrap_cmd(
+    command: List[str] = typer.Argument(..., help="Shell command to execute and monitor."),
+    repo: str = typer.Option(".", "--repo", "-r", help="Working directory for execution."),
+):
+    """Runs a command with Global Sentinel active. If any error occurs, Sentinel intercepts and heals it instantly."""
+    from k_cli.tools.sentinel import GlobalSentinel
+    import shlex
+    cmd_str = shlex.join(command)
+    console.print(f"[bold cyan]⚡ K-CLI Global Sentinel active on: [bold white]{cmd_str}[/bold white][/bold cyan]\n")
+    sentinel = GlobalSentinel(workspace_dir=repo)
+    result = sentinel.wrap_and_heal(cmd_str, cwd=repo)
+
+    if result.stdout.strip():
+        console.print(result.stdout.strip())
+    if result.stderr.strip() and result.final_exit_code != 0:
+        console.print(f"[red]{result.stderr.strip()}[/red]")
+
+    if result.original_exit_code == 0:
+        console.print(f"\n[bold green]✔ Command completed successfully ({result.duration_sec}s)[/bold green]")
+    elif result.repair_successful:
+        console.print(Panel(
+            f"[bold green]✔ Sentinel Auto-Repaired Command in {result.duration_sec}s[/bold green]\n\n"
+            f"• [cyan]Intercepted Error:[/cyan] {result.culprit_detected}\n"
+            f"• [yellow]Action Taken:[/yellow] {result.repair_action}\n"
+            f"• [green]Final Status:[/green] Exit Code {result.final_exit_code} (VERIFIED RE-EXECUTION SUCCESS)",
+            title="🛡️ K-CLI Global Sentinel Interception",
+            border_style="green",
+        ))
+    else:
+        console.print(Panel(
+            f"[bold red]✘ Sentinel Intercepted Error (Exit Code {result.final_exit_code})[/bold red]\n\n"
+            f"• [cyan]Culprit:[/cyan] {result.culprit_detected}\n"
+            f"• [yellow]Intervention:[/yellow] {result.repair_action}",
+            title="⚠️ K-CLI Sentinel Warning",
+            border_style="yellow",
+        ))
+        raise typer.Exit(code=result.final_exit_code)
 
 
 def interactive_mode(model: str = "qwen2.5-coder:1.5b", mock: bool = False, continue_session: bool = False):

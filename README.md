@@ -565,16 +565,20 @@ The official submission video for the AWS "Agents for Humans" Hackathon is rende
 - **Audio & Captions**: High-fidelity neural voiceover narration (`48 kHz Stereo`) with embedded soft English Subtitles / Closed Captions (CC)
 - **Subtitles File**: [`demo_production/output/k_cli_5min_championship_demo.srt`](demo_production/output/k_cli_5min_championship_demo.srt)
 
-### Storyboard Breakdown:
-* **Act 1 (0:00 - 0:58, 58s)**: *The DevOps Crisis & K-CLI Intro* — Live terminal diagnostics, memory HUD, and value pitch.
-* **Act 2 (0:58 - 1:58, 60s)**: *Cyber-Workstation TUI* — 5-persona state machine, live keyboard navigation, and prompt generation.
-* **Act 3 (1:58 - 2:51, 53s)**: *Reactive Web Dashboard & Real-Time Streaming* — Live Gemini 2.5 Flash token streaming and the new Antigravity Local Command Runner.
-* **Act 4 (2:51 - 4:06, 75s)**: *4 Autonomous Superpowers (Frame-Accurate Synced)*:
-  - `0:00 - 0:23`: Incident Crash Triage Studio (`ZeroDivisionError` diagnosis & auto-heal)
-  - `0:23 - 0:38`: 3-Way Git Merge Conflict Studio (AST-aware conflict resolution)
-  - `0:38 - 0:58`: AST Security Shield (Secrets & injection detection)
-  - `0:58 - 1:15`: Chaos Immunity Engine (Edge-case probing & inoculation)
-* **Act 5 (4:06 - 5:00, 54s)**: *AWS Bedrock AgentCore & Grand Finale* — OpenAPI action group export, benchmark scorecard, and vision.
+### Storyboard Breakdown (Synchronized to 00:05:00.00):
+* **Act 1 (0:00 - 0:45, 45s)**: *The DevOps Crisis & K-CLI Intro* — High-energy value pitch, live terminal status diagnostics HUD, and AWS Agents for Humans Hackathon mission.
+* **Act 2 (0:45 - 1:30, 45s)**: *Cyber-Workstation TUI & 5-Persona State Machine (1.33x Speed)* — Full-screen Textual interface, rapid keyboard navigation, and the 5-persona agentic loop (Researcher, Architect, Coder, Critic, Verifier) with closed-loop AST verification.
+* **Act 3 (1:30 - 2:15, 45s)**: *Reactive Web Dashboard, CreditSaver & RateLimitGuard* — Real-time Gemini 2.5 Flash token streaming, financial token pruning saving 85% ($1-2 vs $10), HTTP 429 zero-downtime auto-rotation, and Google Antigravity-grade local shell execution.
+* **Act 4 (2:15 - 3:50, 95s)**: *Autonomous Superpowers & Killer Features Suite*:
+  - `2:15 - 3:00` (45s): 4 Core Superpowers (Incident Crash Triage Studio, 3-Way Git Merge Conflict Studio, AST Security Shield, and Chaos Immunity Engine)
+  - `3:00 - 3:50` (50s): **NEW Killer Capabilities**:
+    - **Time-Travel Checkpoints & Instant Rollback** (`k-cli checkpoints`, `k-cli diff-last`, `k-cli undo` restoring files in 0.02s)
+    - **Self-Learning Project Memory** (`k-cli memory`, `KCLI.md` bounded prompt injection)
+    - **Docker & CI/CD Pipeline Healer** (`k-cli cicd` upgrading GitHub Actions and container layers)
+* **Act 5 (3:50 - 5:00, 70s)**: *Global Sentinel, Evaluation Benchmark & Bedrock Finale*:
+  - `3:50 - 4:12` (22s): **Global Ambient Sentinel Error Interceptor** (`k-cli wrap <cmd>` intercepting shell/pip errors in `< 0.05s`)
+  - `4:12 - 4:35` (23s): **Standardized 5-Battery Evaluation Benchmark** (`k-cli eval` generating 100% AST pass rate and financial scorecard)
+  - `4:35 - 5:00` (25s): **Amazon Bedrock AgentCore OpenAPI 3.0 & SAM CloudFormation Export**, PyPI `v1.0.5` release, and Grand Finale.
 
 ---
 

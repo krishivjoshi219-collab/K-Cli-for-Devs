@@ -117,7 +117,7 @@ flowchart TD
 
 ## 📝 5. `builder.aws.com` Publication & Bonus Points (+0.6 Bonus)
 
-* **Live Article URL**: [https://builder.aws.com/content/3IpGbos0ZAiI1HfHzFkiVOnLQ0q/k-cli-for-devs](https://builder.aws.com/content/3IpGbos0ZAiI1HfHzFkiVOnLQ0q/k-cli-for-devs)
+* **Live Article URL**: [https://builder.aws.com/content/3IpGbos0ZAiI1HfHzFkiVOnLQ0q/agents-for-humans-building-k-cli-the-verification-first-autonomous-devops-workstation-with-aws-strands-agents-and-amazon-bedrock](https://builder.aws.com/content/3IpGbos0ZAiI1HfHzFkiVOnLQ0q/agents-for-humans-building-k-cli-the-verification-first-autonomous-devops-workstation-with-aws-strands-agents-and-amazon-bedrock)
 * **Title**: *Agents for Humans: Building an Autonomous Self-Healing DevOps Agent with AWS Strands SDK & Amazon Bedrock*
 * **Author Profile**: Krishiv Joshi (`@krishivjoshi219-collab`) | AWS Builder ID: `krishivjoshi219@gmail.com`
 * **Bonus Point Qualification**: Includes *"Agents for Humans"* in title, provides an architectural deep-dive of the AWS Strands Agents SDK & Amazon Bedrock AgentCore implementation, and links directly to the open source repository.

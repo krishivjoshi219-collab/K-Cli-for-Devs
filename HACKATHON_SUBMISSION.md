@@ -90,7 +90,12 @@ flowchart TD
 
 ---
 
-## 🎥 4. 5-Minute Demo Video Script
+## 🎥 4. 5-Minute Demo Video & Presentation
+
+- **▶️ Watch Live on YouTube**: [**https://youtu.be/RxT5tUYN9gc**](https://youtu.be/RxT5tUYN9gc)
+- **Duration**: `00:05:00.00` (Exact 300.0s Full HD 1080p @ 30fps)
+- **Embedded Soft Subtitles**: English Closed Captions (CC)
+
 
 * **[0:00 - 0:45] The Hook & Pitch**:
   * "Every developer loses hours to broken CI pipelines, cryptic error traces, and merge conflicts. Welcome to **K-CLI for Devs**, the autonomous self-healing agent built with the **AWS Strands Agents SDK** and **Amazon Bedrock**."

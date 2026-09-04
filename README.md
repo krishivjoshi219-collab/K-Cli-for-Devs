@@ -560,7 +560,7 @@ High-resolution visual evidence captured directly from the running Chromium test
 
 The official submission video for the AWS "Agents for Humans" Hackathon is rendered in **Full HD 1080p @ 30fps** with an exact duration of **`00:05:00.00`** (300.0s), strictly adhering to the 5-minute rule:
 
-- **▶️ Watch Live on YouTube**: [**https://youtu.be/iA42MnXQafc**](https://youtu.be/iA42MnXQafc)
+- **▶️ Watch Live on YouTube**: [**https://youtu.be/RxT5tUYN9gc**](https://youtu.be/RxT5tUYN9gc)
 - **Master Video File**: [`demo_production/output/k_cli_5min_championship_demo.mp4`](demo_production/output/k_cli_5min_championship_demo.mp4)
 - **Audio & Captions**: High-fidelity neural voiceover narration (`48 kHz Stereo`) with embedded soft English Subtitles / Closed Captions (CC)
 - **Subtitles File**: [`demo_production/output/k_cli_5min_championship_demo.srt`](demo_production/output/k_cli_5min_championship_demo.srt)

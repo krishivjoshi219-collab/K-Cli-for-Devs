@@ -227,6 +227,8 @@ def create_app() -> FastAPI:
 
         return {
             "success": result.success,
+            "response": result.final_response,
+            "message": result.final_response,
             "final_code": result.final_response,
             "attempts": len(result.steps),
             "tools_executed": result.tools_executed,
@@ -523,6 +525,8 @@ def create_app() -> FastAPI:
                 comp_payload = {
                     "type": "done",
                     "success": agent_result.success,
+                    "response": agent_result.final_response,
+                    "message": agent_result.final_response,
                     "final_code": agent_result.final_response,
                     "attempts": len(agent_result.steps),
                     "tools_executed": agent_result.tools_executed,

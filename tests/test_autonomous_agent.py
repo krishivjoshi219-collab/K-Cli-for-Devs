@@ -9,6 +9,7 @@ from k_cli.agents.autonomous_agent import (
     tool_execute_command,
     tool_verify_code_file,
     tool_search_codebase,
+    clean_conversational_filler,
     AVAILABLE_TOOLS,
 )
 from k_cli.core.llm_driver import LLMDriver
@@ -58,3 +59,20 @@ def test_autonomous_agent_mock_run(tmp_path):
     res = agent.run("build a quick function in python")
     assert res.success is True
     assert res.final_response is not None
+
+
+def test_clean_conversational_filler():
+    immature_text = (
+        "Okay, I now have a clear picture of the /home/k/K-Cli-for-Devs directory. "
+        "Based on the file structure, this project appears to be a highly sophisticated and ambitious "
+        "AI-powered command-line interface for developers. Here's why I find it impressive: "
+        "Comprehensive AI Features (k_cli/agents, k_cli/tools, incident_triage, security_healer), "
+        "Deep Git Integration (conflict_resolver, verifier), Rich User Interface (Textual TUI, Web UI), "
+        "and Robust Testing Infrastructure (tests/)..."
+    )
+    cleaned = clean_conversational_filler(immature_text)
+    assert not cleaned.startswith("Okay, I now have a clear picture")
+    assert not cleaned.startswith("Based on the file structure")
+    assert not cleaned.startswith("Here's why I find it impressive")
+    assert "Comprehensive AI Features" in cleaned
+

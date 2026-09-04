@@ -301,7 +301,41 @@ Available Tools:
 - `search_codebase(query="...", directory=".")`: Search for symbols or text across files.
 - `triage_and_heal_incident(error_traceback="...")`: Automated crash traceback triage and repair.
 
+COMMUNICATION & NATURAL LANGUAGE STYLE (MANDATORY):
+- Talk like an elite senior staff engineer (similar to Claude Code, Aider, and Google Antigravity). Direct, natural, authoritative, concise.
+- ZERO ROBOTIC PREAMBLES OR CONVERSATIONAL FILLER:
+  - NEVER output robotic phrases like "Okay, I now have a clear picture of...", "Based on the file structure...", "Based on my analysis...", "Here's why I find it impressive:", "Sure, I'd be happy to help!", "Certainly!", or "In summary...".
+  - Get straight to the technical substance without stating what you are about to do or narrating your cognitive state.
+- When reviewing a project or directory:
+  - Deliver a crisp, natural, high-signal technical evaluation.
+  - Highlight key architectural layers, modules, testing infrastructure, and technical design decisions using clean bullet points and precise paths.
+- When writing or modifying code:
+  - Perform the filesystem and compiler operations silently using tools, then state what was accomplished and verified.
+
 Always take real action. Inspect real files, write real code to disk, and verify before giving your final answer."""
+
+
+def clean_conversational_filler(text: str) -> str:
+    """Strips robotic chatbot preambles to ensure natural, senior developer communication."""
+    if not text:
+        return text
+    
+    cleaned = text.strip()
+    patterns = [
+        r"^(?:Okay|Ok|Alright|Great),\s+I\s+now\s+have\s+a\s+clear\s+picture\s+of[^\n.]*[.\n]*",
+        r"^(?:Based\s+on\s+(?:the\s+file\s+structure|the\s+directory\s+structure|the\s+files|my\s+analysis|the\s+above)[^.\n]*[.\n]*)",
+        r"^(?:Here(?:\x27s|'s|\s+is)\s+why\s+I\s+find\s+it\s+impressive:\s*)",
+        r"^(?:Sure|Certainly|Of\s+course)[,!.]?\s+(?:I(?:\s+would|'d)?\s+be\s+happy\s+to\s+help|I\s+can\s+help\s+with\s+that|let's\s+dive\s+in)[^\n.]*[.\n]*",
+        r"^(?:As\s+an\s+AI\s+(?:language\s+model|assistant)[^.\n]*[.\n]*)",
+    ]
+    for _ in range(5):
+        prev = cleaned
+        for pat in patterns:
+            cleaned = re.sub(pat, "", cleaned, flags=re.IGNORECASE).strip()
+        if cleaned == prev:
+            break
+            
+    return cleaned
 
 
 # ==============================================================================
@@ -522,12 +556,14 @@ class AutonomousAgent:
             conversation_history.append(
                 f"Assistant Action:\n{model_out}\n\n"
                 f"<tool_result tool=\"{tool_name}\">\n{tool_result}\n</tool_result>\n"
-                f"The tool execution succeeded. Now continue your response, invoke any additional tools if needed, or conclude your answer."
+                f"Tool execution succeeded. Based on the tool result above, provide your direct, concise technical response in natural senior developer language (or execute the next tool if needed). Do NOT include conversational preambles like 'Okay, I now have a clear picture' or meta-analysis fluff. Speak directly as a senior engineer."
             )
             current_persona = "CODER" if "write" in tool_name else "VERIFIER"
 
         if not final_response:
             final_response = model_out or "Task completed by K-CLI Autonomous Agent."
+
+        final_response = clean_conversational_filler(final_response)
 
         duration = time.time() - start_time
         return AutonomousAgentResult(

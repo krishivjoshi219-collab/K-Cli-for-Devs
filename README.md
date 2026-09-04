@@ -1,6 +1,6 @@
 # ⚡ K-CLI for Devs: Verification-First Autonomous AI DevOps Workstation
 
-### Engineered by **Krishiv Joshi** ([@krishivjoshi219-collab](https://github.com/krishivjoshi219-collab)) | AWS Builder ID: `krishivjoshi219-collab`
+### Engineered by **Krishiv Joshi** ([@krishivjoshi219-collab](https://github.com/krishivjoshi219-collab)) | AWS Builder ID: `krishivjoshi219@gmail.com`
 ### Built for the [AWS *Agents for Humans* Hackathon](https://agentsforhumans.devpost.com/) — *Professional Agents Track* ($40,000 Prize Pool)
 
 ---
@@ -419,6 +419,6 @@ The official submission video for the AWS "Agents for Humans" Hackathon is rende
 
 * **Author & Lead Architect**: **Krishiv Joshi**
 * **GitHub Profile**: [@krishivjoshi219-collab](https://github.com/krishivjoshi219-collab)
-* **AWS Builder ID**: `krishivjoshi219-collab`
+* **AWS Builder ID**: `krishivjoshi219@gmail.com`
 * **Hackathon**: [AWS *Agents for Humans* Hackathon](https://agentsforhumans.devpost.com/) — Professional Agents Track
 * **License**: Open-source under the [MIT License](LICENSE).

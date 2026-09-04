@@ -208,11 +208,16 @@ def create_app() -> FastAPI:
         branch = git_engine.get_current_branch()
         active_model = DevPreferencesManager.get_default_model()
 
+        from k_cli.core.credit_saver import global_credit_saver
+        from k_cli.core.rate_limit_guard import global_rate_limit_guard
+
         return {
             "status": "online",
             "active_model": active_model,
             "git_branch": branch,
             "ram_usage_mb": ram_mb,
+            "credit_savings": global_credit_saver.get_stats(),
+            "rate_limit_guard": global_rate_limit_guard.get_rotation_stats(),
             "timestamp": time.time(),
         }
 
@@ -232,6 +237,11 @@ def create_app() -> FastAPI:
             "final_code": result.final_response,
             "attempts": len(result.steps),
             "tools_executed": result.tools_executed,
+            "savings_summary": getattr(result, "savings_summary", ""),
+            "saved_usd": getattr(result, "saved_usd", 0.0),
+            "actual_cost_usd": getattr(result, "actual_cost_usd", 0.0),
+            "tokens_pruned": getattr(result, "tokens_pruned", 0),
+            "model_rotations": getattr(result, "model_rotations", 0),
             "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
             "route_reason": route_reason,
             "model_used": model,
@@ -530,6 +540,11 @@ def create_app() -> FastAPI:
                     "final_code": agent_result.final_response,
                     "attempts": len(agent_result.steps),
                     "tools_executed": agent_result.tools_executed,
+                    "savings_summary": getattr(agent_result, "savings_summary", ""),
+                    "saved_usd": getattr(agent_result, "saved_usd", 0.0),
+                    "actual_cost_usd": getattr(agent_result, "actual_cost_usd", 0.0),
+                    "tokens_pruned": getattr(agent_result, "tokens_pruned", 0),
+                    "model_rotations": getattr(agent_result, "model_rotations", 0),
                     "ram_usage_mb": round(psutil.Process().memory_info().rss / (1024 * 1024), 2),
                     "timestamp": time.time(),
                 }

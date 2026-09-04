@@ -233,6 +233,46 @@ def tool_triage_and_heal_incident(error_traceback: str) -> str:
         return f"Error in incident triage: {e}"
 
 
+def tool_spawn_subagent(role: str, task: str) -> str:
+    """Spawns an autonomous subagent with specialized capabilities (researcher, coder, tester, security_auditor, refactorer, explorer)."""
+    valid_roles = {"researcher", "coder", "tester", "security_auditor", "refactorer", "explorer"}
+    norm_role = role.lower().strip()
+    if norm_role not in valid_roles:
+        norm_role = "coder"
+
+    try:
+        from k_cli.core.llm_driver import LLMDriver
+        from k_cli.core.credit_saver import global_credit_saver
+
+        role_prompts = {
+            "researcher": "You are a specialized RESEARCHER subagent. Search the codebase, inspect dependencies, check documentation, and return a concise, high-signal technical report.",
+            "coder": "You are a specialized CODER subagent. Write robust, clean, complete implementations adhering to modern software engineering standards.",
+            "tester": "You are a specialized TESTER subagent. Formulate ground-truth unit tests, execute pytest, check edge cases, and verify zero regressions.",
+            "security_auditor": "You are a specialized SECURITY AUDITOR subagent. Inspect for OWASP Top 10, credential leakage, injection vectors, and memory safety flaws.",
+            "refactorer": "You are a specialized REFACTORER subagent. Apply surgical edits to simplify architecture, remove dead code, and improve performance.",
+            "explorer": "You are a specialized EXPLORER subagent. Inspect repository structure, list directories, and map modules.",
+        }
+
+        sub_driver = LLMDriver()
+        sub_system_prompt = (
+            f"{role_prompts.get(norm_role, role_prompts['coder'])}\n"
+            f"Focus exclusively on completing this subtask: {task}\n"
+            f"Be concise, technical, and high-signal. Avoid conversational filler."
+        )
+
+        sub_response = sub_driver.generate(
+            prompt=f"Task: {task}",
+            system_prompt=sub_system_prompt,
+            temperature=0.2,
+        )
+
+        compacted = global_credit_saver.compress_tool_output("subagent", sub_response, max_lines=35)
+        return f"[Subagent '{norm_role.upper()}' Completed Task]\n{compacted}"
+
+    except Exception as e:
+        return f"Error executing subagent '{role}': {e}"
+
+
 # Tool registry map
 AVAILABLE_TOOLS: Dict[str, Callable[..., str]] = {
     "list_dir": tool_list_dir,
@@ -244,6 +284,7 @@ AVAILABLE_TOOLS: Dict[str, Callable[..., str]] = {
     "verify_code_file": tool_verify_code_file,
     "search_codebase": tool_search_codebase,
     "triage_and_heal_incident": tool_triage_and_heal_incident,
+    "spawn_subagent": tool_spawn_subagent,
 }
 
 
@@ -300,6 +341,7 @@ Available Tools:
 - `verify_code_file(file_path="...")`: Ground-truth compiler and test verification.
 - `search_codebase(query="...", directory=".")`: Search for symbols or text across files.
 - `triage_and_heal_incident(error_traceback="...")`: Automated crash traceback triage and repair.
+- `spawn_subagent(role="researcher|coder|tester|security_auditor|refactorer|explorer", task="...")`: Delegates subtasks to specialized background subagents (Google Antigravity & Claude Code architecture).
 
 COMMUNICATION & NATURAL LANGUAGE STYLE (MANDATORY):
 - Talk like an elite senior staff engineer (similar to Claude Code, Aider, and Google Antigravity). Direct, natural, authoritative, concise.
@@ -359,6 +401,11 @@ class AutonomousAgentResult:
     tools_executed: List[str] = field(default_factory=list)
     total_tokens: int = 0
     duration_sec: float = 0.0
+    actual_cost_usd: float = 0.0
+    saved_usd: float = 0.0
+    tokens_pruned: int = 0
+    savings_summary: str = ""
+    model_rotations: int = 0
 
 
 class AutonomousAgent:
@@ -374,6 +421,7 @@ class AutonomousAgent:
         cwd: Optional[str] = None,
         max_steps: int = 8,
     ):
+        self.model_name = model_name
         self.driver = driver or LLMDriver(model_name=model_name)
         self.cwd = cwd or os.getcwd()
         self.max_steps = max_steps
@@ -500,8 +548,17 @@ class AutonomousAgent:
         final_response = ""
         current_persona = "RESEARCHER"
 
+        from k_cli.core.credit_saver import global_credit_saver
+        from k_cli.core.rate_limit_guard import global_rate_limit_guard
+
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
+
         for step_idx in range(1, self.max_steps + 1):
-            full_prompt = "\n\n".join(conversation_history)
+            pruned_history = global_credit_saver.prune_conversation_history(conversation_history)
+            full_prompt = "\n\n".join(pruned_history)
+            total_prompt_tokens += global_credit_saver.estimate_tokens(full_prompt)
+
             current_turn_tokens: List[str] = []
 
             def turn_stream_cb(token: str):
@@ -518,6 +575,8 @@ class AutonomousAgent:
             
             if not model_out and current_turn_tokens:
                 model_out = "".join(current_turn_tokens)
+
+            total_completion_tokens += global_credit_saver.estimate_tokens(model_out)
 
             tool_call_info = self._extract_tool_call(model_out)
             
@@ -537,6 +596,9 @@ class AutonomousAgent:
 
             tool_result = self.execute_tool(tool_name, tool_args)
             
+            # Compress tool result to prevent token bloat
+            compressed_tool_result = global_credit_saver.compress_tool_output(tool_name, tool_result)
+
             if token_callback:
                 res_lines = tool_result.strip().splitlines()
                 summary_preview = res_lines[0] if res_lines else "Completed"
@@ -552,10 +614,10 @@ class AutonomousAgent:
                 )
             )
 
-            # Feed tool execution back to conversation history
+            # Feed compressed tool execution back to conversation history
             conversation_history.append(
                 f"Assistant Action:\n{model_out}\n\n"
-                f"<tool_result tool=\"{tool_name}\">\n{tool_result}\n</tool_result>\n"
+                f"<tool_result tool=\"{tool_name}\">\n{compressed_tool_result}\n</tool_result>\n"
                 f"Tool execution succeeded. Based on the tool result above, provide your direct, concise technical response in natural senior developer language (or execute the next tool if needed). Do NOT include conversational preambles like 'Okay, I now have a clear picture' or meta-analysis fluff. Speak directly as a senior engineer."
             )
             current_persona = "CODER" if "write" in tool_name else "VERIFIER"
@@ -566,10 +628,22 @@ class AutonomousAgent:
         final_response = clean_conversational_filler(final_response)
 
         duration = time.time() - start_time
+        savings_info = global_credit_saver.calculate_savings(
+            model_name=self.model_name or "gemini-2.5-flash",
+            prompt_tokens=total_prompt_tokens,
+            completion_tokens=total_completion_tokens,
+        )
+
         return AutonomousAgentResult(
             success=True,
             final_response=final_response,
             steps=steps,
             tools_executed=tools_executed,
+            total_tokens=total_prompt_tokens + total_completion_tokens,
             duration_sec=duration,
+            actual_cost_usd=savings_info["actual_cost_usd"],
+            saved_usd=savings_info["saved_usd"],
+            tokens_pruned=savings_info["tokens_pruned"],
+            savings_summary=savings_info["summary"],
+            model_rotations=global_rate_limit_guard.get_rotation_stats()["total_rotations"],
         )

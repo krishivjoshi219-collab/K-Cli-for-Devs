@@ -421,23 +421,34 @@ class LLMDriver:
             else:
                 return lambda: self._mock_generate(prompt, system_prompt, stream_callback=stream_callback)
 
-        # Try primary provider directly first to avoid probing overhead
-        primary_runner = make_runner(primary)
+        # Check if primary provider is in cooldown from a previous rate limit
         try:
-            self._last_used_provider = primary
-            res = primary_runner()
-            if res is not None:
-                return res
-        except _CallbackException as cb_exc:
-            raise cb_exc.original_exception
+            from k_cli.core.rate_limit_guard import global_rate_limit_guard
         except Exception:
-            pass
+            global_rate_limit_guard = None
 
-        # Primary failed: build fallback candidate list
+        if not (global_rate_limit_guard and not global_rate_limit_guard.is_available(primary)):
+            primary_runner = make_runner(primary)
+            try:
+                self._last_used_provider = primary
+                res = primary_runner()
+                if res is not None:
+                    if global_rate_limit_guard:
+                        global_rate_limit_guard.record_success(primary)
+                    return res
+            except _CallbackException as cb_exc:
+                raise cb_exc.original_exception
+            except Exception as exc:
+                if global_rate_limit_guard and global_rate_limit_guard.is_rate_limit_error(exc):
+                    global_rate_limit_guard.trip_circuit(primary, str(exc))
+
+        # Primary failed or cooling down: build fallback candidate list
         candidates: List[Tuple[str, Callable[[], str]]] = []
         fallback_order = ["gemini", "anthropic", "openai", "deepseek", "openrouter", "ollama", "llamacpp", "native"]
         for fb in fallback_order:
             if fb != primary:
+                if global_rate_limit_guard and not global_rate_limit_guard.is_available(fb):
+                    continue
                 if fb == "gemini" and self.is_gemini_available():
                     candidates.append((fb, make_runner(fb)))
                 elif fb == "anthropic" and self.is_anthropic_available():
@@ -464,10 +475,14 @@ class LLMDriver:
                 self._last_used_provider = prov_name
                 res = runner()
                 if res is not None:
+                    if global_rate_limit_guard:
+                        global_rate_limit_guard.record_success(prov_name)
                     return res
             except _CallbackException as cb_exc:
                 raise cb_exc.original_exception
-            except Exception:
+            except Exception as exc:
+                if global_rate_limit_guard and global_rate_limit_guard.is_rate_limit_error(exc):
+                    global_rate_limit_guard.trip_circuit(prov_name, str(exc))
                 continue
 
         self._last_used_provider = "mock"

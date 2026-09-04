@@ -2702,58 +2702,47 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
             scroll.scroll_end(animate=False)
             return
 
-        if intent_res.intent in (UserIntent.CHAT, UserIntent.EXPLAIN):
-            # Fast conversational query & codebase analysis
-            resp = await loop.run_in_executor(None, driver.generate, val)
-            try: typing_ind.remove()
-            except Exception: pass
-            await scroll.mount(Markdown(f"**K-CLI Agent** ({routed_model}):\n{resp}"))
-        elif intent_res.intent == UserIntent.PLAN:
-            # Planning Blueprint format
-            resp = await loop.run_in_executor(None, driver.generate, f"Create a detailed engineering execution plan for: {val}")
-            try: typing_ind.remove()
-            except Exception: pass
-            await scroll.mount(Markdown(f"### 📐 Architectural Plan & Execution Strategy ({routed_model})\n{resp}"))
-        else:
-            # Builder / Coding mode: Run full Orchestrator pipeline with AST verification and native file operations
-            verifier = Verifier()
-            orchestrator = Orchestrator(driver=driver, verifier=verifier)
+        # Fully Autonomous Agent Execution (Google Antigravity, Claude Code, OpenAI Codex style)
+        from k_cli.agents.autonomous_agent import AutonomousAgent
 
-            def _run_orch():
-                return orchestrator.execute_pipeline(user_prompt=val, language="python")
+        agent = AutonomousAgent(driver=driver, model_name=routed_model, cwd=self.workspace_dir)
 
-            orch_res = await loop.run_in_executor(None, _run_orch)
-            try: typing_ind.remove()
-            except Exception: pass
+        tool_actions: List[str] = []
+        def tui_stream_callback(persona: str, token: str):
+            if persona in ("TOOL EXEC", "TOOL RESULT", "RECON"):
+                tool_actions.append(token)
 
-            # Check if user prompt specifies writing to a file
-            target_match = re.search(r"(?:save|write|create|output)(?:\s+to|\s+in)?\s+([a-zA-Z0-9_\-/\\]+\.[a-zA-Z0-9]+)", val, re.IGNORECASE)
-            written_msg = ""
-            if target_match and orch_res.final_code:
-                out_path = Path(target_match.group(1)).resolve()
-                try:
-                    out_path.parent.mkdir(parents=True, exist_ok=True)
-                    out_path.write_text(orch_res.final_code, encoding="utf-8")
-                    written_msg = f"\n\n> 💾 **Native File Written**: `{out_path}` ({len(orch_res.final_code.encode('utf-8'))} bytes)"
-                    self.notify(f"Written to {out_path.name}", title="File Created", severity="information")
-                except Exception as write_err:
-                    written_msg = f"\n\n> ⚠️ File write error: {write_err}"
+        agent_result = await loop.run_in_executor(
+            None,
+            lambda: agent.run(prompt=val, token_callback=tui_stream_callback),
+        )
+        try: typing_ind.remove()
+        except Exception: pass
 
-            col = Collapsible(title=f"🧠 Builder Pipeline: {routed_model} · {orch_res.attempts} attempt(s) · AST {'✔ PASS' if orch_res.success else '✘ FAIL'}", collapsed=False)
-            await scroll.mount(col)
-            
-            summary_lines = [
-                f"• **Routed Model**: `{routed_model}` ({route_reason})",
-                f"• **AST Verification**: `{'PASSED (Zero Syntax Errors)' if orch_res.success else 'FAILED'}`",
-                f"• **RAM Usage**: `{round(orch_res.ram_usage_mb, 2)} MB`",
-            ]
-            if orch_res.architecture_plan:
-                summary_lines.append(f"• **Architecture Plan**: {orch_res.architecture_plan[:160]}...")
-            
-            await col.mount(Markdown("\n".join(summary_lines)))
+        # Render Collapsible panel matching existing TUI styling
+        tools_str = ", ".join(agent_result.tools_executed) or "Direct Synthesis"
+        status_label = "AST ✔ PASS" if agent_result.success else "✘ FAILED"
+        col_title = f"🧠 Autonomous Agent: {routed_model} · {len(agent_result.steps)} step(s) · {tools_str} · {status_label}"
+        col = Collapsible(title=col_title, collapsed=False)
+        await scroll.mount(col)
 
-            output_md = f"**Generated Implementation**:\n```python\n{orch_res.final_code}\n```{written_msg}" if orch_res.final_code else f"**Response**:\n{orch_res.critic_output}"
-            await scroll.mount(Markdown(output_md))
+        summary_lines = [
+            f"• **Routed Model**: `{routed_model}` ({route_reason})",
+            f"• **Tools Executed**: `{tools_str}`",
+            f"• **CreditSaver**: {agent_result.savings_summary or 'Active'}",
+        ]
+        if tool_actions:
+            clean_actions = "".join(tool_actions).strip()
+            if len(clean_actions) > 800:
+                clean_actions = clean_actions[:400] + "\n... [truncated] ...\n" + clean_actions[-400:]
+            summary_lines.append(f"• **Tool Execution Trace**:\n```\n{clean_actions}\n```")
+
+        await col.mount(Markdown("\n".join(summary_lines)))
+
+        # Mount the natural language response
+        await scroll.mount(Markdown(agent_result.final_response))
+
+        resp_for_history = agent_result.final_response
         
         # Persist conversation turn to ~/.kcli/sessions/
         try:
@@ -2762,7 +2751,7 @@ _Type a task, ask a question, or hit `Ctrl+O` to get started in 30 seconds._"""
                 self._tui_session_id = f"session_{int(time.time())}"
             if not hasattr(self, "_tui_history"):
                 self._tui_history = []
-            self._tui_history.append({"prompt": val, "response": resp if 'resp' in locals() else (orch_res.final_code if 'orch_res' in locals() else ""), "timestamp": time.time()})
+            self._tui_history.append({"prompt": val, "response": resp_for_history if 'resp_for_history' in locals() else "", "timestamp": time.time()})
             LocalStorageManager.save_session(
                 session_id=self._tui_session_id,
                 workspace_dir=self.workspace_dir,

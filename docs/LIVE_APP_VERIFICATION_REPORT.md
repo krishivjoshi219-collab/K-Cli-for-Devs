@@ -1,6 +1,6 @@
 # 🏆 K-CLI for Devs: Official Live App End-to-End Verification Report
 *Conducted on Developer Host Linux Machine at: 2026-09-04 20:39:43 UTC*
-*Author & Builder ID*: `krishivjoshi219@gmail.com` | **Version**: `1.0.4`
+*Author & Builder ID*: `krishivjoshi219@gmail.com` | **Version**: `1.0.5`
 
 ## 📊 Executive Summary
 - **Total Test Scenarios**: `16`

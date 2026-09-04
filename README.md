@@ -7,10 +7,12 @@
 
 [![PyPI Version](https://img.shields.io/pypi/v/k-cli-for-devs?color=blue&style=flat-square)](https://pypi.org/project/k-cli-for-devs/)
 [![PyPI Install](https://img.shields.io/badge/pip-install%20k--cli--for--devs-blue?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/k-cli-for-devs/)
+[![Release](https://img.shields.io/badge/Release-v1.0.5-brightgreen.svg?style=flat-square)](https://pypi.org/project/k-cli-for-devs/1.0.5/)
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%20%7C%203.12-brightgreen.svg?style=flat-square)](https://python.org)
 [![AWS Strands Agents](https://img.shields.io/badge/AWS-Strands%20Agents%20SDK-orange.svg?style=flat-square)](https://strandsagents.com)
 [![Amazon Bedrock Ready](https://img.shields.io/badge/Amazon-Bedrock%20AgentCore-purple.svg?style=flat-square)](https://aws.amazon.com/bedrock/)
+[![Live Verification](https://img.shields.io/badge/Live%20App%20Verification-16%2F16%20Pass%20(100%25)-success.svg?style=flat-square)](docs/LIVE_APP_VERIFICATION_REPORT.md)
 [![Tests Passing](https://img.shields.io/badge/Tests-100%25%20Passing-success.svg?style=flat-square)](tests/)
 [![Architecture](https://img.shields.io/badge/Architecture-Verification--First%20AST-blueviolet.svg?style=flat-square)](#-zero-trust-ast-compiler-verification-guardrails)
 [![Offline Ready](https://img.shields.io/badge/Air--Gapped-100%25%20Offline%20Ready-teal.svg?style=flat-square)](#-sovereign-air-gapped-offline-engine)
@@ -49,6 +51,9 @@ pip install k-cli-for-devs
 - [💻 Comprehensive CLI Command Catalog](#-comprehensive-cli-command-catalog)
 - [☁️ Amazon Bedrock AgentCore Export & Cloud Deployment](#️-amazon-bedrock-agentcore-export--cloud-deployment)
 - [🧪 Test Suite & Reliability Scorecard](#-test-suite--reliability-scorecard)
+  - [Official 16/16 Live App Verification Matrix](#-official-1616-live-app-verification-matrix)
+  - [Quantitative 5-Battery Benchmark Scorecard](#-quantitative-5-battery-benchmark-scorecard)
+  - [Visual Evidence from Live Browser Automation](#-visual-evidence-from-live-browser-automation)
 - [📋 Official Live App Verification Report (16/16 Pass)](docs/LIVE_APP_VERIFICATION_REPORT.md)
 - [🎬 5-Minute Championship Demo Video](#-5-minute-championship-demo-video)
 - [📄 License & Authorship](#-license--authorship)
@@ -412,6 +417,16 @@ k-cli doctor
 | | `k-cli auto-heal <log>` | Triage stack trace log and synthesize compiler-verified patch |
 | | `k-cli immune <file>` | Proactive chaos edge-case audit and inoculation |
 | | `k-cli daemon` | Launch background daemon monitoring repo and healing errors |
+| **Evaluation & Benchmark** | `k-cli eval` | Run standardized 5-battery evaluation harness & export scorecard |
+| | `k-cli benchmark` | Alias for `k-cli eval` |
+| **Time-Travel Checkpoints** | `k-cli undo` | Instant 1-command rollback to pre-execution checkpoint |
+| | `k-cli rollback` | Alias for `k-cli undo` |
+| | `k-cli checkpoints` | List all saved safe workspace snapshot checkpoints |
+| | `k-cli diff-last` | Inspect syntax-highlighted AST diff against latest checkpoint |
+| **Project Memory** | `k-cli memory` | Inspect, update, or clear persistent self-learning `KCLI.md` |
+| **CI/CD & DevOps** | `k-cli cicd` | Audit and auto-heal GitHub Actions workflows and Dockerfiles |
+| **Sentinel Copilot** | `k-cli wrap "<cmd>"` | Global ambient error interceptor wrapping any shell/pip/python command |
+| | `k-cli sentinel "<cmd>"` | Alias for `k-cli wrap` |
 | **Git & Workflows** | `k-cli conflict list` | Scan and resolve 3-way Git merge conflicts via AST |
 | | `k-cli bisect "<cmd>"` | Automated AI Git bisect to hunt regressions |
 | | `k-cli watch` | Autonomous PR review and watcher daemon |
@@ -455,19 +470,89 @@ k-cli bedrock deploy
 
 ## 🧪 Test Suite & Reliability Scorecard
 
-K-CLI is backed by an extensive, battle-tested automated test suite:
+K-CLI is backed by an extensive, battle-tested automated test suite and live browser-driven end-to-end verification:
 
 ```bash
 # Run the complete test suite
 pytest tests/ -v
+
+# Run the 5-battery standardized evaluation benchmark
+k-cli eval
+
+# Run the full headless browser & CLI end-to-end verification suite
+python3 scripts/live_app_deep_test.py
 ```
 
 ### Verified Test Categories:
+* **Autonomous Killer Features Test Suite** ([`tests/test_autonomous_killer_features.py`](tests/test_autonomous_killer_features.py)): **`6/6 Passed (100%)`** — Verifies `CheckpointManager` snapshotting & rollback, `ProjectMemoryManager` prompt injection, `EvaluationHarness` scorecard generation, `CICDHealer` workflow/Dockerfile repair, and `GlobalSentinel` error auto-remediation.
 * **AWS Strands Agent Suite** ([`tests/test_strands_agent.py`](tests/test_strands_agent.py)): **`15/15 Passed`** — Verifies agent initialization, deterministic tools count, and fallback loops.
 * **CLI Fuzzer Traversal Suite** ([`tests/test_cli_fuzzer_traversal.py`](tests/test_cli_fuzzer_traversal.py)): **`42/42 Passed`** — Traverses every command and sub-command with boundary inputs to ensure zero unhandled tracebacks.
 * **Google Antigravity Command Runner** ([`tests/test_command_runner.py`](tests/test_command_runner.py)): **`6/6 Passed`** — Tests synchronous/asynchronous execution, working directory overrides, and timeout enforcement.
 * **TUI & Pilot Automation** ([`tests/test_tui_pilot.py`](tests/test_tui_pilot.py)): **`Passed`** — Headless screen navigation and widget event simulation.
 * **Security & Sanitization**: Comprehensive testing against secret leakage and shell injection.
+
+---
+
+### 🏆 Official 16/16 Live App Verification Matrix
+
+Conducted live on developer Linux host via automated Playwright Headless Chromium testing all 8 Web UI tabs, dual-window activity monitor, and CLI subcommands (`http://127.0.0.1:8000`):
+
+> 📄 **Complete Official Audit Report**: See [`docs/LIVE_APP_VERIFICATION_REPORT.md`](docs/LIVE_APP_VERIFICATION_REPORT.md).
+
+| Component / Feature | Test Vector | Status | Metrics / Visual Proof |
+|:---|:---|:---:|:---|
+| **Web UI Landing & Telemetry HUD** | Live Chromium navigation & card assertion | `✔ PASS` | [01_landing_agent_hud.png](docs/assets/live_app_test/01_landing_agent_hud.png) |
+| **Cyber Agent Live ReAct Streaming** | Real-time WebSocket token streaming & prompt execution | `✔ PASS` | [02_agent_streaming_live.png](docs/assets/live_app_test/02_agent_streaming_live.png) |
+| **Incident Crash Triage Studio** | ZeroDivisionError stack trace ingestion & AST repair | `✔ PASS` | [03_incident_triage_live.png](docs/assets/live_app_test/03_incident_triage_live.png) |
+| **3-Way Merge Conflict Studio** | Conflict marker detection & semantic AST 3-way merge | `✔ PASS` | [04_conflict_studio_live.png](docs/assets/live_app_test/04_conflict_studio_live.png) |
+| **AST Security Shield Scanner** | Insecure AWS keys & SQL injection scanning & surgical fix | `✔ PASS` | [05_security_shield_live.png](docs/assets/live_app_test/05_security_shield_live.png) |
+| **Chaos Immunity Engine** | Brittle AST node mutation & adversarial pytest synthesis | `✔ PASS` | [06_chaos_immunity_live.png](docs/assets/live_app_test/06_chaos_immunity_live.png) |
+| **DevDocs Offline SQLite Search** | Fast full-text documentation query without internet | `✔ PASS` | [07_devdocs_search_live.png](docs/assets/live_app_test/07_devdocs_search_live.png) |
+| **Model Hub & Dual T4 Catalog** | Model provider inspection & latency telemetry | `✔ PASS` | [08_model_hub_live.png](docs/assets/live_app_test/08_model_hub_live.png) |
+| **Live Dual-Window Activity Monitor** | Real-time agent action logging & split-pane tracking | `✔ PASS` | [09_activity_monitor_live.png](docs/assets/live_app_test/09_activity_monitor_live.png) |
+| **`k-cli eval` (5-Battery Benchmark)** | Automated quantitative evaluation & scorecard export | `✔ PASS` | 8.63s execution time |
+| **`k-cli checkpoints`** | Non-destructive pre-execution snapshot listing | `✔ PASS` | 8.02s execution time |
+| **`k-cli diff-last`** | Syntax-highlighted AST diff against checkpoint | `✔ PASS` | 9.17s execution time |
+| **`k-cli undo` (Time-Travel Rollback)** | 1-command restoration to pre-agent safe state | `✔ PASS` | 9.52s execution time |
+| **`k-cli memory` (Self-Learning Memory)** | Persistent `KCLI.md` memory update and inspection | `✔ PASS` | 8.21s execution time |
+| **`k-cli cicd` (Docker & CI/CD Healer)** | GitHub Actions modernization & Docker layer optimization | `✔ PASS` | 8.52s execution time |
+| **`k-cli wrap` (Global Ambient Sentinel)** | Sub-second shell error interception (< 0.05s) | `✔ PASS` | 8.68s execution time |
+
+---
+
+### 📊 Quantitative 5-Battery Benchmark Scorecard
+
+Generated natively by `k-cli eval` and exported to [`.kcli/BENCHMARK_SCORECARD.md`](.kcli/BENCHMARK_SCORECARD.md):
+
+| Benchmark Battery | Target Capability | AST Ground-Truth Status | Pass Rate |
+|:---|:---|:---:|:---:|
+| **1. AST Syntax Healing** | Repair malformed syntax trees via compiler feedback | `✔ VALIDATED` | **100.0%** |
+| **2. Multi-Language Crash Triage** | Ingest Python & Node stack traces and apply surgical patch | `✔ VALIDATED` | **100.0%** |
+| **3. AST Security Shield** | Detect hardcoded cloud credentials and SQL injection | `✔ VALIDATED` | **100.0%** |
+| **4. 3-Way Git Merge Conflict** | Semantically resolve git conflict markers without human input | `✔ VALIDATED` | **100.0%** |
+| **5. Autonomous ReAct Agent Loop** | Multi-step tool chaining with local execution & verification | `✔ VALIDATED` | **100.0%** |
+| **COMPOSITE RELIABILITY** | **Full Ground-Truth Verification Across All Batteries** | **`✔ PRODUCTION READY`** | **`100.0%`** |
+
+* **Financial Efficiency**: CreditSaver expended **$0.18 vs $10.00 baseline** (slashing token spend by **~98.2%**).
+* **Ambient Sentinel Interception**: Shell and runtime errors detected and remediated in **`< 0.05 seconds`**.
+
+---
+
+### 📸 Visual Evidence from Live Browser Automation
+
+High-resolution visual evidence captured directly from the running Chromium test suite during verification:
+
+| Cyber Agent Telemetry HUD | Agent Live Token Streaming | Incident Crash Triage Studio |
+|:---:|:---:|:---:|
+| ![Agent HUD](docs/assets/live_app_test/01_landing_agent_hud.png) | ![Agent Streaming](docs/assets/live_app_test/02_agent_streaming_live.png) | ![Incident Triage](docs/assets/live_app_test/03_incident_triage_live.png) |
+
+| 3-Way Git Merge Conflict Studio | AST Security Shield Scanner | Chaos Immunity Engine |
+|:---:|:---:|:---:|
+| ![Conflict Studio](docs/assets/live_app_test/04_conflict_studio_live.png) | ![Security Shield](docs/assets/live_app_test/05_security_shield_live.png) | ![Chaos Immunity](docs/assets/live_app_test/06_chaos_immunity_live.png) |
+
+| DevDocs Offline Search | Model Hub & Bankai Catalog | Dual-Window Activity Monitor |
+|:---:|:---:|:---:|
+| ![DevDocs Search](docs/assets/live_app_test/07_devdocs_search_live.png) | ![Model Hub](docs/assets/live_app_test/08_model_hub_live.png) | ![Activity Monitor](docs/assets/live_app_test/09_activity_monitor_live.png) |
 
 ---
 

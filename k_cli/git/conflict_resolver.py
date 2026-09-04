@@ -947,14 +947,15 @@ class ConflictResolver:
             pass
 
         # Method 2: Recursive scan for conflict markers
-        ignored_dirs = {".git", ".venv", "k_cli_env", "venv", "node_modules", "build", "dist", "__pycache__", ".pytest_cache", "data"}
+        ignored_dirs = {".git", ".venv", "k_cli_env", "venv", "node_modules", "build", "dist", "__pycache__", ".pytest_cache", "data", "demo_production"}
+        ignored_exts = {".webm", ".png", ".jpg", ".jpeg", ".mp4", ".mp3", ".wav", ".tar", ".gz", ".zip", ".whl", ".pyc", ".so", ".bin", ".gguf"}
         for root, dirs, files in os.walk(str(target)):
             dirs[:] = [d for d in dirs if d not in ignored_dirs and not d.startswith(".")]
             for fname in files:
                 if fname.startswith("."):
                     continue
                 fpath = (Path(root) / fname).resolve()
-                if not fpath.is_relative_to(target):
+                if not fpath.is_relative_to(target) or fpath.suffix.lower() in ignored_exts:
                     continue
                 try:
                     with open(fpath, "r", encoding="utf-8", errors="ignore") as f:
@@ -966,7 +967,7 @@ class ConflictResolver:
 
         for fpath in sorted(conflicted_files):
             try:
-                content = fpath.read_text(encoding="utf-8")
+                content = fpath.read_text(encoding="utf-8", errors="replace")
                 blocks = self.parse_conflict_blocks(content, file_path=str(fpath))
                 all_conflicts.extend(blocks)
             except Exception as e:

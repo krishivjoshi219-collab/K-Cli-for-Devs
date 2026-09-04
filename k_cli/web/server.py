@@ -1,5 +1,5 @@
 """
-server.py - FastAPI Web UI Server & Async (((((((REST / WebSocket if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) API for K-CLI Engine
+server.py - FastAPI Web UI Server & Async ((((((((REST / WebSocket if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) if WebSocket != 0 else 0) API for K-CLI Engine
 """
 
 from __future__ import annotations
@@ -446,6 +446,48 @@ def create_app() -> FastAPI:
             timeout=req.timeout,
         )
         return res.to_dict()
+
+    @app.api_route("/api/eval", methods=["GET", "POST"])
+    async def run_evaluation(repo_path: str = "."):
+        from k_cli.tools.benchmark_harness import EvaluationHarness
+        import dataclasses
+        harness = EvaluationHarness(workspace_dir=repo_path)
+        report = harness.run_full_evaluation()
+        return dataclasses.asdict(report)
+
+    @app.get("/api/checkpoints")
+    async def list_checkpoints(repo_path: str = "."):
+        from k_cli.git.checkpoint import CheckpointManager
+        mgr = CheckpointManager(workspace_dir=repo_path)
+        return {"checkpoints": mgr.list_checkpoints()}
+
+    @app.post("/api/checkpoints/rollback")
+    async def rollback_checkpoint(repo_path: str = "."):
+        from k_cli.git.checkpoint import CheckpointManager
+        mgr = CheckpointManager(workspace_dir=repo_path)
+        success, msg = mgr.rollback_last_checkpoint()
+        return {"success": success, "message": msg}
+
+    @app.get("/api/memory")
+    async def get_project_memory(repo_path: str = "."):
+        from k_cli.core.memory import ProjectMemoryManager
+        mgr = ProjectMemoryManager(workspace_dir=repo_path)
+        return {"memory": mgr.load_memory()}
+
+    @app.post("/api/cicd/audit")
+    async def audit_cicd(repo_path: str = ".", auto_apply: bool = False):
+        from k_cli.tools.cicd_healer import CICDHealer
+        import dataclasses
+        healer = CICDHealer(workspace_dir=repo_path)
+        results = []
+        wf_path = Path(repo_path) / ".github" / "workflows"
+        if wf_path.exists():
+            for wf in list(wf_path.glob("*.yml")) + list(wf_path.glob("*.yaml")):
+                results.append(dataclasses.asdict(healer.audit_and_heal_workflow(str(wf), auto_apply=auto_apply)))
+        df_path = Path(repo_path) / "Dockerfile"
+        if df_path.exists():
+            results.append(dataclasses.asdict(healer.audit_and_heal_dockerfile(str(df_path), auto_apply=auto_apply)))
+        return {"results": results}
 
     # WebSocket for real-time agent token streaming
     @app.websocket("/ws/agent")

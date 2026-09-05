@@ -127,6 +127,27 @@ MODEL_CATALOG: Dict[str, Dict[str, Any]] = {
         "repeat_penalty": 1.1,
         "stop_tokens": ["<|im_start|>", "<|im_end|>"],
     },
+    "bankai-14b": {
+        "repo_id": "krishivjoshi/bankai-14b",
+        "default_filename": "bankai-14b.gguf",
+        "candidate_filenames": [
+            "bankai-14b.gguf",
+            "bankai-14b-q4_k_m.gguf",
+            "bankai-14b.Q4_K_M.gguf",
+            "qwen2.5-coder-14b-instruct.Q4_K_M.gguf",
+        ],
+        "ollama_tag": "bankai:14b",
+        "aliases": ["bankai-14b", "bankai:14b", "14b", "krishivjoshi/bankai-14b"],
+        "system_prompt": (
+            "You are Bankai-14B, an elite distilled reasoning coding model. You decouple pure reasoning from static memorization: "
+            "all code syntax, API references, and library docs are dynamically supplied by the SQLite DevDocs indexer and codebase QA. "
+            "You specialize in complex multi-file AST architecture, surgical patches, and formal verification inside <think>...</think> tags."
+        ),
+        "temperature": 0.2,
+        "top_p": 0.95,
+        "repeat_penalty": 1.1,
+        "stop_tokens": ["<|im_start|>", "<|im_end|>"],
+    },
 }
 
 
@@ -429,6 +450,10 @@ class ModelManager:
             Path("/content"), # Colab runtime root
             Path("/content/bankai_7b_model"),
             Path("/content/bankai_10b_model"),
+            Path("/content/bankai_14b_model"),
+            Path("/kaggle/working"), # Kaggle runtime root
+            Path("/kaggle/working/models"),
+            Path("/kaggle/input"),
         ]
 
         for s_dir in search_dirs:

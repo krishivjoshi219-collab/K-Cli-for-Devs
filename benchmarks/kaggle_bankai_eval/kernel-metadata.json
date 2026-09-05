@@ -1,0 +1,14 @@
+{
+  "id": "krishivjoshi/bankai-dual-t4-swe-eval",
+  "title": "Bankai Dual T4 SWE-Bench DevDocs Evaluation",
+  "code_file": "bankai_dual_t4_benchmark.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "machine_shape": "NvidiaTeslaT4",
+  "enable_internet": true,
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": []
+}

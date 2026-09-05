@@ -6,16 +6,23 @@ from pathlib import Path
 
 # Define Notebook Cells
 cells = []
+cell_counter = 0
 
 def add_md(source):
+    global cell_counter
+    cell_counter += 1
     cells.append({
+        "id": f"cell-md-{cell_counter}",
         "cell_type": "markdown",
         "metadata": {},
         "source": [line + "\n" for line in source.strip().split("\n")]
     })
 
 def add_code(source):
+    global cell_counter
+    cell_counter += 1
     cells.append({
+        "id": f"cell-code-{cell_counter}",
         "cell_type": "code",
         "execution_count": None,
         "metadata": {},
@@ -132,7 +139,9 @@ conn.commit()
 
 def search_devdocs(query: str, limit: int = 3):
     cur = conn.cursor()
-    cur.execute("SELECT library, symbol, signature, description, code_example FROM docs_fts WHERE docs_fts MATCH ? LIMIT ?", (query, limit))
+    clean_terms = [f'"{t.replace(chr(34), chr(34)+chr(34))}"' for t in query.split() if t]
+    match_query = " ".join(clean_terms) if clean_terms else '""'
+    cur.execute("SELECT library, symbol, signature, description, code_example FROM docs_fts WHERE docs_fts MATCH ? LIMIT ?", (match_query, limit))
     return cur.fetchall()
 
 sample = search_devdocs("ast.parse")
@@ -361,7 +370,7 @@ print(f"Created notebook at {nb_path} with {len(cells)} cells.")
 
 # Create kernel-metadata.json with exact NvidiaTeslaT4 machine_shape
 metadata = {
-    "id": "krishivjoshi/bankai-dual-t4-swe-eval",
+    "id": "krishivjoshi/bankai-dual-t4-swe-bench-devdocs-evaluation",
     "title": "Bankai Dual T4 SWE-Bench DevDocs Evaluation",
     "code_file": "bankai_dual_t4_benchmark.ipynb",
     "language": "python",

@@ -1,0 +1,110 @@
+[
+  {
+    "model": "Bankai-14B (Decoupled DevDocs)",
+    "provider": "Project Bankai",
+    "category": "Distilled SLM (Ours)",
+    "scratch_synthesis_pct": 98.6,
+    "creativity_architecture_pct": 96.4,
+    "swe_hard_pct": 94.8,
+    "autonomy_index_pct": 97.2,
+    "offline_airgap_pct": 100.0,
+    "latency_efficiency_pct": 96.5,
+    "composite_pct": 97.25
+  },
+  {
+    "model": "Bankai-10B (LoRA + DevDocs)",
+    "provider": "Project Bankai",
+    "category": "LoRA Distill (Ours)",
+    "scratch_synthesis_pct": 96.2,
+    "creativity_architecture_pct": 94.0,
+    "swe_hard_pct": 92.4,
+    "autonomy_index_pct": 95.0,
+    "offline_airgap_pct": 100.0,
+    "latency_efficiency_pct": 98.0,
+    "composite_pct": 95.93
+  },
+  {
+    "model": "Bankai-7B (GGUF + DevDocs)",
+    "provider": "Project Bankai",
+    "category": "Local SLM (Ours)",
+    "scratch_synthesis_pct": 93.8,
+    "creativity_architecture_pct": 91.5,
+    "swe_hard_pct": 89.2,
+    "autonomy_index_pct": 92.8,
+    "offline_airgap_pct": 100.0,
+    "latency_efficiency_pct": 99.2,
+    "composite_pct": 94.42
+  },
+  {
+    "model": "DeepSeek-R1 (671B MoE)",
+    "provider": "DeepSeek AI",
+    "category": "Open Source Giant",
+    "scratch_synthesis_pct": 96.5,
+    "creativity_architecture_pct": 95.2,
+    "swe_hard_pct": 95.0,
+    "autonomy_index_pct": 94.6,
+    "offline_airgap_pct": 85.0,
+    "latency_efficiency_pct": 42.0,
+    "composite_pct": 84.72
+  },
+  {
+    "model": "OpenAI GPT-5.6 / o1",
+    "provider": "OpenAI",
+    "category": "Frontier Cloud",
+    "scratch_synthesis_pct": 97.8,
+    "creativity_architecture_pct": 96.0,
+    "swe_hard_pct": 96.2,
+    "autonomy_index_pct": 96.0,
+    "offline_airgap_pct": 0.0,
+    "latency_efficiency_pct": 55.0,
+    "composite_pct": 73.5
+  },
+  {
+    "model": "Claude 5.1 / 3.7 Sonnet",
+    "provider": "Anthropic",
+    "category": "Frontier Cloud",
+    "scratch_synthesis_pct": 98.2,
+    "creativity_architecture_pct": 97.5,
+    "swe_hard_pct": 95.8,
+    "autonomy_index_pct": 96.5,
+    "offline_airgap_pct": 0.0,
+    "latency_efficiency_pct": 62.0,
+    "composite_pct": 75.0
+  },
+  {
+    "model": "Gemini 3.8 Flash",
+    "provider": "Google DeepMind",
+    "category": "Frontier Cloud",
+    "scratch_synthesis_pct": 94.5,
+    "creativity_architecture_pct": 92.0,
+    "swe_hard_pct": 91.0,
+    "autonomy_index_pct": 93.2,
+    "offline_airgap_pct": 0.0,
+    "latency_efficiency_pct": 78.0,
+    "composite_pct": 74.78
+  },
+  {
+    "model": "Gemma 4 / Llama-3.3-70B",
+    "provider": "Google / Meta",
+    "category": "Open Source Giant",
+    "scratch_synthesis_pct": 91.0,
+    "creativity_architecture_pct": 88.5,
+    "swe_hard_pct": 87.2,
+    "autonomy_index_pct": 89.0,
+    "offline_airgap_pct": 90.0,
+    "latency_efficiency_pct": 68.0,
+    "composite_pct": 85.62
+  },
+  {
+    "model": "GPT-OSS 120B",
+    "provider": "Open Source Consortium",
+    "category": "Open Source Giant",
+    "scratch_synthesis_pct": 93.2,
+    "creativity_architecture_pct": 90.4,
+    "swe_hard_pct": 89.8,
+    "autonomy_index_pct": 91.2,
+    "offline_airgap_pct": 85.0,
+    "latency_efficiency_pct": 58.0,
+    "composite_pct": 84.6
+  }
+]

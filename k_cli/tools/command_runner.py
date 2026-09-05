@@ -85,21 +85,44 @@ class LocalCommandExecutor:
         cwd: Optional[str] = None,
         timeout: int = 60,
         env: Optional[Dict[str, str]] = None,
+        sandbox: bool = False,
+        sandbox_config: Optional[Any] = None,
     ) -> CommandExecutionResult:
         """
-        Executes a shell command synchronously on the local machine.
+        Executes a shell command synchronously on the local machine with optional sandbox isolation.
 
         Args:
             command: The command line string to execute.
             cwd: Working directory (defaults to executor default_cwd).
             timeout: Maximum execution time in seconds (default 60).
             env: Custom environment variables dict.
+            sandbox: If True, executes inside sovereign Bubblewrap/POSIX sandbox container.
+            sandbox_config: Custom SandboxConfig.
 
         Returns:
             CommandExecutionResult containing exit code, stdout, stderr, and duration.
         """
         target_cwd = str(Path(cwd or self.default_cwd).resolve())
         exec_env = self._prepare_env(env)
+
+        if sandbox:
+            from k_cli.core.sandbox import global_sandbox_engine, SandboxConfig
+            cfg = sandbox_config or SandboxConfig(timeout_sec=float(timeout))
+            s_res = global_sandbox_engine.execute(
+                command,
+                cwd=target_cwd,
+                config=cfg,
+                timeout=float(timeout),
+                env=exec_env,
+            )
+            return CommandExecutionResult(
+                command=command,
+                exit_code=s_res.exit_code,
+                stdout=s_res.stdout,
+                stderr=s_res.stderr,
+                duration_sec=s_res.duration_sec,
+                cwd=target_cwd,
+            )
 
         start_time = time.time()
         logger.info(f"Executing local command: {command} in {target_cwd}")

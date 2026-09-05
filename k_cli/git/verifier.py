@@ -131,8 +131,9 @@ class CodeExtractor:
 class Verifier:
     """Ground-Truth Execution Guard providing static AST parsing, isolated execution, and framework tests."""
 
-    def __init__(self, python_executable: Optional[str] = None):
+    def __init__(self, python_executable: Optional[str] = None, use_sandbox: bool = False):
         self.python_executable = python_executable or sys.executable
+        self.use_sandbox = use_sandbox
 
     @staticmethod
     def _safe_environment() -> Dict[str, str]:
@@ -160,11 +161,19 @@ class Verifier:
         *,
         cwd: Union[str, Path],
         timeout: float,
+        sandbox: bool = False,
     ) -> subprocess.CompletedProcess:
         """Run a verifier child with bounded resources and reliable descendant cleanup."""
         safe_cwd = Path(cwd).resolve()
         if not safe_cwd.exists():
             raise FileNotFoundError(f"Subprocess working directory does not exist: {cwd}")
+
+        if sandbox:
+            from k_cli.core.sandbox import global_sandbox_engine, SandboxConfig
+            cfg = SandboxConfig(timeout_sec=timeout, memory_limit_mb=1024)
+            s_res = global_sandbox_engine.execute(cmd, cwd=safe_cwd, config=cfg, timeout=timeout)
+            return subprocess.CompletedProcess(cmd, s_res.exit_code, s_res.stdout, s_res.stderr)
+
         kwargs: Dict[str, Any] = {
             "cwd": str(safe_cwd),
             "stdout": subprocess.PIPE,

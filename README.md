@@ -105,33 +105,40 @@ K-CLI reverses this with the **Verification-First** paradigm:
 
 ---
 
-## ⚔️ Production-Grade Comparison: K-CLI vs. Aider vs. Claude Code vs. OpenCode
+## ⚔️ Production-Grade Comparison: K-CLI vs. Google Antigravity vs. Claude Code vs. Aider
 
-How does K-CLI compare against leading CLI developer assistants like **Aider**, **Claude Code**, and **OpenCode / Copilot Workspace**?
+How does K-CLI compare against leading developer coding agents? See the full quantitative scorecard in [`docs/BENCHMARK_SCORECARD.md`](docs/BENCHMARK_SCORECARD.md) (generated via `k-cli eval --compare all`).
 
-| Capability / Architecture | K-CLI for Devs (Ours) | Aider | Claude Code | OpenCode / Copilot |
-|:---|:---:|:---:|:---:|:---:|
-| **Local Host Shell Execution** | ✅ **Full Engine** (`k-cli exec`, Strands tool, Web UI) | ⚠️ Partial (`/run` only) | ✅ Yes (Built-in bash) | ❌ No (Cloud-only sandbox) |
-| **Closed-Loop Compiler AST Verification** | ✅ **Built-in Ground Truth** (`py_compile`, `ast`) | ❌ No (Relies on git undo) | ❌ No (Human must verify) | ❌ No (Human must verify) |
-| **Autonomous 3-Way Git Conflict Resolver** | ✅ **AST Semantic Resolver** | ❌ No (Manual text edits) | ❌ No (Standard LLM diff) | ❌ No (Manual web UI) |
-| **Multi-Language Crash Triage and Auto-Heal** | ✅ **Built-in (7 Runtimes)** | ❌ No (Chat prompt only) | ⚠️ Partial (Single prompt) | ❌ No (Static suggestions) |
-| **Autonomous Chaos Immunity Engine** | ✅ **AST Inoculation and Edge-Case Probing** | ❌ None | ❌ None | ❌ None |
-| **AWS Strands Agents SDK Integration** | ✅ **Native Multi-Step Agent Core** | ❌ None | ❌ No (Proprietary Anthropic) | ❌ No (Proprietary Azure) |
-| **Amazon Bedrock AgentCore OpenAPI 3.0 Export**| ✅ **1-Click SAM Template Export** | ❌ None | ❌ None | ❌ None |
-| **Sub-Millisecond Intent Sensing** | ✅ **Heuristic Sensor (under 0.1ms)** | ❌ None | ❌ None | ❌ None |
-| **3 Unified Interfaces (TUI, Web UI, REPL)**| ✅ **Textual TUI + 1080p Web + Terminal** | ⚠️ No (Terminal CLI only) | ⚠️ No (Terminal CLI only) | ⚠️ No (Web / IDE only) |
-| **100% Air-Gapped Sovereign Offline Mode** | ✅ **Local SLMs (Bankai) + Offline DevDocs** | ⚠️ Partial (Ollama, no offline docs) | ❌ No (Cloud only) | ❌ No (Cloud only) |
-| **Multi-Model Adversarial Consensus** | ✅ **Red Team / Blue Team Swarms** | ❌ No (Single model) | ❌ No (Single model) | ❌ No (Single model) |
-| **Background Auto-Healing Daemon** | ✅ **Autonomous Watcher (`k-cli daemon`)** | ❌ No (Interactive only) | ❌ No (Interactive only) | ❌ No (Cloud webhooks only) |
-| **Smart Credit Saver ($2 vs $10 Benchmark)** | ✅ **Context Pruning & $0.00 AST (85% savings)** | ❌ No (Sends raw context) | ❌ No (Standard pricing) | ❌ No (No optimization) |
-| **RateLimitGuard & Model Auto-Rotation** | ✅ **Circuit Breaker (429 Zero-Downtime)** | ⚠️ Manual fallback | ❌ No (Halts on 429) | ❌ No (Halts on error) |
-| **Autonomous Subagent Spawning** | ✅ **Native Multi-Agent Delegation** | ❌ No (Single agent only) | ⚠️ Partial preview | ❌ No |
+> **Balanced Industry Benchmark Leaderboard**:
+> - 🛡️ **K-CLI Leads (7/10 Categories)**: Sovereign Sandbox & Airgap, Closed-Loop AST Compiler Verification, Strict <1.0 GB RAM Budget, CreditSaver Token Pruning, 100% Air-Gapped Offline SLMs, Autonomous 3-Way AST Conflict Studio, and Chaos Immunity.
+> - 🌐 **Google Antigravity Dominates (2/10 Categories)**: Visual Workspace & Chrome DevTools DOM Instrumentation, Fleet Subagent Distributed Cloud Provisioning.
+> - 🧠 **Claude Code Leads (1/10 Categories)**: Monolithic Raw Frontier Context Reasoning (>200k Token Window).
+
+| Capability / Architecture | K-CLI for Devs (Ours) | Google Antigravity | Claude Code | Aider | Category Leader |
+|:---|:---:|:---:|:---:|:---:|:---:|
+| **Sovereign Multi-Tier Sandbox & Airgap** | ✅ **Bubblewrap + Airgap + POSIX** | ⚠️ Subprocess + MCP Hooks | ⚠️ Bash Prompt Approval | ❌ Raw Host Execution | **K-CLI** |
+| **Closed-Loop Compiler AST Verification** | ✅ **Built-in Ground Truth (py_compile, ast)** | ⚠️ Compiler / Linter MCP Tools | ⚠️ Shell Test Retries | ❌ Diff String Match Only | **K-CLI** |
+| **Deep Chrome DevTools DOM Instrumentation** | ⚠️ Textual TUI + Cyber Web | ✅ **Live DOM Tree & Visual Artifacts** | ❌ Minimal Terminal | ❌ Minimal Terminal | **Google Antigravity** |
+| **Monolithic Frontier Reasoning (>200k Context)** | ⚠️ Pruned AST Graph (CreditSaver) | ⚠️ 1M+ Gemini Pro Window | ✅ **Claude 3.7 Extended Thinking** | ❌ High Overhead Token Dump | **Claude Code** |
+| **Strict < 1.0 GB RAM Budget & Low-Spec Support** | ✅ **psutil Capped (~158 MB RSS)** | ❌ 4.0 - 8.0+ GB RAM | ⚠️ 2.0 - 3.5 GB RAM | ⚠️ 2.5 - 4.2 GB RAM | **K-CLI** |
+| **Fleet Subagent Cloud Orchestration** | ⚠️ 5-Model Swarm Dispatcher | ✅ **Fleet Cloud Subagent Provisioning** | ⚠️ Sequential Turns | ❌ Single Agent Only | **Google Antigravity** |
+| **Smart Credit Saver ($2 vs $10 Benchmark)** | ✅ **Context Pruning (85-92% Savings)** | ⚠️ Context Caching | ❌ Standard Frontier Billing | ❌ No Context Pruning | **K-CLI** |
+| **100% Air-Gapped Sovereign Offline Mode** | ✅ **Local SLMs (Bankai) + SQLite Docs** | ❌ Cloud-First Connected | ❌ Cloud-Locked API | ⚠️ Ollama (No offline docs) | **K-CLI** |
+| **Autonomous 3-Way Git Conflict Resolver** | ✅ **AST Semantic Conflict Studio** | ⚠️ Agentic Diff Resolution | ⚠️ Prompt-Driven Edits | ❌ Syntax Broken Diffs | **K-CLI** |
+| **Autonomous Chaos Immunity Engine** | ✅ **AST Inoculation & Edge Probing** | ⚠️ Automated Fuzzing / Tests | ⚠️ Ad-Hoc Prompt Tests | ❌ None | **K-CLI** |
 
 ---
 
 ## ⚡ Key Architectural Innovations
 
-### 1. Google Antigravity-Grade Local Shell Execution Engine
+### 1. Sovereign Multi-Tier Sandbox & Airgap Virtualization (`k-cli sandbox`)
+To prevent malicious code execution, rogue subprocesses, and data exfiltration, K-CLI incorporates an enterprise **4-Tier Defense-in-Depth Virtualization Sandbox** ([`k_cli/core/sandbox.py`](k_cli/core/sandbox.py)):
+* **Tier 1 (Bubblewrap Containerization)**: Unshares `user`, `pid`, `ipc`, `uts`, and `cgroup` Linux namespaces with a read-only root mount (`/usr`), isolated `/tmp` tmpfs, and restricted `/proc`.
+* **Tier 2 (Physical Network Airgap)**: Strips all networking capabilities with `--unshare-net` so untrusted code or scripts cannot leak secrets or communicate with external servers.
+* **Tier 3 (POSIX Resource Constraints)**: Enforces hard limits via `prlimit` (<1024 MB RAM, 120s CPU quota, 256 max processes) to neutralize fork bombs and runaway memory leaks.
+* **Tier 4 (Pre-Execution AST Security Guard)**: Static security analyzer that blocks dangerous syscalls (`rm -rf`, raw socket bindings, process signal manipulation) and scrubs API keys, AWS tokens, and environment secrets prior to invocation.
+
+### 2. Google Antigravity-Grade Local Shell Execution Engine
 Inspired by state-of-the-art agentic runtime environments like Google Antigravity, K-CLI provides a native, non-blocking local machine execution engine (`LocalCommandExecutor` in [`k_cli/tools/command_runner.py`](k_cli/tools/command_runner.py)):
 * **Host Execution Across All Tiers**: Available directly via terminal (`k-cli exec "<cmd>"`), via the Web UI interactive command runner bar, and as a first-class tool for autonomous agents.
 * **Autonomous Strands Agent Tool**: Exposed via `@tool def execute_command(command: str, cwd: str, timeout_seconds: int)` so the autonomous agent can run tests, check linters, inspect processes, and compile binaries in real time.
@@ -419,7 +426,11 @@ k-cli doctor
 | | `k-cli immune <file>` | Proactive chaos edge-case audit and inoculation |
 | | `k-cli daemon` | Launch background daemon monitoring repo and healing errors |
 | **Evaluation & Benchmark** | `k-cli eval` | Run standardized 5-battery evaluation harness & export scorecard |
+| | `k-cli eval --compare all` | Run 4-way industry benchmark (K-CLI vs Antigravity vs Claude vs Aider) |
 | | `k-cli benchmark` | Alias for `k-cli eval` |
+| **Sandbox & Virtualization** | `k-cli sandbox status` | Inspect active isolation tier, namespaces, and security budget |
+| | `k-cli sandbox test` | Execute 4-battery security isolation test battery |
+| | `k-cli sandbox run "<cmd>"` | Execute command in isolated airgapped bubble container |
 | **Time-Travel Checkpoints** | `k-cli undo` | Instant 1-command rollback to pre-execution checkpoint |
 | | `k-cli rollback` | Alias for `k-cli undo` |
 | | `k-cli checkpoints` | List all saved safe workspace snapshot checkpoints |

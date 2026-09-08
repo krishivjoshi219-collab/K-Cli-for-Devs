@@ -367,7 +367,20 @@ def execute_run(
     orchestrator = Orchestrator(driver=driver, verifier=verifier, max_retries=max_retries, persona=persona_val)
 
     initial_ram = orchestrator.get_current_ram_mb()
-    driver_type = "ONLINE (Ollama GGUF)" if driver.is_ollama_available() else "LOCAL (llama-cpp-python GGUF)"
+    active_prov = driver.detect_primary_provider()
+    driver_type_map = {
+        "gemini": "CLOUD (Google Gemini API)",
+        "anthropic": "CLOUD (Anthropic Claude API)",
+        "openai": "CLOUD (OpenAI API)",
+        "groq": "CLOUD (Groq Fast LPU)",
+        "deepseek": "CLOUD (DeepSeek API)",
+        "openrouter": "CLOUD (OpenRouter Multi-Model)",
+        "ollama": "LOCAL (Ollama Server)",
+        "llamacpp": "LOCAL (llama.cpp Server)",
+        "native": "LOCAL (llama-cpp-python GGUF)",
+        "mock": "SIMULATED (Offline Mock Engine)",
+    }
+    driver_type = driver_type_map.get(active_prov, f"ACTIVE ({active_prov.upper()})")
 
     if show_banner:
         table = Table(title="System Environment Status", box=None)

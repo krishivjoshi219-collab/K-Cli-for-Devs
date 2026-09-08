@@ -20,8 +20,18 @@ import pytest
 
 try:
     from k_cli.core.llm_driver import LLMDriver, ProviderType, _CallbackException
+    from k_cli.core.rate_limit_guard import RateLimitGuard
 except ModuleNotFoundError:
     from llm_driver import LLMDriver, ProviderType, _CallbackException
+    from rate_limit_guard import RateLimitGuard
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limit_circuits():
+    """Ensure clean circuit breaker state across all tests."""
+    RateLimitGuard().reset_all()
+    yield
+    RateLimitGuard().reset_all()
 
 
 # =====================================================================

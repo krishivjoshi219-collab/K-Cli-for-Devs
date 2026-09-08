@@ -235,6 +235,12 @@ class RateLimitGuard:
                 },
             }
 
+    def reset_all(self) -> None:
+        """Resets all circuits and clears cooldowns."""
+        with self._circuit_lock:
+            self._circuits.clear()
+            self._rotation_events.clear()
+
 
 class ModelRotator:
     """

@@ -43,7 +43,9 @@ async function initSystemStatus() {
             const res = await fetch('/api/status');
             if (res.ok) {
                 const data = await res.json();
-                document.getElementById('stat-model').textContent = data.active_model;
+                const modelSelect = document.getElementById('agent-model');
+                const activeModel = (modelSelect && modelSelect.value && modelSelect.value !== 'auto') ? modelSelect.value : data.active_model;
+                document.getElementById('stat-model').textContent = activeModel;
                 document.getElementById('stat-branch').textContent = data.git_branch;
                 document.getElementById('stat-ram').textContent = `${data.ram_usage_mb} MB / 1024 MB`;
             }
@@ -97,6 +99,15 @@ function initAgentRunner() {
 
     let tokenCount = 0;
     let startTime = null;
+
+    if (modelSelect) {
+        modelSelect.addEventListener('change', () => {
+            const statModel = document.getElementById('stat-model');
+            if (statModel && modelSelect.value) {
+                statModel.textContent = modelSelect.value;
+            }
+        });
+    }
 
     btnCopy.addEventListener('click', () => {
         navigator.clipboard.writeText(terminal.textContent);
@@ -366,6 +377,15 @@ function initDevDocs() {
     const inputQuery = document.getElementById('devdocs-query');
     const container = document.getElementById('devdocs-results-container');
 
+    if (inputQuery) {
+        inputQuery.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btnSearch.click();
+            }
+        });
+    }
+
     btnSearch.addEventListener('click', async () => {
         const query = inputQuery.value.trim();
         if (!query) {
@@ -380,14 +400,19 @@ function initDevDocs() {
             if (data.results && data.results.length > 0) {
                 let html = '';
                 data.results.forEach(r => {
+                    const libName = r.module || r.library || 'Standard Lib';
+                    const symName = r.symbol || r.name || query;
+                    const sigText = r.signature || r.docstring || r.doc || 'No signature available';
+                    const docSnippet = (r.doc && r.signature && r.doc !== r.signature) ? `<p class="margin-top-xs text-dim text-sm">${r.doc}</p>` : '';
                     html += `
                         <div class="spotlight-card margin-top-md">
                             <div class="spotlight-header">
-                                <span class="badge badge-info">${r.library || 'Python'}</span>
+                                <span class="badge badge-info">${libName}</span>
                                 <span class="text-dim">Score: ${r.score || '1.0'}</span>
                             </div>
-                            <h3>${r.symbol}</h3>
-                            <pre class="code-terminal">${r.signature || r.docstring}</pre>
+                            <h3>${symName}</h3>
+                            <pre class="code-terminal">${sigText}</pre>
+                            ${docSnippet}
                         </div>
                     `;
                 });

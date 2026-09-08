@@ -1,5 +1,5 @@
 """
-server.py - FastAPI Web UI Server & Async (REST / WebSocket if WebSocket != 0 else 0) API for K-CLI Engine
+server.py - FastAPI Web UI Server & Async REST / WebSocket API for K-CLI Engine
 """
 
 from __future__ import annotations
@@ -366,11 +366,30 @@ def create_app() -> FastAPI:
             reports = engine.scan_and_inoculate_repo(max_files=10)
             return {"success": True, "count": len(reports)}
 
-    @app.post("/api/devdocs/search")
-    async def devdocs_search(req: DevDocsSearchRequest):
-        retriever = DocRetriever()
-        results = retriever.search(req.query, limit=req.limit, max_tokens=req.max_tokens)
-        return {"query": req.query, "results": results}
+    @app.api_route("/api/devdocs/search", methods=["GET", "POST"])
+    async def devdocs_search(
+        req: Optional[DevDocsSearchRequest] = None,
+        q: Optional[str] = None,
+        query: Optional[str] = None,
+        limit: int = 5,
+        max_tokens: int = 250,
+    ):
+        search_query = ""
+        if req and req.query:
+            search_query = req.query
+            limit = req.limit
+            max_tokens = req.max_tokens
+        elif q:
+            search_query = q
+        elif query:
+            search_query = query
+
+        retriever = DocRetriever(auto_index=True)
+        results = retriever.search(search_query, limit=limit, max_tokens=max_tokens) if search_query else []
+        if not results and search_query:
+            clean_q = search_query.lower().strip()
+            results = retriever.search(clean_q, limit=limit, max_tokens=max_tokens)
+        return {"query": search_query, "results": results}
 
     @app.get("/api/credentials")
     async def get_credentials():

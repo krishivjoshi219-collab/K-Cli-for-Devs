@@ -379,64 +379,64 @@ class SecurityHealer:
                 except Exception:
                     continue
 
-            lines = content.splitlines()
-            # 1. Regex-based secret detection
-            for line_idx, line in enumerate(lines, start=1):
-                if "rule" in line.lower() and "re.compile" in line.lower():
-                    continue
+                lines = content.splitlines()
+                # 1. Regex-based secret detection
+                for line_idx, line in enumerate(lines, start=1):
+                    if "rule" in line.lower() and "re.compile" in line.lower():
+                        continue
 
-                for rule in SECRET_REGEX_RULES:
-                    match = rule["pattern"].search(line)
-                    if match:
-                        matched_val = match.group(0)
-                        if any(ph in matched_val.lower() for ph in ("example", "your_key", "placeholder", "dummy", "xxxx")):
-                            continue
+                    for rule in SECRET_REGEX_RULES:
+                        match = rule["pattern"].search(line)
+                        if match:
+                            matched_val = match.group(0)
+                            if any(ph in matched_val.lower() for ph in ("example", "your_key", "placeholder", "dummy", "xxxx")):
+                                continue
 
-                        v_id = f"SEC-KEY-{vuln_counter:03d}"
-                        vuln_counter += 1
-                        findings.append(
-                            VulnerabilityFinding(
-                                id=v_id,
-                                vuln_type=VulnerabilityType.HARDCODED_SECRET.value,
-                                severity=rule["severity"],
-                                cvss_score=rule["cvss"],
-                                cvss_vector=rule["vector"],
-                                file_path=rel_path,
-                                line_number=line_idx,
-                                snippet=line.strip(),
-                                description=f"{rule['name']}: {rule['desc']}",
-                                recommendation=rule["rec"],
-                                cwe_id=rule["cwe"],
-                            )
-                        )
-
-            # 2. ReDoS Detection
-            for line_idx, line in enumerate(lines, start=1):
-                if any(kw in line for kw in ("re.compile", "re.match", "re.search", "re.findall", "RegExp", "pattern =")):
-                    for p in REDOS_PATTERNS:
-                        if p.search(line):
-                            v_id = f"SEC-REDOS-{vuln_counter:03d}"
+                            v_id = f"SEC-KEY-{vuln_counter:03d}"
                             vuln_counter += 1
                             findings.append(
                                 VulnerabilityFinding(
                                     id=v_id,
-                                    vuln_type=VulnerabilityType.REDOS.value,
-                                    severity=VulnerabilitySeverity.MEDIUM.value,
-                                    cvss_score=7.5,
-                                    cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                                    vuln_type=VulnerabilityType.HARDCODED_SECRET.value,
+                                    severity=rule["severity"],
+                                    cvss_score=rule["cvss"],
+                                    cvss_vector=rule["vector"],
                                     file_path=rel_path,
                                     line_number=line_idx,
                                     snippet=line.strip(),
-                                    description="Potential ReDoS: Catastrophic backtracking nested quantifiers detected in regex.",
-                                    recommendation="Simplify nested quantifiers or use possessive/atomic matching to prevent CPU exhaustion.",
-                                    cwe_id="CWE-1333",
+                                    description=f"{rule['name']}: {rule['desc']}",
+                                    recommendation=rule["rec"],
+                                    cwe_id=rule["cwe"],
                                 )
                             )
 
-            # 3. Python Deep AST Analysis
-            if path.suffix.lower() == ".py":
-                ast_findings, vuln_counter = self._scan_python_ast(rel_path, content, vuln_counter)
-                findings.extend(ast_findings)
+                # 2. ReDoS Detection
+                for line_idx, line in enumerate(lines, start=1):
+                    if any(kw in line for kw in ("re.compile", "re.match", "re.search", "re.findall", "RegExp", "pattern =")):
+                        for p in REDOS_PATTERNS:
+                            if p.search(line):
+                                v_id = f"SEC-REDOS-{vuln_counter:03d}"
+                                vuln_counter += 1
+                                findings.append(
+                                    VulnerabilityFinding(
+                                        id=v_id,
+                                        vuln_type=VulnerabilityType.REDOS.value,
+                                        severity=VulnerabilitySeverity.MEDIUM.value,
+                                        cvss_score=7.5,
+                                        cvss_vector="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+                                        file_path=rel_path,
+                                        line_number=line_idx,
+                                        snippet=line.strip(),
+                                        description="Potential ReDoS: Catastrophic backtracking nested quantifiers detected in regex.",
+                                        recommendation="Simplify nested quantifiers or use possessive/atomic matching to prevent CPU exhaustion.",
+                                        cwe_id="CWE-1333",
+                                    )
+                                )
+
+                # 3. Python Deep AST Analysis
+                if path.suffix.lower() == ".py":
+                    ast_findings, vuln_counter = self._scan_python_ast(rel_path, content, vuln_counter)
+                    findings.extend(ast_findings)
 
         duration = time.time() - start_time
         return SecurityScanReport(

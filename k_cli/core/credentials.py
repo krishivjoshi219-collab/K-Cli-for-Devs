@@ -170,6 +170,12 @@ class CredentialsManager:
                                     val_str = v.strip()
                                 elif isinstance(v, list) and len(v) > 0 and isinstance(v[0], str) and v[0].strip():
                                     val_str = v[0].strip()
+                                    if k.upper() in ("GOOGLE_KEYS", "GEMINI_KEYS"):
+                                        pool = [x.strip() for x in v if isinstance(x, str) and x.strip()]
+                                        os.environ["GEMINI_API_KEYS_POOL"] = json.dumps(pool)
+                                        # Use key 3 if available to bypass temporary 429 on index 0
+                                        if len(pool) > 3:
+                                            val_str = pool[3]
                                 elif isinstance(v, dict):
                                     for sub_k, sub_v in v.items():
                                         if isinstance(sub_v, str) and sub_v.strip():

@@ -508,6 +508,31 @@ def execute_local_command_cli(
         console.print(f"[bold green]✔ Command completed in {res.duration_sec:.2f}s[/bold green]")
 
 
+@app.command(name="auto", help="Execute an autonomous end-to-end engineering task directly in the workspace using local tools.")
+@app.command(name="autopilot", help="Alias for k-cli auto: autonomous task execution with local tools.")
+def auto_cmd(
+    goal: str = typer.Argument(..., help="High-level engineering or project goal to execute autonomously."),
+    model: str = typer.Option("gemini-2.0-flash", "--model", "-m", help="Model name (e.g. 'gemini-2.0-flash', 'bankai-7b', 'groq/llama-3.1-8b-instant')."),
+    cwd: str = typer.Option(".", "--cwd", "-C", help="Workspace working directory."),
+    max_steps: int = typer.Option(12, "--max-steps", "-s", help="Max autonomous tool execution iterations."),
+):
+    from k_cli.agents.autonomous_agent import AutonomousAgent
+    from k_cli.core.llm_driver import LLMDriver
+
+    console.print(f"[bold cyan]⚡ K-CLI Autonomous Workstation Engine[/bold cyan]")
+    console.print(f"[bold green]▶ Goal:[/bold green] [white]{goal}[/white]")
+    console.print(f"[bold dim]Model: {model} | Workspace: {Path(cwd).resolve()}[/bold dim]\n")
+
+    driver = LLMDriver(model_name=model)
+    agent = AutonomousAgent(driver=driver, model_name=model, cwd=cwd, max_steps=max_steps)
+
+    def stream_cb(persona: str, token: str):
+        console.print(token, end="", highlight=False)
+
+    res = agent.run(goal, token_callback=stream_cb)
+    console.print(f"\n\n[bold green]✔ Autonomous task finished in {res.duration_sec:.2f}s (tools executed: {len(res.tools_executed)})[/bold green]")
+
+
 @app.command(name="run", help="Generate and verify code for a given prompt.")
 def run(
     prompt: str = typer.Argument(..., help="Natural language prompt / coding task description."),

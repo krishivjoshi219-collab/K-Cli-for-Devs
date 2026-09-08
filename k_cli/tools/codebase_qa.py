@@ -9,6 +9,7 @@ by querying local AST symbols, SQLite FTS5 docs, and git changes with zero cloud
 from __future__ import annotations
 
 import ast
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -65,23 +66,26 @@ class CodebaseQAEngine:
         matched_files: List[str] = []
         matched_symbols: List[str] = []
 
-        ignored_dirs = {".venv", "k_cli_env", ".git", ".pytest_cache", "__pycache__", "build", "dist", "data"}
+        ignored_dirs = {".venv", "k_cli_env", ".git", ".pytest_cache", "__pycache__", "build", "dist", "data", ".kcli", "node_modules"}
         query_tokens = query.lower().split()
-        for p in self.repo_path.rglob("*.py"):
-            if any(ig in p.parts for ig in ignored_dirs):
-                continue
-            try:
-                rel = str(p.relative_to(self.repo_path))
-                content = p.read_text(encoding="utf-8", errors="ignore")
-                if any(tok in rel.lower() or tok in content.lower() for tok in query_tokens):
-                    matched_files.append(rel)
-                    tree = ast.parse(content)
-                    for node in ast.walk(tree):
-                        if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-                            if any(tok in node.name.lower() for tok in query_tokens):
-                                matched_symbols.append(node.name)
-            except Exception:
-                pass
+        for root, dirs, files in os.walk(self.repo_path):
+            dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ignored_dirs and not d.endswith(".egg-info")]
+            for file in files:
+                if not file.endswith(".py") or file.startswith("."):
+                    continue
+                p = Path(root) / file
+                try:
+                    rel = str(p.relative_to(self.repo_path))
+                    content = p.read_text(encoding="utf-8", errors="ignore")
+                    if any(tok in rel.lower() or tok in content.lower() for tok in query_tokens):
+                        matched_files.append(rel)
+                        tree = ast.parse(content)
+                        for node in ast.walk(tree):
+                            if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+                                if any(tok in node.name.lower() for tok in query_tokens):
+                                    matched_symbols.append(node.name)
+                except Exception:
+                    pass
 
         matched_files = matched_files[:8]
         matched_symbols = matched_symbols[:max_context_symbols]

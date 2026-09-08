@@ -9,14 +9,18 @@ Enforces non-conversational code outputs, zero-fluff text, and < 1.0 GB system R
 
 from __future__ import annotations
 
+import ast
 import gc
 import json
+import logging
 import os
 import psutil
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+
+logger = logging.getLogger("k_cli.agents.orchestrator")
 
 try:
     from k_cli.core.llm_driver import LLMDriver
@@ -181,6 +185,19 @@ class Orchestrator:
             cleaned = re.sub(pat, "", cleaned, flags=re.IGNORECASE | re.MULTILINE).strip()
         return cleaned
 
+    @staticmethod
+    def _compute_code_fingerprint(code: str, language: str) -> str:
+        """Computes AST or normalized structural fingerprint to detect circular debugging loops."""
+        code_clean = code.strip()
+        if language.lower() == "python":
+            try:
+                tree = ast.parse(code_clean)
+                return ast.dump(tree, annotate_fields=False)
+            except Exception:
+                pass
+        lines = [line.strip() for line in code_clean.splitlines() if line.strip() and not line.strip().startswith(("#", "//", "/*"))]
+        return "\n".join(lines)
+
     def execute_pipeline(
         self,
         user_prompt: str,
@@ -264,6 +281,9 @@ class Orchestrator:
         current_code = candidate_code
         v_result = self.verifier.verify(current_code, language=language, test_code=test_code)
 
+        seen_fingerprints: Set[str] = {self._compute_code_fingerprint(current_code, language)}
+        loop_detected = False
+
         while not v_result.success and attempts < self.max_retries:
             attempts += 1
             self.check_ram_budget()
@@ -276,6 +296,13 @@ class Orchestrator:
                 f"Error Line Number: {v_result.line_number or 'Unknown'}\n"
                 f"Compiler/Execution Error Traceback:\n{v_result.error_trace}\n"
             )
+            if loop_detected:
+                debugger_prompt += (
+                    "\n[ANTI-LOOP DIRECTIVE]\n"
+                    "CRITICAL: A previous debugging attempt reproduced an identical AST/code state that has already failed.\n"
+                    "You are caught in a circular repair loop. DO NOT revert to prior syntax patterns or repeat the same patch.\n"
+                    "Change your algorithmic or structural approach fundamentally to break the cycle.\n"
+                )
             if critic_out:
                 debugger_prompt += f"Critic Notes:\n{critic_out}\n"
             debugger_prompt += "\nFix the code and output ONLY the corrected code inside markdown code blocks."
@@ -288,10 +315,23 @@ class Orchestrator:
                 "persona": f"{Persona.DEBUGGER.value}_attempt_{attempts}",
                 "output": current_code,
                 "error_trace": v_result.error_trace,
+                "loop_detected": loop_detected,
             })
 
             # Re-verify
             v_result = self.verifier.verify(current_code, language=language, test_code=test_code)
+
+            # Detect circular AST/code state to prevent verification death spiral
+            fp = self._compute_code_fingerprint(current_code, language)
+            if fp in seen_fingerprints:
+                loop_detected = True
+                logger.warning(
+                    "Verification loop detected in attempt %d: code state matches previously seen AST/code fingerprint.",
+                    attempts,
+                )
+            else:
+                seen_fingerprints.add(fp)
+                loop_detected = False
 
         final_ram = self.get_current_ram_mb()
 

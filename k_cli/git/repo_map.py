@@ -45,6 +45,7 @@ class RepoMap:
 
     DEFAULT_IGNORED_DIRS: Set[str] = {
         ".git",
+        ".kcli",
         ".agents",
         ".pytest_cache",
         ".venv",
@@ -52,7 +53,6 @@ class RepoMap:
         "venv",
         "env",
         "data",
-        ".pytest_cache",
         "__pycache__",
         "build",
         "dist",
@@ -69,7 +69,6 @@ class RepoMap:
         ".next",
         ".turbo",
         ".cache",
-        ".agents",
     }
 
     SUPPORTED_EXTENSIONS: Set[str] = {

@@ -309,6 +309,7 @@ REDOS_PATTERNS = [
 
 IGNORED_DIRS = {
     ".git",
+    ".kcli",
     ".venv",
     "venv",
     "k_cli_env",
@@ -360,19 +361,23 @@ class SecurityHealer:
         scanned_count = 0
         vuln_counter = 1
 
-        for path in root.rglob("*"):
-            if not path.is_file() or path.suffix.lower() not in SCANNABLE_EXTENSIONS:
-                continue
-            if any(part in IGNORED_DIRS for part in path.parts):
-                continue
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if not d.startswith(".") and d not in IGNORED_DIRS and not d.endswith(".egg-info")]
+            for filename in filenames:
+                if filename.startswith("."):
+                    continue
+                _, ext = os.path.splitext(filename)
+                if ext.lower() not in SCANNABLE_EXTENSIONS:
+                    continue
 
-            rel_path = path.relative_to(root).as_posix()
-            scanned_count += 1
+                path = Path(dirpath) / filename
+                rel_path = path.relative_to(root).as_posix()
+                scanned_count += 1
 
-            try:
-                content = path.read_text(encoding="utf-8", errors="replace")
-            except Exception:
-                continue
+                try:
+                    content = path.read_text(encoding="utf-8", errors="replace")
+                except Exception:
+                    continue
 
             lines = content.splitlines()
             # 1. Regex-based secret detection

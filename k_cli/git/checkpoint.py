@@ -32,6 +32,7 @@ class CheckpointMeta:
     description: str
     files_tracked: List[str] = field(default_factory=list)
     git_head: Optional[str] = None
+    full_workspace: bool = True
 
 
 class CheckpointManager:
@@ -125,6 +126,7 @@ class CheckpointManager:
             description=description,
             files_tracked=tracked_files,
             git_head=self.get_git_head(),
+            full_workspace=(tracked_paths is None),
         )
 
         index = self._load_index()
@@ -142,7 +144,7 @@ class CheckpointManager:
 
     def rollback_last_checkpoint(self) -> Tuple[bool, str]:
         """
-        Reverts the workspace to the most recent checkpoint state.
+        Reverts the workspace to the most recent checkpoint state and purges orphan files.
         Returns (success, status_message).
         """
         index = self._load_index()
@@ -158,7 +160,10 @@ class CheckpointManager:
             return False, f"Checkpoint directory '{checkpoint_id}' missing."
 
         restored_count = 0
-        for rel_path_str in latest.get("files_tracked", []):
+        tracked_files = latest.get("files_tracked", [])
+        tracked_set = set(tracked_files)
+
+        for rel_path_str in tracked_files:
             src = snapshot_dir / rel_path_str
             dest = self.workspace_dir / rel_path_str
             if src.exists() and src.is_file():
@@ -166,8 +171,27 @@ class CheckpointManager:
                 shutil.copy2(src, dest)
                 restored_count += 1
 
+        # Purge orphan files created during the failed run if this was a workspace snapshot
+        orphans_removed = 0
+        if latest.get("full_workspace", True):
+            ignored = {".git", ".venv", "venv", "k_cli_env", "__pycache__", "node_modules", ".kcli", "dist", "build"}
+            for item in self.workspace_dir.rglob("*"):
+                if any(ig in item.parts for ig in ignored):
+                    continue
+                if item.is_file() and item.suffix.lower() in {
+                    ".py", ".js", ".ts", ".html", ".css", ".md", ".json", ".toml", ".yaml", ".yml", ".sh"
+                }:
+                    try:
+                        rel = str(item.relative_to(self.workspace_dir))
+                        if rel not in tracked_set:
+                            item.unlink(missing_ok=True)
+                            orphans_removed += 1
+                    except Exception:
+                        continue
+
         self._save_index(index)
-        return True, f"Successfully rolled back to checkpoint '{checkpoint_id}' ({restored_count} files restored: {latest.get('description', '')})"
+        orphan_msg = f", {orphans_removed} orphan files purged" if orphans_removed else ""
+        return True, f"Successfully rolled back to checkpoint '{checkpoint_id}' ({restored_count} files restored{orphan_msg}: {latest.get('description', '')})"
 
     def compute_diff(self, checkpoint_id: Optional[str] = None) -> str:
         """

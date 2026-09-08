@@ -246,19 +246,24 @@ class TestLLMDriverFallbackHierarchy:
 
     def test_priority_3_mock_fallback_all_personas(self):
         driver = LLMDriver(mock_mode=False)
-        with patch.object(driver, "get_native_llama", return_value=None):
-            with patch.object(driver, "is_ollama_available", return_value=False):
-                res_r = driver.generate("task", system_prompt="You are [RESEARCHER] persona")
-                assert "Task:" in res_r or "RAM" in res_r
+        with patch.object(driver, "get_native_llama", return_value=None), \
+             patch.object(driver, "is_ollama_available", return_value=False), \
+             patch.object(driver, "is_gemini_available", return_value=False), \
+             patch.object(driver, "is_anthropic_available", return_value=False), \
+             patch.object(driver, "is_openai_available", return_value=False), \
+             patch.object(driver, "is_deepseek_available", return_value=False), \
+             patch.object(driver, "is_openrouter_available", return_value=False):
+            res_r = driver.generate("task", system_prompt="You are [RESEARCHER] persona")
+            assert "Task:" in res_r or "RAM" in res_r
 
-                res_a = driver.generate("plan", system_prompt="You are [ARCHITECT] persona")
-                assert "<think>" in res_a
+            res_a = driver.generate("plan", system_prompt="You are [ARCHITECT] persona")
+            assert "<think>" in res_a
 
-                res_c = driver.generate("review", system_prompt="You are [CRITIC] persona")
-                assert "VALIDATED" in res_c
+            res_c = driver.generate("review", system_prompt="You are [CRITIC] persona")
+            assert "VALIDATED" in res_c
 
-                res_d = driver.generate("repair", system_prompt="You are [DEBUGGER] persona")
-                assert "```python" in res_d
+            res_d = driver.generate("repair", system_prompt="You are [DEBUGGER] persona")
+            assert "```python" in res_d
 
     def test_mock_generation_prompt_routing(self):
         driver = LLMDriver(mock_mode=True)

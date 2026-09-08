@@ -3646,6 +3646,9 @@ def main(
     demo_ui: bool = typer.Option(False, "--demo-ui", help="Launch the TUI in pure Zero-AI demo mode without needing any API key."),
 ):
     if ctx.invoked_subcommand is None:
+        if any(arg in ("--help", "-h") for arg in ctx.args):
+            console.print(ctx.get_help())
+            raise typer.Exit()
         if demo_ui:
             ui_cmd(mock=True, demo=True, continue_session=continue_session)
             raise typer.Exit()

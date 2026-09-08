@@ -106,8 +106,8 @@ def test_web_ui_websocket_agent(client: TestClient):
         tokens = []
         while True:
             msg = websocket.receive_json()
-            if msg["type"] in ("complete", "error"):
-                assert msg["type"] == "complete"
+            if msg["type"] in ("complete", "done", "error"):
+                assert msg["type"] in ("complete", "done")
                 assert msg["success"] is True
                 break
             elif msg["type"] == "token":

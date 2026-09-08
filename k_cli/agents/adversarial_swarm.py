@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import concurrent.futures
 import logging
+import os
+import psutil
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -302,7 +304,20 @@ class MultiModelConsensusSwarm:
                     error_message=str(exc),
                 )
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.models)) as executor:
+        # Determine adaptive worker concurrency to prevent CPU/RAM thrashing
+        cpu_cores = os.cpu_count() or 2
+        try:
+            mem = psutil.virtual_memory()
+            if mem.percent > 85.0:
+                concurrency_cap = 2
+            else:
+                concurrency_cap = min(cpu_cores, 4)
+        except Exception:
+            concurrency_cap = min(cpu_cores, 4)
+
+        max_workers = max(1, min(len(self.models), concurrency_cap))
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_model = {executor.submit(_generate_one, m): m for m in self.models}
             for future in concurrent.futures.as_completed(future_to_model):
                 cand = future.result()

@@ -348,7 +348,7 @@ class EvaluationHarness:
                 metric_id="EVAL-08",
                 category="Sovereign AI",
                 name="Sovereign Air-Gapped & 100% Offline Local SLM Operation",
-                k_cli="100% Sovereign (Local Ollama/Bankai SLMs, SQLite DevDocs, Zero Telemetry)",
+                k_cli="100% Sovereign (Local Ollama/SLMs, SQLite DevDocs, Zero Telemetry)",
                 aider="50% Partial (Ollama supported, but struggles on pure offline docs)",
                 claude_code="0% Cloud-Locked (Strictly requires Anthropic API endpoints)",
                 antigravity="20% Cloud-First (Requires Google Cloud / Gemini connectivity)",
@@ -436,7 +436,7 @@ class EvaluationHarness:
             f"- **Evaluation Duration**: `{report.total_duration_sec}s`",
             "",
             "## 🥊 4-Way Architectural Comparison Matrix",
-            "| ID | Evaluation Metric | K-CLI (Project Bankai) | Google Antigravity | Claude Code | Aider | Category Leader |",
+            "| ID | Evaluation Metric | K-CLI | Google Antigravity | Claude Code | Aider | Category Leader |",
             "|:---|:---|:---|:---|:---|:---|:---:|",
         ]
 
@@ -455,7 +455,7 @@ class EvaluationHarness:
             "   - **Strict Resource Budget (< 1.0 GB RAM)**: Runs on low-spec 4GB developer environments with continuous RSS monitoring.",
             "   - **Ground-Truth Compilers**: Pre-commit AST verification and local compiler execution guarantee zero broken commits.",
             "   - **CreditSaver Financial Optimization**: Saves 85-92% of model costs through AST symbol graph pruning.",
-            "   - **100% Offline Capability**: Runs locally on Ollama, Bankai SLMs, and offline SQLite DevDocs.",
+            "   - **100% Offline Capability**: Runs locally on Ollama, open-weight SLMs, and offline SQLite DevDocs.",
         ])
 
         out_file.write_text("\n".join(lines), encoding="utf-8")

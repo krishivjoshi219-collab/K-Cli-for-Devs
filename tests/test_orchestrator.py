@@ -151,3 +151,37 @@ def test_orchestrator_auto_debug_loop_max_retries_termination():
     assert res.success is False
     assert res.attempts == 4  # 1 initial attempt + 3 retries
     assert res.retry_count == 3
+
+
+class LoopTrackingDriver(LLMDriver):
+    """Driver that records debugger prompts and repeats code to trigger loop detector."""
+    def __init__(self):
+        super().__init__(mock_mode=True)
+        self.debugger_prompts = []
+
+    def generate(self, prompt, system_prompt=None, temperature=0.2, stream_callback=None):
+        sys_lower = (system_prompt or "").lower()
+        if "coder" in sys_lower:
+            return "```python\ndef broken(:\n    pass\n```"
+        elif "debugger" in sys_lower:
+            self.debugger_prompts.append(prompt)
+            return "```python\ndef broken(:\n    pass\n```"
+        return super().generate(prompt, system_prompt, temperature=stream_callback)
+
+
+def test_orchestrator_anti_loop_directive_injection():
+    driver = LoopTrackingDriver()
+    orchestrator = Orchestrator(driver=driver, max_retries=3)
+
+    res = orchestrator.execute_pipeline(
+        user_prompt="Trigger loop detection",
+        language="python"
+    )
+
+    assert res.success is False
+    assert len(driver.debugger_prompts) == 3
+    # First attempt does not have anti-loop directive
+    assert "[ANTI-LOOP DIRECTIVE]" not in driver.debugger_prompts[0]
+    # Subsequent attempt after repeated code state MUST have anti-loop directive
+    assert "[ANTI-LOOP DIRECTIVE]" in driver.debugger_prompts[1]
+

@@ -40,7 +40,7 @@ All visual evidence captured live from the running Chromium browser:
 5. **AST Security Scanner**: `docs/assets/live_app_test/05_security_shield_live.png`
 6. **Chaos Immunity Engine**: `docs/assets/live_app_test/06_chaos_immunity_live.png`
 7. **DevDocs Offline Search**: `docs/assets/live_app_test/07_devdocs_search_live.png`
-8. **Model Hub & Bankai Catalog**: `docs/assets/live_app_test/08_model_hub_live.png`
+8. **Model Hub & SLM Catalog**: `docs/assets/live_app_test/08_model_hub_live.png`
 9. **Dual-Window Live Activity Monitor**: `docs/assets/live_app_test/09_activity_monitor_live.png`
 
 ## 💡 Key Architectural Validations
